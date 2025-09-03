@@ -1,107 +1,104 @@
 #pragma once
 
-#include "IRenderer.h"
 #include <memory>
 #include <string>
+#include "IRenderer.h"
 
-// Conditional includes based on platform
+// Forward declarations
+class SDL_Renderer;
+
 #ifdef __EMSCRIPTEN__
-    // WASM: Use pure WebGL and WebGPU renderers (no SDL dependencies)
-    class PureWebGLRenderer;
-    class PureWebGPURenderer;
-    class TextureManager;
-    #define USE_WASM_RENDERER 1
+// WASM builds: Use pure WebGL and WebGPU renderers
+class PureWebGLRenderer;
+class PureWebGPURenderer;
+class TextureManager;
+class SpriteRenderer;
 #else
-    // Non-WASM: Use SDL-dependent renderers
-    #include <SDL2/SDL.h>
-    class WebGPURenderer;
-    class WebGLRenderer;
-    #define USE_WASM_RENDERER 0
+// Non-WASM builds: Use existing SDL-based renderers
+class WebGLRenderer;
+class WebGPURenderer;
 #endif
 
-// Renderer type enumeration
 enum class RendererType {
-    WebGPU,
+    None,
+    WebGL,
     WebGL2,
-    WebGL1,
-    None
+    WebGPU,
+    OpenGL,
+    OpenGLES
 };
 
-// Graphics manager class
 class GraphicsManager {
-private:
-    std::unique_ptr<IRenderer> renderer;
-    RendererType currentType;
-    bool isInitialized;
-    #if USE_WASM_RENDERER
-        // WASM: No SDL renderer needed
-        void* existingSdlRenderer; // Placeholder for compatibility
-        std::unique_ptr<TextureManager> m_textureManager; // WASM texture management
-    #else
-        // Non-WASM: Store existing SDL renderer for WebGL fallback
-        SDL_Renderer* existingSdlRenderer;
-    #endif
-    
-    // Performance tracking
-    float frameTime;
-    int drawCalls;
-    
 public:
-    
-    // Constructor/Destructor
     GraphicsManager();
     ~GraphicsManager();
-    
-    // Initialization and shutdown
+
+    // Initialize graphics system
     bool Initialize();
-    #if !USE_WASM_RENDERER
-        bool Initialize(SDL_Renderer* existingRenderer); // Overload to use existing renderer (non-WASM only)
-    #endif
     void Shutdown();
+
+    // Renderer management
+    IRenderer* GetCurrentRenderer() const { return m_currentRenderer.get(); }
+    IRenderer* GetRenderer() const { return m_currentRenderer.get(); } // Compatibility alias
+    RendererType GetCurrentRendererType() const { return m_currentRendererType; }
     
-    // Renderer access
-    IRenderer* GetRenderer() { return renderer.get(); }
-    const IRenderer* GetRenderer() const { return renderer.get(); }
-    RendererType GetCurrentType() const { return currentType; }
+    // Performance and stats
+    void ResetStats();
+    std::string GetPerformanceStats() const;
     
-    // Status queries
-    bool IsInitialized() const { return isInitialized; }
-    std::string GetRendererName() const;
+    // Feature support
     bool SupportsFeature(RendererFeature feature) const;
     
-    // Renderer status and information
-    std::string GetRendererStatus() const;
-    bool IsUsingWebGPU() const { return currentType == RendererType::WebGPU; }
-    bool IsUsingWebGL() const { return currentType == RendererType::WebGL2 || currentType == RendererType::WebGL1; }
-    
-    // Performance queries
-    float GetFrameTime() const { return frameTime; }
-    int GetDrawCalls() const { return drawCalls; }
-    void ResetStats();
-    
-    // Texture management (WASM only)
-    #if USE_WASM_RENDERER
-        TextureManager* GetTextureManager() { return m_textureManager.get(); }
-        const TextureManager* GetTextureManager() const { return m_textureManager.get(); }
-    #endif
-    
-    // Frame management
+    // Frame management (for compatibility)
     void BeginFrame();
     void EndFrame();
     
-private:
-    // Renderer detection
-    #if USE_WASM_RENDERER
-        bool InitializeInternal(void* existingRenderer); // Common initialization logic (WASM)
-        bool TryInitializePureWebGPU();
-        bool TryInitializePureWebGL();
-    #else
-        bool InitializeInternal(SDL_Renderer* existingRenderer); // Common initialization logic (non-WASM)
-        bool TryInitializeWebGPU();
-        bool TryInitializeWebGL2();
-        bool TryInitializeWebGL1();
-    #endif
+    // Renderer information (for compatibility)
+    std::string GetRendererName() const;
+    bool IsUsingWebGPU() const;
+    bool IsUsingWebGL() const;
+    std::string GetRendererStatus() const;
+    float GetFrameTime() const;
+    int GetDrawCalls() const;
+
+#ifdef __EMSCRIPTEN__
+    // WASM: Get texture manager
+    TextureManager* GetTextureManager() const { return m_textureManager.get(); }
     
-    // Helper methods
-    void LogRendererInfo() const;
+    // WASM: Get sprite renderer
+    SpriteRenderer* GetSpriteRenderer() const { return m_spriteRenderer.get(); }
+#endif
+
+private:
+    // Initialize renderer based on platform
+    bool InitializeInternal();
+    
+#ifdef __EMSCRIPTEN__
+    // WASM: Try to initialize pure WebGPU renderer
+    bool TryInitializePureWebGPU();
+    
+    // WASM: Try to initialize pure WebGL renderer
+    bool TryInitializePureWebGL();
+#else
+    // Non-WASM: Try to initialize SDL-based renderers
+    bool TryInitializeWebGPU();
+    bool TryInitializeWebGL2();
+    bool TryInitializeWebGL1();
+#endif
+
+private:
+    std::unique_ptr<IRenderer> m_currentRenderer;
+    RendererType m_currentRendererType;
+    
+    // Performance tracking (for compatibility)
+    float m_frameTime;
+    int m_drawCalls;
+    
+#ifdef __EMSCRIPTEN__
+    // WASM: Use pure WebGL and WebGPU renderers
+    std::unique_ptr<TextureManager> m_textureManager;
+    std::unique_ptr<SpriteRenderer> m_spriteRenderer;
+#else
+    // Non-WASM: Use existing SDL-based renderers (unchanged)
+#endif
 };
