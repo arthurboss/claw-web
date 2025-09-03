@@ -1,4 +1,4 @@
-# Immediate Implementation Plan: Pure WebGL Renderer
+# Immediate Implementation Plan: Generic WASM Graphics Module
 
 ## 🎯 **Current Status**
 - ✅ Roadmap created and approved
@@ -6,246 +6,196 @@
 - ✅ Clear path forward established
 - ✅ Old SDL-dependent WebGPU implementation cleaned up
 - ✅ Working directory clean and ready for fresh implementation
+- ✅ Phase 1: Pure WebGL Foundation - COMPLETE
+- ✅ Phase 2: WebGPU Integration - COMPLETE
+- ✅ Phase 3: Texture System - COMPLETE
 
-## 🚀 **Phase 1: WASM-Only Pure WebGL Foundation (Week 1)**
+## 🚀 **Phase 4: Sprite Rendering with Actual Textures (Current Focus)**
 
-### **Day 1-2: Create WASM-Only Pure WebGL Renderer Structure**
+### **Day 1-2: Create Sprite System Structure**
 
-#### **1.1 Create Directory Structure**
-```bash
-mkdir -p OpenClaw/Engine/Graphics/WASM
-mkdir -p OpenClaw/Engine/Graphics/Generic
-```
-
-#### **1.2 Create WASM-Only Pure WebGL Renderer Header**
-- **File**: `OpenClaw/Engine/Graphics/WASM/PureWebGLRenderer.h`
+#### **4.1 Create Sprite Class**
+- **File**: `OpenClaw/Engine/Graphics/WASM/Sprite.h`
 - **Features**:
-  - Inherit from `IRenderer` interface
-  - No SDL includes whatsoever (WASM builds only)
-  - WebGL context management via JavaScript
-  - Basic rendering methods
-- **Platform Safety**: Other platforms completely unaffected
-
-#### **1.3 Create WASM-Only Pure WebGL Renderer Implementation**
-- **File**: `OpenClaw/Engine/Graphics/WASM/PureWebGLRenderer.cpp`
-- **Features**:
-  - WebGL context initialization via JavaScript bridge
-  - Basic texture loading and rendering
-  - Simple 2D sprite rendering
-  - Viewport management
+  - Texture ID management
+  - Position and size properties
+  - UV coordinate support
+  - Rendering interface
 - **Platform Safety**: Only compiled for WASM builds
 
-### **Day 3-4: JavaScript Graphics Bridge**
-
-#### **1.4 Create WebGL JavaScript Bridge**
-- **File**: `Build_Release/graphics-bridge.js`
+#### **4.2 Create Sprite Renderer**
+- **File**: `OpenClaw/Engine/Graphics/WASM/SpriteRenderer.h`
+- **File**: `OpenClaw/Engine/Graphics/WASM/SpriteRenderer.cpp`
 - **Features**:
-  - WebGL context creation and management
-  - Basic shader compilation
-  - Texture loading from URLs/memory
-  - Buffer management (VBO, IBO)
+  - Batch sprite rendering for performance
+  - Texture binding and management
+  - UV coordinate handling
+  - Alpha blending support
 
-#### **1.5 WASM-Specific Asset Loading (Replace SDL Dependencies)**
-- **File**: `OpenClaw/Engine/Graphics/WASM/WASMTextureLoader.h`
-- **File**: `OpenClaw/Engine/Graphics/WASM/WASMTextureLoader.cpp`
+### **Day 3-4: Texture Integration**
+
+#### **4.3 Update WebGL Renderer for Textures**
+- **Modify**: `OpenClaw/Engine/Graphics/WASM/PureWebGLRenderer.cpp`
 - **Features**:
-  - Replace SDL_IMAGE with pure WebGL texture loading
-  - Support PNG, PCX, TGA formats via fetch API
-  - Memory-efficient texture management
-- **File**: `OpenClaw/Engine/Graphics/WASM/WASMFontRenderer.h`
-- **File**: `OpenClaw/Engine/Graphics/WASM/WASMFontRenderer.cpp`
+  - Texture binding in shaders
+  - UV coordinate support
+  - Texture sampling in fragment shader
+  - Alpha blending for transparency
+
+#### **4.4 Update WebGPU Renderer for Textures**
+- **Modify**: `OpenClaw/Engine/Graphics/WASM/PureWebGPURenderer.cpp`
 - **Features**:
-  - Replace SDL_TTF with pure WebGL font rendering
-  - Bitmap font atlas generation
+  - Texture binding in WGSL shaders
+  - Texture sampling and UV mapping
+  - Advanced blending modes
+  - Performance optimization
 
-### **Day 5-7: Testing & Integration**
+### **Day 5-7: Game Integration & Testing**
 
-#### **1.6 Update Graphics Manager with Conditional Compilation**
-- **Modify**: `OpenClaw/Engine/Graphics/GraphicsManager.cpp`
-- **Add**: WASM-only pure WebGL renderer (conditional compilation)
-- **Test**: Ensure it compiles and links for WASM only
-- **Platform Safety**: Non-WASM builds use existing SDL-based renderers
+#### **4.5 Replace Colored Rectangles with Textures**
+- **Modify**: `OpenClaw/Engine/Graphics/WASM/PureWebGLRenderer.cpp`
+- **Modify**: `OpenClaw/Engine/Graphics/WASM/PureWebGPURenderer.cpp`
+- **Features**:
+  - Menu background textures
+  - Button state textures (normal, hover, pressed)
+  - Text rendering with proper fonts
+  - Visual consistency with original game
 
-#### **1.7 Basic Rendering Test**
-- **Goal**: Get a colored rectangle on screen
-- **Method**: Simple WebGL triangle rendering
-- **Success Criteria**: No black screen, visible output
+#### **4.6 Performance Testing & Optimization**
+- **Goal**: Ensure no performance regression
+- **Method**: Benchmark texture rendering vs. colored rectangles
+- **Success Criteria**: Performance maintained or improved
 
 ## 🛠️ **Technical Implementation Details**
 
-### **WASM-Only Pure WebGL Renderer Design**
+### **Sprite System Design**
 ```cpp
-class PureWebGLRenderer : public IRenderer {
+class Sprite {
 private:
-    // No SDL dependencies! (WASM builds only)
-    bool m_isInitialized;
-    int m_width, m_height;
-    
-    // WebGL objects managed via JavaScript
-    int m_webglContextId;  // Reference to JavaScript WebGL context
+    int m_textureId;
+    float m_x, m_y, m_width, m_height;
+    float m_u1, m_v1, m_u2, m_v2; // UV coordinates
+    float m_alpha;
+    bool m_visible;
     
 public:
-    bool Initialize() override;
-    void RenderMenuBackground(const MenuBackgroundData& data) override;
-    void RenderMenuItem(const MenuItemData& data) override;
-    void RenderMenuText(const MenuTextData& data) override;
+    Sprite(int textureId, float x, float y, float width, float height);
     
-private:
-    bool InitializeWebGL();
-    bool CreateShaders();
-    bool CreateBuffers();
+    // Rendering
+    void Render(IRenderer* renderer);
+    void SetTexture(int textureId);
+    void SetPosition(float x, float y);
+    void SetSize(float width, float height);
+    void SetUV(float u1, float v1, float u2, float v2);
+    void SetAlpha(float alpha);
+    void SetVisible(bool visible);
+    
+    // Getters
+    int GetTextureId() const { return m_textureId; }
+    float GetX() const { return m_x; }
+    float GetY() const { return m_y; }
+    float GetWidth() const { return m_width; }
+    float GetHeight() const { return m_height; }
 };
 
 // Conditional compilation ensures this only exists in WASM builds
 #ifdef __EMSCRIPTEN__
-    // WASM-specific implementation
-#else
-    // Non-WASM platforms use existing SDL-based renderers
-#endif
 ```
 
-### **JavaScript Bridge Interface**
-```javascript
-class WebGLBridge {
-    constructor(canvas) {
-        this.canvas = canvas;
-        this.gl = null;
-        this.shaders = {};
-        this.textures = {};
-    }
-    
-    async initialize() {
-        // Create WebGL context
-        this.gl = this.canvas.getContext('webgl2') || 
-                  this.canvas.getContext('webgl') ||
-                  this.canvas.getContext('experimental-webgl');
-        
-        if (!this.gl) {
-            throw new Error('WebGL not supported');
-        }
-        
-        // Initialize basic shaders and buffers
-        await this.initializeShaders();
-        await this.initializeBuffers();
-    }
-    
-    // C++ will call these methods via EM_ASM
-    renderBackground(data) { /* ... */ }
-    renderMenuItem(data) { /* ... */ }
-    renderText(data) { /* ... */ }
-}
-```
-
-### **C++ to JavaScript Communication**
+### **Texture Integration in Renderers**
 ```cpp
-// In PureWebGLRenderer.cpp
-bool PureWebGLRenderer::Initialize() {
-    LOG("Initializing Pure WebGL Renderer...");
+void PureWebGLRenderer::RenderSprite(const Sprite& sprite) {
+    // Get texture from TextureManager
+    const TextureInfo* texture = m_textureManager->GetTextureInfo(sprite.GetTextureId());
+    if (!texture) return;
     
-    // Initialize WebGL via JavaScript bridge
-    bool success = EM_ASM_INT({
-        if (typeof window.webglBridge !== 'undefined') {
-            return window.webglBridge.initialize() ? 1 : 0;
+    // Bind texture to WebGL
+    EM_ASM_({
+        if (window.graphicsBridge) {
+            window.graphicsBridge.bindTexture($0);
+            window.graphicsBridge.renderSprite($1, $2, $3, $4, $5, $6, $7, $8);
         }
-        return 0;
-    });
-    
-    if (!success) {
-        LOG_ERROR("Failed to initialize WebGL bridge");
-        return false;
-    }
-    
-    m_isInitialized = true;
-    LOG("Pure WebGL Renderer initialized successfully");
-    return true;
+    }, sprite.GetTextureId(), sprite.GetX(), sprite.GetY(), 
+        sprite.GetWidth(), sprite.GetHeight(),
+        sprite.GetU1(), sprite.GetV1(), sprite.GetU2(), sprite.GetV2());
 }
 ```
 
-## 📋 **Success Criteria for Week 1**
+### **Enhanced Shader Support**
+```glsl
+// Vertex shader with texture support
+attribute vec2 a_position;
+attribute vec2 a_texCoord;
+attribute vec4 a_color;
+
+varying vec2 v_texCoord;
+varying vec4 v_color;
+
+void main() {
+    gl_Position = vec4(a_position, 0.0, 1.0);
+    v_texCoord = a_texCoord;
+    v_color = a_color;
+}
+
+// Fragment shader with texture sampling
+precision mediump float;
+
+varying vec2 v_texCoord;
+varying vec4 v_color;
+
+uniform sampler2D u_texture;
+
+void main() {
+    vec4 texColor = texture2D(u_texture, v_texCoord);
+    gl_FragColor = texColor * v_color;
+}
+```
+
+## 🎯 **Success Criteria for Phase 4**
 
 ### **Minimum Viable Product**
-- [ ] **Compiles**: No compilation errors
-- [ ] **Links**: Successfully builds with Emscripten
-- [ ] **Initializes**: WebGL context created without SDL
-- [ ] **Renders**: Basic colored output visible (not black screen)
-- [ ] **No SDL**: Zero SDL dependencies in pure WebGL code
+- [ ] **Sprite System**: Sprite class working with textures
+- [ ] **Texture Binding**: Textures properly bound to renderers
+- [ ] **UV Mapping**: Proper texture coordinate handling
+- [ ] **Menu Textures**: Actual textures visible instead of colored rectangles
+- [ ] **Performance**: No performance regression
 
-### **Stretch Goals**
-- [ ] **Texture Loading**: Basic texture rendering
-- [ ] **Menu Background**: Simple background rendering
-- [ ] **Performance**: Comparable to current SDL implementation
+### **What This Means**
+- **Visual Progress**: You'll see actual game textures instead of colored shapes
+- **Technical Progress**: Complete texture-to-sprite rendering pipeline
+- **Foundation**: Ready for next phase (advanced features and optimization)
 
-## 🔧 **Build & Test Process**
+## 🔧 **Integration Points**
 
-### **1. Build the Project**
-```bash
-cd build
-make
-```
+### **GraphicsManager Updates**
+- **Add**: SpriteRenderer to GraphicsManager
+- **Integrate**: TextureManager with sprite rendering
+- **Conditional**: Only for WASM builds
 
-### **2. Test Basic Functionality**
-```bash
-cd ../Build_Release
-python3 -m http.server 8080
-# Open https://localhost:8080/openclaw.html
-```
+### **CMake Configuration**
+- **Add**: New sprite-related source files
+- **Conditional**: Only compiled for Emscripten builds
+- **Dependencies**: Ensure proper linking
 
-### **3. Expected Results**
-- ✅ **WebGL Context**: Created successfully
-- ✅ **No Errors**: Console shows successful initialization
-- ✅ **Visual Output**: Something visible on screen (not black)
-- ✅ **Performance**: Reasonable frame rates
+### **JavaScript Bridge Updates**
+- **Enhance**: graphics-bridge.js for texture binding
+- **Enhance**: webgpu-bridge.js for texture support
+- **Performance**: Optimize texture operations
 
-## 🚨 **Potential Challenges & Solutions**
+## 🚀 **Next Steps After Phase 4**
 
-### **Challenge 1: WebGL Context Creation**
-- **Issue**: Canvas not available during C++ initialization
-- **Solution**: Defer WebGL initialization until canvas is ready
+### **Phase 5: Advanced Features & Optimization**
+- Post-processing effects
+- Particle systems
+- Advanced lighting
+- Performance optimization
 
-### **Challenge 2: Shader Compilation**
-- **Issue**: Complex shader compilation in JavaScript
-- **Solution**: Start with simple, hardcoded shaders
-
-### **Challenge 3: Texture Loading (SDL Replacement)**
-- **Issue**: Loading game assets without SDL_IMAGE
-- **Solution**: Use fetch API + WebGL texture loading
-
-### **Challenge 4: Font Rendering (SDL Replacement)**
-- **Issue**: Text rendering without SDL_TTF
-- **Solution**: WebGL bitmap font atlas generation
-
-### **Challenge 5: Platform Safety**
-- **Issue**: Ensuring other platforms unaffected
-- **Solution**: Conditional compilation with `#ifdef __EMSCRIPTEN__`
-
-### **Challenge 6: Performance**
-- **Issue**: JavaScript bridge overhead
-- **Solution**: Batch operations and minimize C++/JS calls
-
-## 📚 **Resources & References**
-
-### **WebGL Resources**
-- [WebGL Fundamentals](https://webglfundamentals.org/)
-- [MDN WebGL Guide](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API)
-- [Emscripten WebGL Examples](https://emscripten.org/docs/porting/multimedia.html)
-
-### **Emscripten Resources**
-- [EM_ASM Documentation](https://emscripten.org/docs/api_reference/emscripten.h.html#c.EM_ASM)
-- [JavaScript Interop](https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html)
-
-## 🎯 **Next Week Preview**
-
-### **Week 2 Goals**
-- [ ] **Enhanced Rendering**: Better sprite and text rendering
-- [ ] **Performance Optimization**: Reduce JavaScript bridge overhead
-- [ ] **Asset Integration**: Load and render game textures
-- [ ] **Menu System**: Full main menu functionality
-
-### **Week 3 Goals**
-- [ ] **WebGPU Integration**: Add WebGPU renderer alongside WebGL
-- [ ] **Generic Module**: Extract reusable graphics module
-- [ ] **Documentation**: API reference and integration guide
+### **Phase 6: Generic Module Extraction**
+- Abstract interface design
+- Module packaging
+- Platform integration
+- Example projects
 
 ---
 
-*This plan focuses on getting a working pure WebGL renderer as quickly as possible, establishing the foundation for our generic WASM graphics module.*
+*Phase 4 represents the transition from basic rendering to professional-quality texture-based graphics, bringing us closer to a truly reusable WASM graphics module.*
