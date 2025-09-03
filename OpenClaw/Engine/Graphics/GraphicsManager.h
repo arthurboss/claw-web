@@ -6,8 +6,9 @@
 
 // Conditional includes based on platform
 #ifdef __EMSCRIPTEN__
-    // WASM: Use pure WebGL renderer (no SDL dependencies)
+    // WASM: Use pure WebGL and WebGPU renderers (no SDL dependencies)
     class PureWebGLRenderer;
+    class PureWebGPURenderer;
     #define USE_WASM_RENDERER 1
 #else
     // Non-WASM: Use SDL-dependent renderers
@@ -84,6 +85,7 @@ private:
     // Renderer detection
     #if USE_WASM_RENDERER
         bool InitializeInternal(void* existingRenderer); // Common initialization logic (WASM)
+        bool TryInitializePureWebGPU();
         bool TryInitializePureWebGL();
     #else
         bool InitializeInternal(SDL_Renderer* existingRenderer); // Common initialization logic (non-WASM)

@@ -6,8 +6,9 @@
 
 // Conditional includes based on platform
 #ifdef __EMSCRIPTEN__
-    // WASM: Use pure WebGL renderer (no SDL dependencies)
+    // WASM: Use pure WebGL and WebGPU renderers (no SDL dependencies)
     #include "WASM/PureWebGLRenderer.h"
+    #include "WASM/PureWebGPURenderer.h"
 #else
     // Non-WASM: Use SDL-dependent renderers
     #include "WebGL/WebGLRenderer.h"
@@ -59,7 +60,15 @@ bool GraphicsManager::InitializeInternal(void* existingRenderer) {
     // WASM: No SDL renderer needed
     existingSdlRenderer = existingRenderer;
     
-    // Try to initialize pure WebGL renderer
+    // Try to initialize WebGPU renderer first (best performance)
+    if (TryInitializePureWebGPU()) {
+        currentType = RendererType::WebGPU;
+        isInitialized = true;
+        LogRendererInfo();
+        return true;
+    }
+    
+    // Fall back to pure WebGL renderer
     if (TryInitializePureWebGL()) {
         currentType = RendererType::WebGL2; // Treat as WebGL2 for compatibility
         isInitialized = true;
@@ -359,6 +368,30 @@ void GraphicsManager::LogRendererInfo() const {
 }
 
 #ifdef __EMSCRIPTEN__
+// Try to initialize pure WebGPU renderer (WASM only)
+bool GraphicsManager::TryInitializePureWebGPU() {
+    LOG("GraphicsManager::TryInitializePureWebGPU() called");
+    
+    LOG("Attempting to initialize pure WebGPU renderer (no SDL dependencies)");
+    
+    try {
+        PureWebGPURenderer* pureWebGPURenderer = new PureWebGPURenderer();
+        if (pureWebGPURenderer->Initialize()) {
+            renderer.reset(pureWebGPURenderer);
+            LOG("Pure WebGPU renderer initialized successfully");
+            LOG("🚀 WASM-only pure WebGPU is now active! No SDL dependencies.");
+            return true;
+        } else {
+            LOG("Pure WebGPU renderer initialization failed, will fall back to WebGL");
+            delete pureWebGPURenderer;
+        }
+    } catch (const std::exception& e) {
+        LOG_ERROR("Exception during pure WebGPU initialization: " + std::string(e.what()));
+    }
+    
+    return false;
+}
+
 // Try to initialize pure WebGL renderer (WASM only)
 bool GraphicsManager::TryInitializePureWebGL() {
     LOG("GraphicsManager::TryInitializePureWebGL() called");

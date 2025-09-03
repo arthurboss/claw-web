@@ -15,6 +15,8 @@ if (EMSCRIPTEN)
         ${CMAKE_CURRENT_SOURCE_DIR}/Data/MenuTextData.h
         ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGLRenderer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGLRenderer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGPURenderer.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGPURenderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/GraphicsTest.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/IntegrationTest.cpp
     )
