@@ -67,6 +67,16 @@ endif(Android)
 
 add_subdirectory(OpenClaw)
 
+# Copy JavaScript graphics bridge for WASM builds
+if (Emscripten)
+    add_custom_command(TARGET openclaw POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_SOURCE_DIR}/OpenClaw/Engine/Graphics/WASM/js/graphics-bridge.js
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/graphics-bridge.js
+        COMMENT "Copying graphics bridge JavaScript file for WASM build"
+    )
+endif (Emscripten)
+
 # Linker settings
 list(APPEND TARGET_LIBS
     libwap

@@ -1,11 +1,19 @@
 #include "GraphicsManager.h"
-#include "WebGL/WebGLRenderer.h"
-#include "WebGPU/WebGPURenderer.h"
 #include "../Logger/Logger.h"
 #include <iostream>
 #include <memory>
-#include <emscripten.h>
 #include <stdexcept>
+
+// Conditional includes based on platform
+#ifdef __EMSCRIPTEN__
+    // WASM: Use pure WebGL renderer (no SDL dependencies)
+    #include "WASM/PureWebGLRenderer.h"
+#else
+    // Non-WASM: Use SDL-dependent renderers
+    #include "WebGL/WebGLRenderer.h"
+    #include "WebGPU/WebGPURenderer.h"
+    #include <emscripten.h>
+#endif
 
 // Constructor
 GraphicsManager::GraphicsManager()
@@ -31,14 +39,39 @@ bool GraphicsManager::Initialize() {
     return InitializeInternal(nullptr);
 }
 
+#if !USE_WASM_RENDERER
 // Initialize with existing SDL renderer
 bool GraphicsManager::Initialize(SDL_Renderer* existingRenderer) {
     LOG("=== GraphicsManager::Initialize() called with existing renderer ===");
     
     return InitializeInternal(existingRenderer);
 }
+#endif
 
-// Common initialization logic
+#ifdef __EMSCRIPTEN__
+// Common initialization logic (WASM)
+bool GraphicsManager::InitializeInternal(void* existingRenderer) {
+    if (isInitialized) {
+        LOG_WARNING("GraphicsManager already initialized");
+        return true;
+    }
+    
+    // WASM: No SDL renderer needed
+    existingSdlRenderer = existingRenderer;
+    
+    // Try to initialize pure WebGL renderer
+    if (TryInitializePureWebGL()) {
+        currentType = RendererType::WebGL2; // Treat as WebGL2 for compatibility
+        isInitialized = true;
+        LogRendererInfo();
+        return true;
+    }
+    
+    LOG_ERROR("No graphics renderer available");
+    return false;
+}
+#else
+// Common initialization logic (non-WASM)
 bool GraphicsManager::InitializeInternal(SDL_Renderer* existingRenderer) {
     if (isInitialized) {
         LOG_WARNING("GraphicsManager already initialized");
@@ -73,6 +106,7 @@ bool GraphicsManager::InitializeInternal(SDL_Renderer* existingRenderer) {
     LOG_ERROR("No graphics renderer available");
     return false;
 }
+#endif
 
 // Shutdown graphics system
 void GraphicsManager::Shutdown() {
@@ -166,6 +200,7 @@ void GraphicsManager::EndFrame() {
     }
 }
 
+#if !USE_WASM_RENDERER
 // Try to initialize WebGPU
 bool GraphicsManager::TryInitializeWebGPU() {
     LOG("GraphicsManager::TryInitializeWebGPU() called");
@@ -210,7 +245,9 @@ bool GraphicsManager::TryInitializeWebGPU() {
     
     return false;
 }
+#endif
 
+#if !USE_WASM_RENDERER
 // Try to initialize WebGL2
 bool GraphicsManager::TryInitializeWebGL2() {
     LOG("GraphicsManager::TryInitializeWebGL2() called");
@@ -257,7 +294,9 @@ bool GraphicsManager::TryInitializeWebGL2() {
     
     return false;
 }
+#endif
 
+#if !USE_WASM_RENDERER
 // Try to initialize WebGL1
 bool GraphicsManager::TryInitializeWebGL1() {
     LOG("GraphicsManager::TryInitializeWebGL1() called");
@@ -304,6 +343,7 @@ bool GraphicsManager::TryInitializeWebGL1() {
     
     return false;
 }
+#endif
 
 // Log renderer information
 void GraphicsManager::LogRendererInfo() const {
@@ -317,3 +357,29 @@ void GraphicsManager::LogRendererInfo() const {
         LOG("No renderer available");
     }
 }
+
+#ifdef __EMSCRIPTEN__
+// Try to initialize pure WebGL renderer (WASM only)
+bool GraphicsManager::TryInitializePureWebGL() {
+    LOG("GraphicsManager::TryInitializePureWebGL() called");
+    
+    LOG("Attempting to initialize pure WebGL renderer (no SDL dependencies)");
+    
+    try {
+        PureWebGLRenderer* pureWebGLRenderer = new PureWebGLRenderer();
+        if (pureWebGLRenderer->Initialize()) {
+            renderer.reset(pureWebGLRenderer);
+            LOG("Pure WebGL renderer initialized successfully");
+            LOG("🎉 WASM-only pure WebGL is now active! No SDL dependencies.");
+            return true;
+        } else {
+            LOG("Pure WebGL renderer initialization failed");
+            delete pureWebGLRenderer;
+        }
+    } catch (const std::exception& e) {
+        LOG_ERROR("Exception during pure WebGL initialization: " + std::string(e.what()));
+    }
+    
+    return false;
+}
+#endif

@@ -5,8 +5,17 @@
 #include "Data/MenuItemData.h"
 #include "Data/MenuTextData.h"
 #include "../UserInterface/UserInterface.h"
-#include <SDL2/SDL.h>
 #include <memory>
+
+// Conditional includes based on platform
+#ifdef __EMSCRIPTEN__
+    // WASM: No SDL dependencies
+    #define USE_WASM_RENDERER 1
+#else
+    // Non-WASM: Include SDL dependencies
+    #include <SDL2/SDL.h>
+    #define USE_WASM_RENDERER 0
+#endif
 
 // Forward declarations
 class Image;
@@ -23,7 +32,9 @@ public:
     
     // Initialize/shutdown
     bool Initialize();
-    bool Initialize(SDL_Renderer* existingRenderer); // Overload to use existing renderer
+    #if !USE_WASM_RENDERER
+        bool Initialize(SDL_Renderer* existingRenderer); // Overload to use existing renderer (non-WASM only)
+    #endif
     void Shutdown();
     
     // Direct rendering methods (for integration with existing system)

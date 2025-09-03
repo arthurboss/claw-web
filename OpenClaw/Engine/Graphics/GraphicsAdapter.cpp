@@ -32,6 +32,7 @@ bool GraphicsAdapter::Initialize() {
 }
 
 // Initialize graphics adapter with existing SDL renderer
+#if !USE_WASM_RENDERER
 bool GraphicsAdapter::Initialize(SDL_Renderer* existingRenderer) {
     LOG("Initializing GraphicsAdapter with existing SDL renderer...");
     
@@ -47,6 +48,7 @@ bool GraphicsAdapter::Initialize(SDL_Renderer* existingRenderer) {
     
     return true;
 }
+#endif
 
 // Shutdown graphics adapter
 void GraphicsAdapter::Shutdown() {

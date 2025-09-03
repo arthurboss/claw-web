@@ -1,13 +1,21 @@
 #pragma once
 
 #include "IRenderer.h"
-#include <SDL2/SDL.h>
 #include <memory>
 #include <string>
 
-// Forward declarations
-class WebGPURenderer;
-class WebGLRenderer;
+// Conditional includes based on platform
+#ifdef __EMSCRIPTEN__
+    // WASM: Use pure WebGL renderer (no SDL dependencies)
+    class PureWebGLRenderer;
+    #define USE_WASM_RENDERER 1
+#else
+    // Non-WASM: Use SDL-dependent renderers
+    #include <SDL2/SDL.h>
+    class WebGPURenderer;
+    class WebGLRenderer;
+    #define USE_WASM_RENDERER 0
+#endif
 
 // Renderer type enumeration
 enum class RendererType {
@@ -23,7 +31,13 @@ private:
     std::unique_ptr<IRenderer> renderer;
     RendererType currentType;
     bool isInitialized;
-    SDL_Renderer* existingSdlRenderer; // Store existing SDL renderer for WebGL fallback
+    #if USE_WASM_RENDERER
+        // WASM: No SDL renderer needed
+        void* existingSdlRenderer; // Placeholder for compatibility
+    #else
+        // Non-WASM: Store existing SDL renderer for WebGL fallback
+        SDL_Renderer* existingSdlRenderer;
+    #endif
     
     // Performance tracking
     float frameTime;
@@ -37,7 +51,9 @@ public:
     
     // Initialization and shutdown
     bool Initialize();
-    bool Initialize(SDL_Renderer* existingRenderer); // Overload to use existing renderer
+    #if !USE_WASM_RENDERER
+        bool Initialize(SDL_Renderer* existingRenderer); // Overload to use existing renderer (non-WASM only)
+    #endif
     void Shutdown();
     
     // Renderer access
@@ -66,10 +82,15 @@ public:
     
 private:
     // Renderer detection
-    bool InitializeInternal(SDL_Renderer* existingRenderer); // Common initialization logic
-    bool TryInitializeWebGPU();
-    bool TryInitializeWebGL2();
-    bool TryInitializeWebGL1();
+    #if USE_WASM_RENDERER
+        bool InitializeInternal(void* existingRenderer); // Common initialization logic (WASM)
+        bool TryInitializePureWebGL();
+    #else
+        bool InitializeInternal(SDL_Renderer* existingRenderer); // Common initialization logic (non-WASM)
+        bool TryInitializeWebGPU();
+        bool TryInitializeWebGL2();
+        bool TryInitializeWebGL1();
+    #endif
     
     // Helper methods
     void LogRendererInfo() const;

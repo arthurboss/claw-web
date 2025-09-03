@@ -1550,10 +1550,20 @@ bool BaseGameApp::InitializeGraphicsSystem() {
     LOG("Initializing graphics system...");
     
     m_graphicsAdapter.reset(new GraphicsAdapter());
-    if (!m_graphicsAdapter->Initialize(m_pRenderer)) {
-        LOG_WARNING("Failed to initialize new graphics system, falling back to SDL2");
-        return false;
-    }
+    
+    #ifdef __EMSCRIPTEN__
+        // WASM: No SDL renderer needed
+        if (!m_graphicsAdapter->Initialize()) {
+            LOG_WARNING("Failed to initialize new graphics system");
+            return false;
+        }
+    #else
+        // Non-WASM: Use existing SDL renderer
+        if (!m_graphicsAdapter->Initialize(m_pRenderer)) {
+            LOG_WARNING("Failed to initialize new graphics system, falling back to SDL2");
+            return false;
+        }
+    #endif
     
     LOG("Graphics system initialized successfully");
     LOG("Active renderer: " + m_graphicsAdapter->GetRendererName());
