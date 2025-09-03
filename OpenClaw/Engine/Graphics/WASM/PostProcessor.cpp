@@ -1,9 +1,13 @@
 #include "PostProcessor.h"
 #include "../IRenderer.h"
 #include "TextureManager.h"
+#include "PostProcessShader.h"
+#include "PostProcessFramebuffer.h"
+#include <GLES3/gl3.h>
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <memory>
 
 #ifdef __EMSCRIPTEN__
 
@@ -17,6 +21,10 @@ PostProcessor::PostProcessor(TextureManager* textureManager)
     , m_lastFrameTime(0.0)
     , m_averageFrameTime(0.0)
     , m_frameCount(0)
+#ifdef __EMSCRIPTEN__
+    , m_screenWidth(800)
+    , m_screenHeight(600)
+#endif
 {
 }
 
@@ -30,11 +38,26 @@ bool PostProcessor::Initialize() {
         return false;
     }
 
+#ifdef __EMSCRIPTEN__
+    // Initialize WASM-specific components
+    m_shader = std::unique_ptr<PostProcessShader>(new PostProcessShader());
+    if (!m_shader->Initialize()) {
+        std::cerr << "PostProcessor: Failed to initialize shader manager" << std::endl;
+        return false;
+    }
+    
+    m_framebuffer = std::unique_ptr<PostProcessFramebuffer>(new PostProcessFramebuffer());
+    if (!m_framebuffer->Initialize(m_screenWidth, m_screenHeight)) {
+        std::cerr << "PostProcessor: Failed to initialize framebuffer manager" << std::endl;
+        return false;
+    }
+    
     // Create framebuffers for post-processing
     if (!CreateFramebuffers()) {
         std::cerr << "PostProcessor: Failed to create framebuffers" << std::endl;
         return false;
     }
+#endif
 
     m_isInitialized = true;
     m_effects.clear();
@@ -45,6 +68,18 @@ bool PostProcessor::Initialize() {
 
 void PostProcessor::Shutdown() {
     m_isInitialized = false;
+    
+#ifdef __EMSCRIPTEN__
+    if (m_shader) {
+        m_shader->Shutdown();
+        m_shader.reset();
+    }
+    if (m_framebuffer) {
+        m_framebuffer->Shutdown();
+        m_framebuffer.reset();
+    }
+#endif
+
     CleanupFramebuffers();
     m_effects.clear();
 }
@@ -158,43 +193,108 @@ bool PostProcessor::ApplyEffect(PostProcessEffect effect, int sourceTexture, int
         return false;
     }
 
-    // For Phase 5, we'll implement actual effect rendering
-    // For now, this is a placeholder that will be enhanced in future phases
+#ifdef __EMSCRIPTEN__
+    if (!m_shader || !m_framebuffer) {
+        return false;
+    }
+    
+    // Bind target framebuffer for rendering
+    const Framebuffer* fb = m_framebuffer->GetFirstFramebuffer();
+    if (fb) {
+        m_framebuffer->BindFramebuffer(*fb);
+    }
+    
+    // Clear the framebuffer
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    // Apply the effect based on type
     switch (effect) {
         case PostProcessEffect::Blur:
-            // TODO: Implement blur effect
+            if (m_shader->UseShader("blur")) {
+                m_shader->SetUniform2f("u_resolution", static_cast<float>(m_screenWidth), static_cast<float>(m_screenHeight));
+                m_shader->SetUniform1f("u_intensity", params.intensity);
+                m_shader->SetUniform1f("u_radius", params.radius);
+                m_shader->BindTexture("u_texture", sourceTexture, 0);
+                
+                // Render the effect
+                m_framebuffer->RenderScreenQuad();
+            }
             break;
+            
         case PostProcessEffect::Bloom:
-            // TODO: Implement bloom effect
+            if (m_shader->UseShader("bloom")) {
+                m_shader->SetUniform1f("u_intensity", params.intensity);
+                m_shader->SetUniform1f("u_threshold", params.threshold);
+                m_shader->BindTexture("u_texture", sourceTexture, 0);
+                
+                // Render the effect
+                m_framebuffer->RenderScreenQuad();
+            }
             break;
+            
         case PostProcessEffect::ColorCorrection:
-            // TODO: Implement color correction
+            if (m_shader->UseShader("color")) {
+                m_shader->SetUniform1f("u_brightness", params.brightness);
+                m_shader->SetUniform1f("u_contrast", params.contrast);
+                m_shader->SetUniform1f("u_saturation", params.saturation);
+                m_shader->BindTexture("u_texture", sourceTexture, 0);
+                
+                // Render the effect
+                m_framebuffer->RenderScreenQuad();
+            }
             break;
+            
         case PostProcessEffect::Vignette:
-            // TODO: Implement vignette effect
-            break;
         case PostProcessEffect::ChromaticAberration:
-            // TODO: Implement chromatic aberration
-            break;
         case PostProcessEffect::MotionBlur:
-            // TODO: Implement motion blur
+            // TODO: Implement these effects in future phases
+            break;
+            
+        default:
+            break;
+    }
+    
+    // Restore default framebuffer
+    m_framebuffer->BindDefault();
+#else
+    // Non-WASM builds: placeholder implementation
+    switch (effect) {
+        case PostProcessEffect::Blur:
+        case PostProcessEffect::Bloom:
+        case PostProcessEffect::ColorCorrection:
+        case PostProcessEffect::Vignette:
+        case PostProcessEffect::ChromaticAberration:
+        case PostProcessEffect::MotionBlur:
+            // TODO: Implement these effects for non-WASM builds
             break;
         default:
             break;
     }
+#endif
 
     m_totalEffectsApplied++;
     return true;
 }
 
 bool PostProcessor::CreateFramebuffers() {
-    // For Phase 5, we'll create actual WebGL/WebGPU framebuffers
-    // For now, this is a placeholder that will be enhanced in future phases
+#ifdef __EMSCRIPTEN__
+    if (!m_framebuffer) {
+        return false;
+    }
+    
+    // Create framebuffers for post-processing
+    if (!m_framebuffer->CreateFramebuffer(m_screenWidth, m_screenHeight)) {
+        std::cerr << "PostProcessor: Failed to create framebuffer" << std::endl;
+        return false;
+    }
     
     // Create temporary texture for post-processing
-    // For Phase 5, we'll implement actual texture creation
-    // For now, use a placeholder ID
+    // For now, use a placeholder ID (will be replaced with actual texture)
     m_tempTexture = 999; // Placeholder texture ID
+#else
+    // Non-WASM builds: placeholder implementation
+    m_tempTexture = 999; // Placeholder texture ID
+#endif
     
     return true;
 }

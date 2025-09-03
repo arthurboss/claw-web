@@ -9,6 +9,12 @@ class IRenderer;
 class TextureManager;
 
 #ifdef __EMSCRIPTEN__
+// Forward declarations for WASM-specific classes
+class PostProcessShader;
+class PostProcessFramebuffer;
+#endif
+
+#ifdef __EMSCRIPTEN__
 // WASM builds only - no SDL dependencies
 
 /**
@@ -175,6 +181,14 @@ private:
     int m_sourceFramebuffer;                            ///< Source framebuffer ID
     int m_targetFramebuffer;                            ///< Target framebuffer ID
     int m_tempTexture;                                  ///< Temporary texture for processing
+
+#ifdef __EMSCRIPTEN__
+    // WASM-specific rendering components
+    std::unique_ptr<PostProcessShader> m_shader;        ///< Shader manager for post-processing
+    std::unique_ptr<PostProcessFramebuffer> m_framebuffer; ///< Framebuffer manager
+    int m_screenWidth;                                  ///< Screen width for framebuffers
+    int m_screenHeight;                                 ///< Screen height for framebuffers
+#endif
 
     // Performance tracking
     size_t m_totalEffectsApplied;                       ///< Total effects applied this frame

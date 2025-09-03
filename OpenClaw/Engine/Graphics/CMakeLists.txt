@@ -33,6 +33,10 @@ if (EMSCRIPTEN)
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessor.cpp
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/ParticleSystem.h
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/ParticleSystem.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessShader.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessShader.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessFramebuffer.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessFramebuffer.cpp
        )
 else()
     # Non-WASM builds: Use existing SDL-based renderers (unchanged)
