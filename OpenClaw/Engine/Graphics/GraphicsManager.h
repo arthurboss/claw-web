@@ -4,20 +4,22 @@
 #include <string>
 #include "IRenderer.h"
 
-// Forward declarations
-class SDL_Renderer;
+       // Forward declarations
+       class SDL_Renderer;
 
-#ifdef __EMSCRIPTEN__
-// WASM builds: Use pure WebGL and WebGPU renderers
-class PureWebGLRenderer;
-class PureWebGPURenderer;
-class TextureManager;
-class SpriteRenderer;
-#else
-// Non-WASM builds: Use existing SDL-based renderers
-class WebGLRenderer;
-class WebGPURenderer;
-#endif
+       #ifdef __EMSCRIPTEN__
+       // WASM builds: Use pure WebGL and WebGPU renderers
+       class PureWebGLRenderer;
+       class PureWebGPURenderer;
+       class TextureManager;
+       class SpriteRenderer;
+       class PostProcessor;
+       class ParticleSystem;
+       #else
+       // Non-WASM builds: Use existing SDL-based renderers
+       class WebGLRenderer;
+       class WebGPURenderer;
+       #endif
 
 enum class RendererType {
     None,
@@ -61,13 +63,19 @@ public:
     float GetFrameTime() const;
     int GetDrawCalls() const;
 
-#ifdef __EMSCRIPTEN__
-    // WASM: Get texture manager
-    TextureManager* GetTextureManager() const { return m_textureManager.get(); }
-    
-    // WASM: Get sprite renderer
-    SpriteRenderer* GetSpriteRenderer() const { return m_spriteRenderer.get(); }
-#endif
+       #ifdef __EMSCRIPTEN__
+           // WASM: Get texture manager
+           TextureManager* GetTextureManager() const { return m_textureManager.get(); }
+
+           // WASM: Get sprite renderer
+           SpriteRenderer* GetSpriteRenderer() const { return m_spriteRenderer.get(); }
+
+           // WASM: Get post processor
+           PostProcessor* GetPostProcessor() const { return m_postProcessor.get(); }
+
+           // WASM: Get particle system
+           ParticleSystem* GetParticleSystem() const { return m_particleSystem.get(); }
+       #endif
 
 private:
     // Initialize renderer based on platform
@@ -94,11 +102,13 @@ private:
     float m_frameTime;
     int m_drawCalls;
     
-#ifdef __EMSCRIPTEN__
-    // WASM: Use pure WebGL and WebGPU renderers
-    std::unique_ptr<TextureManager> m_textureManager;
-    std::unique_ptr<SpriteRenderer> m_spriteRenderer;
-#else
-    // Non-WASM: Use existing SDL-based renderers (unchanged)
-#endif
+       #ifdef __EMSCRIPTEN__
+           // WASM: Use pure WebGL and WebGPU renderers
+           std::unique_ptr<TextureManager> m_textureManager;
+           std::unique_ptr<SpriteRenderer> m_spriteRenderer;
+           std::unique_ptr<PostProcessor> m_postProcessor;
+           std::unique_ptr<ParticleSystem> m_particleSystem;
+       #else
+           // Non-WASM: Use existing SDL-based renderers (unchanged)
+       #endif
 };

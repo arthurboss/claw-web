@@ -17,19 +17,23 @@ target_sources(openclaw PRIVATE
 
 # Platform-specific graphics implementations
 if (EMSCRIPTEN)
-    # WASM builds: Use pure WebGL/WebGPU renderers (no SDL dependencies)
-    target_sources(openclaw PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGLRenderer.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGLRenderer.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGPURenderer.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGPURenderer.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/TextureManager.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/TextureManager.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/Sprite.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/Sprite.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/SpriteRenderer.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/SpriteRenderer.cpp
-    )
+           # WASM builds: Use pure WebGL/WebGPU renderers (no SDL dependencies)
+       target_sources(openclaw PRIVATE
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGLRenderer.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGLRenderer.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGPURenderer.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGPURenderer.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/TextureManager.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/TextureManager.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/Sprite.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/Sprite.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/SpriteRenderer.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/SpriteRenderer.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessor.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessor.cpp
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/ParticleSystem.h
+           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/ParticleSystem.cpp
+       )
 else()
     # Non-WASM builds: Use existing SDL-based renderers (unchanged)
     target_sources(openclaw PRIVATE

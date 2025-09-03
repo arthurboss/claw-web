@@ -1,17 +1,19 @@
 #include "GraphicsManager.h"
 #include "IRenderer.h"
 
-#ifdef __EMSCRIPTEN__
-// WASM builds: Use pure WebGL and WebGPU renderers
-#include "WASM/PureWebGLRenderer.h"
-#include "WASM/PureWebGPURenderer.h"
-#include "WASM/TextureManager.h"
-#include "WASM/SpriteRenderer.h"
-#else
-// Non-WASM builds: Use existing SDL-based renderers
-#include "WebGL/WebGLRenderer.h"
-#include "WebGPU/WebGPURenderer.h"
-#endif
+       #ifdef __EMSCRIPTEN__
+       // WASM builds: Use pure WebGL and WebGPU renderers
+       #include "WASM/PureWebGLRenderer.h"
+       #include "WASM/PureWebGPURenderer.h"
+       #include "WASM/TextureManager.h"
+       #include "WASM/SpriteRenderer.h"
+       #include "WASM/PostProcessor.h"
+       #include "WASM/ParticleSystem.h"
+       #else
+       // Non-WASM builds: Use existing SDL-based renderers
+       #include "WebGL/WebGLRenderer.h"
+       #include "WebGPU/WebGPURenderer.h"
+       #endif
 
 #include <iostream>
 #include <sstream>
@@ -36,16 +38,26 @@ void GraphicsManager::Shutdown() {
     m_currentRendererType = RendererType::None;
     
 #ifdef __EMSCRIPTEN__
-    // WASM: Clean up texture manager and sprite renderer
-    if (m_spriteRenderer) {
-        m_spriteRenderer->Shutdown();
-        m_spriteRenderer.reset();
-    }
-    
-    if (m_textureManager) {
-        m_textureManager->Shutdown();
-        m_textureManager.reset();
-    }
+               // WASM: Clean up texture manager and sprite renderer
+           if (m_spriteRenderer) {
+               m_spriteRenderer->Shutdown();
+               m_spriteRenderer.reset();
+           }
+
+           if (m_postProcessor) {
+               m_postProcessor->Shutdown();
+               m_postProcessor.reset();
+           }
+
+           if (m_particleSystem) {
+               m_particleSystem->Shutdown();
+               m_particleSystem.reset();
+           }
+
+           if (m_textureManager) {
+               m_textureManager->Shutdown();
+               m_textureManager.reset();
+           }
 #endif
 }
 
@@ -58,12 +70,26 @@ bool GraphicsManager::InitializeInternal() {
         return false;
     }
     
-    // WASM: Initialize sprite renderer
-    m_spriteRenderer = std::unique_ptr<SpriteRenderer>(new SpriteRenderer(m_textureManager.get()));
-    if (!m_spriteRenderer->Initialize()) {
-        std::cerr << "Failed to initialize sprite renderer" << std::endl;
-        return false;
-    }
+               // WASM: Initialize sprite renderer
+           m_spriteRenderer = std::unique_ptr<SpriteRenderer>(new SpriteRenderer(m_textureManager.get()));
+           if (!m_spriteRenderer->Initialize()) {
+               std::cerr << "Failed to initialize sprite renderer" << std::endl;
+               return false;
+           }
+
+           // WASM: Initialize post processor
+           m_postProcessor = std::unique_ptr<PostProcessor>(new PostProcessor(m_textureManager.get()));
+           if (!m_postProcessor->Initialize()) {
+               std::cerr << "Failed to initialize post processor" << std::endl;
+               return false;
+           }
+
+           // WASM: Initialize particle system
+           m_particleSystem = std::unique_ptr<ParticleSystem>(new ParticleSystem(m_textureManager.get(), 5000));
+           if (!m_particleSystem->Initialize()) {
+               std::cerr << "Failed to initialize particle system" << std::endl;
+               return false;
+           }
     
     // WASM: Try WebGPU first, fallback to WebGL
     if (TryInitializePureWebGPU()) {
