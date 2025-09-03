@@ -9,6 +9,7 @@
     // WASM: Use pure WebGL and WebGPU renderers (no SDL dependencies)
     class PureWebGLRenderer;
     class PureWebGPURenderer;
+    class TextureManager;
     #define USE_WASM_RENDERER 1
 #else
     // Non-WASM: Use SDL-dependent renderers
@@ -35,6 +36,7 @@ private:
     #if USE_WASM_RENDERER
         // WASM: No SDL renderer needed
         void* existingSdlRenderer; // Placeholder for compatibility
+        std::unique_ptr<TextureManager> m_textureManager; // WASM texture management
     #else
         // Non-WASM: Store existing SDL renderer for WebGL fallback
         SDL_Renderer* existingSdlRenderer;
@@ -76,6 +78,12 @@ public:
     float GetFrameTime() const { return frameTime; }
     int GetDrawCalls() const { return drawCalls; }
     void ResetStats();
+    
+    // Texture management (WASM only)
+    #if USE_WASM_RENDERER
+        TextureManager* GetTextureManager() { return m_textureManager.get(); }
+        const TextureManager* GetTextureManager() const { return m_textureManager.get(); }
+    #endif
     
     // Frame management
     void BeginFrame();

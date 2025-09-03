@@ -17,6 +17,8 @@ if (EMSCRIPTEN)
         ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGLRenderer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGPURenderer.h
         ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGPURenderer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/TextureManager.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/WASM/TextureManager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/GraphicsTest.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/IntegrationTest.cpp
     )

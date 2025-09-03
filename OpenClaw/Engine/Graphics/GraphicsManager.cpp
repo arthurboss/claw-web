@@ -9,6 +9,7 @@
     // WASM: Use pure WebGL and WebGPU renderers (no SDL dependencies)
     #include "WASM/PureWebGLRenderer.h"
     #include "WASM/PureWebGPURenderer.h"
+    #include "WASM/TextureManager.h"
 #else
     // Non-WASM: Use SDL-dependent renderers
     #include "WebGL/WebGLRenderer.h"
@@ -59,6 +60,13 @@ bool GraphicsManager::InitializeInternal(void* existingRenderer) {
     
     // WASM: No SDL renderer needed
     existingSdlRenderer = existingRenderer;
+    
+    // Initialize texture manager
+    m_textureManager = std::unique_ptr<TextureManager>(new TextureManager());
+    if (!m_textureManager->Initialize()) {
+        LOG_ERROR("Failed to initialize texture manager");
+        return false;
+    }
     
     // Try to initialize WebGPU renderer first (best performance)
     if (TryInitializePureWebGPU()) {
@@ -124,6 +132,13 @@ void GraphicsManager::Shutdown() {
         renderer->Shutdown();
         renderer.reset();
     }
+    
+    #if USE_WASM_RENDERER
+    if (m_textureManager) {
+        m_textureManager->Shutdown();
+        m_textureManager.reset();
+    }
+    #endif
     
     currentType = RendererType::None;
     isInitialized = false;

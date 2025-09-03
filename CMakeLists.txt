@@ -81,6 +81,12 @@ add_subdirectory(OpenClaw)
             ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/webgpu-bridge.js
             COMMENT "Copying WebGPU graphics bridge JavaScript file for WASM build"
         )
+        add_custom_command(TARGET openclaw POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/OpenClaw/Engine/Graphics/WASM/js/texture-bridge.js
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/texture-bridge.js
+            COMMENT "Copying texture bridge JavaScript file for WASM build"
+        )
     endif (Emscripten)
 
 # Linker settings
