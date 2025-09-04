@@ -15,6 +15,14 @@ target_sources(openclaw PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/IRenderer.h
 )
 
+# Generic graphics module (cross-platform interface)
+target_sources(openclaw PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/Generic/IGenericRenderer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Generic/GenericGraphicsModule.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/Generic/GenericGraphicsModule.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Generic/ParticleEmitter.h
+)
+
 # Platform-specific graphics implementations
 if (EMSCRIPTEN)
            # WASM builds: Use pure WebGL/WebGPU renderers (no SDL dependencies)
@@ -37,6 +45,9 @@ if (EMSCRIPTEN)
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessShader.cpp
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessFramebuffer.h
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessFramebuffer.cpp
+                   # Generic module WASM renderer (using the one from Generic/WASM)
+        # ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGLRenderer.h
+        # ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGLRenderer.cpp
        )
 else()
     # Non-WASM builds: Use existing SDL-based renderers (unchanged)
