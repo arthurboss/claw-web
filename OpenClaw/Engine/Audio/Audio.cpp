@@ -158,9 +158,13 @@ void Audio::PlayMusic(const char* musicData, size_t musicSize, bool looping)
 {
     _MusicInfo* pMusicInfo = new _MusicInfo(musicData, musicSize, looping, m_bMusicOn ? m_MusicVolume : -1);
 
-    // Playing music track takes ALOT of time for some reason so play it in another thread
+// Playing music track takes ALOT of time for some reason so play it in another thread
+#ifdef __EMSCRIPTEN__
+    SetupPlayMusicThread((void*)pMusicInfo);
+#else
     SDL_Thread* pThread = SDL_CreateThread(SetupPlayMusicThread, "SetupPlayMusicThread", (void*)pMusicInfo);
     SDL_DetachThread(pThread);
+#endif
 }
 
 void Audio::PauseMusic()
@@ -242,7 +246,28 @@ bool Audio::PlaySound(const char* soundData, size_t soundSize, const SoundProper
 }
 bool Audio::PlaySound(Mix_Chunk* sound, const SoundProperties& soundProperties)
 {
-    if (!m_bSoundOn || !m_audioSystem) {
+    if (!m_bSoundOn) {
+        return false;
+    }
+
+#ifdef __EMSCRIPTEN__
+    // Emscripten/SDL2 Mixer direct path
+    if (sound) {
+        // Calculate volume (0-128 for SDL_mixer)
+        int volume = (int)((soundProperties.volume / 100.0f) * (m_SoundVolume / 100.0f) * MIX_MAX_VOLUME);
+        Mix_VolumeChunk(sound, volume);
+        
+        std::cout << "Audio::PlaySound: Playing channel volume=" << volume << std::endl;
+
+        if(Mix_PlayChannel(-1, sound, 0) == -1) {
+            std::cout << "Audio::PlaySound: Mix_PlayChannel failed: " << Mix_GetError() << std::endl;
+             return false;
+        }
+        return true;
+    }
+    return false;
+#else
+    if (!m_audioSystem) {
         return false;
     }
     
@@ -257,6 +282,7 @@ bool Audio::PlaySound(Mix_Chunk* sound, const SoundProperties& soundProperties)
     }
     
     return false;
+#endif
 }
 
 void Audio::SetSoundVolume(int volumePercentage)

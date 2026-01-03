@@ -217,6 +217,14 @@ bool AudioWorkletSystem::PlaySound(const std::string& name, float volume) {
 void AudioWorkletSystem::StopSound(const std::string& name) {
 #ifdef __EMSCRIPTEN__
     EM_ASM({
+        if (window.activeSources && window.activeSources.has(UTF8ToString($0))) {
+            const name = UTF8ToString($0);
+            try {
+                window.activeSources.get(name).stop();
+                window.activeSources.delete(name);
+            } catch(e) { }
+        }
+    
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'stopSound',
@@ -230,6 +238,16 @@ void AudioWorkletSystem::StopSound(const std::string& name) {
 void AudioWorkletSystem::StopAllSounds() {
 #ifdef __EMSCRIPTEN__
     EM_ASM({
+        // Stop all active sources
+        if (window.activeSources) {
+            window.activeSources.forEach((source, path) => {
+                try {
+                    source.stop();
+                } catch(e) { }
+            });
+            window.activeSources.clear();
+        }
+        
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'stopAllSounds'
@@ -376,7 +394,11 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
             console.log('Loading WAV file for:', originalPath);
             
             // Map original paths to our organized structure
-            let wavFileName = 'sounds/menu/CLICK.WAV'; // default
+            let wavFileName = originalPath; // Default to trying the path directly
+            
+            // Clean up path separators and make lowercase for web server compatibility if needed?
+            // Since we are fetching via HTTP, case sensitivity depends on the server.
+            // But let's handle the specific overrides we know about.
             
             if (originalPath.includes('SELECT.WAV') || originalPath.includes('SELECT_MENU_ITEM')) {
                 wavFileName = 'sounds/menu/SELECT.WAV';
@@ -384,13 +406,21 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                 wavFileName = 'sounds/menu/CLICK.WAV';
             } else if (originalPath.includes('MENUBED.WAV') || originalPath.includes('MENUMUSIC')) {
                 wavFileName = 'sounds/menu/MENUBED.WAV';
+            } else {
+                 // For other sounds, try to ensure the path is clean.
+                 // Remove leading slash if present
+                 if (wavFileName.startsWith('/')) {
+                     wavFileName = wavFileName.substring(1);
+                 }
+                 // Convert to lowercase if that matches your asset layout
+                 wavFileName = wavFileName.toLowerCase();
             }
             
             // Use fetch to load the WAV file
             console.log('Attempting to fetch:', wavFileName);
             fetch(wavFileName)
                 .then(function(response) {
-                    console.log('Fetch response status:', response.status, response.statusText);
+                    // console.log('Fetch response status:', response.status, response.statusText);
                     if (!response.ok) {
                         throw new Error('Failed to load WAV file: ' + response.status + ' ' + response.statusText);
                     }
@@ -436,6 +466,24 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                         window.musicSource = source;
                         window.musicVolume = volumeMultiplier;
                     }
+
+                    // TRACK THE ACTIVE SOURCE
+                    window.activeSources = window.activeSources || new Map();
+                    
+                    // Stop existing source for this path if it exists to prevent lost references
+                    if (window.activeSources.has(originalPath)) {
+                        try {
+                            window.activeSources.get(originalPath).stop();
+                        } catch(e) {}
+                    }
+                    
+                    window.activeSources.set(originalPath, source);
+                    
+                    source.onended = function() {
+                        if (window.activeSources) {
+                             window.activeSources.delete(originalPath);
+                        }
+                    };
                     
                     source.connect(gainNode);
                     gainNode.connect(audioContext.destination);
