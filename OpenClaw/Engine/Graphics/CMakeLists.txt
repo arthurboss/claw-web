@@ -43,12 +43,13 @@ if (EMSCRIPTEN)
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/ParticleSystem.cpp
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessShader.h
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessShader.cpp
-           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessFramebuffer.h
-           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessFramebuffer.cpp
-                   # Generic module WASM renderer (using the one from Generic/WASM)
-        # ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGLRenderer.h
-        # ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGLRenderer.cpp
-       )
+            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PostProcessFramebuffer.cpp
+            # Generic module WASM renderers
+            ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGLRenderer.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGLRenderer.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGPURenderer.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGPURenderer.cpp
+        )
 else()
     # Non-WASM builds: Use existing SDL-based renderers (unchanged)
     target_sources(openclaw PRIVATE

@@ -1,15 +1,17 @@
 # 🎨 Generic Graphics Module
 
-A **cross-platform, reusable graphics module** that automatically selects the best renderer for your target platform. Write once, run anywhere!
+A **cross-platform, reusable graphics module** that provides a unified interface for 2D graphics rendering across different platforms and graphics APIs. Write once, run anywhere!
 
 ## 🌟 **Features**
 
-- **🚀 Cross-Platform**: Works on WASM, Windows, Linux, and Android
+- **🚀 Cross-Platform**: Works on WebAssembly, Windows, Linux, and Android
 - **🎯 Automatic Selection**: Automatically picks the best renderer for your platform
 - **🔧 Easy Integration**: Simple API that works the same everywhere
-- **⚡ High Performance**: Direct GPU access without abstraction layers
+- **⚡ High Performance**: Direct GPU access with optimized rendering
 - **🎨 Modern Graphics**: WebGL, WebGPU, OpenGL, and Vulkan support
 - **📱 Mobile Ready**: Optimized for mobile platforms
+- **⚙️ Configurable**: Runtime configuration and customization options
+- **📊 Monitoring**: Built-in performance monitoring and statistics
 
 ## 🚀 **Quick Start**
 

@@ -8,15 +8,20 @@
 #include <sstream>
 
 // Forward declarations for platform-specific implementations
-class PureWebGLRenderer;
+class GenericWebGLRenderer;
+class GenericWebGPURenderer;
 
 /**
  * @brief Generic Graphics Module - Cross-platform graphics solution
  * 
- * This module automatically selects the appropriate graphics renderer based on the build target:
- * - WASM: Pure WebGL/WebGPU renderers (no SDL dependencies)
- * - Windows/Linux: SDL2-based renderers
- * - Android: OpenGL ES renderers
+ * This module provides a unified interface for graphics rendering across different platforms.
+ * It automatically selects the best available renderer for your target platform and provides
+ * a consistent API for 2D graphics, textures, shaders, and advanced effects.
+ * 
+ * Supported Platforms:
+ * - WebAssembly (WebGL/WebGPU)
+ * - Desktop (OpenGL/Vulkan)
+ * - Mobile (OpenGL ES)
  * 
  * Usage:
  * ```cpp
@@ -63,6 +68,20 @@ public:
      */
     bool IsInitialized() const;
 
+    // ===== Module Information =====
+    
+    /**
+     * @brief Get the module version string
+     * @return Version string (e.g., "1.0.0")
+     */
+    static std::string GetVersion();
+    
+    /**
+     * @brief Get the module build information
+     * @return Build info string containing compiler, date, etc.
+     */
+    static std::string GetBuildInfo();
+    
     // ===== Platform & Renderer Information =====
     
     /**
@@ -127,10 +146,35 @@ public:
     void SetFeatureEnabled(const std::string& feature, bool enabled);
     
     /**
+     * @brief Set module configuration from a configuration string
+     * @param config Configuration string in key=value format
+     * @return true if configuration was applied successfully
+     */
+    bool SetConfiguration(const std::string& config);
+    
+    /**
      * @brief Get module configuration
      * @return String containing current configuration
      */
     std::string GetConfiguration() const;
+    
+    /**
+     * @brief Set default texture filtering mode
+     * @param filtering Filtering mode ("linear", "nearest")
+     */
+    void SetDefaultTextureFiltering(const std::string& filtering);
+    
+    /**
+     * @brief Set default blending mode
+     * @param blending Blending mode ("alpha", "additive", "multiply")
+     */
+    void SetDefaultBlending(const std::string& blending);
+    
+    /**
+     * @brief Set maximum texture cache size (in MB)
+     * @param sizeMB Maximum cache size in megabytes
+     */
+    void SetMaxTextureCacheSize(size_t sizeMB);
 
     // ===== Performance & Monitoring =====
     
@@ -328,6 +372,12 @@ private:
     bool m_initialized;                               // Initialization state
     bool m_performanceMonitoring;                     // Performance monitoring state
     
+    // Configuration options
+    std::string m_defaultTextureFiltering;            // Default texture filtering mode
+    std::string m_defaultBlending;                    // Default blending mode
+    size_t m_maxTextureCacheSize;                     // Maximum texture cache size in MB
+    
     // Platform-specific renderer instances (for fallback)
-    std::unique_ptr<PureWebGLRenderer> m_wasmWebGLRenderer;
+    std::unique_ptr<GenericWebGLRenderer> m_wasmWebGLRenderer;
+    std::unique_ptr<GenericWebGPURenderer> m_wasmWebGPURenderer;
 };

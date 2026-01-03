@@ -5,7 +5,7 @@
 // Platform-specific includes
 #ifdef __EMSCRIPTEN__
 #include "WASM/PureWebGLRenderer.h"
-// #include "WASM/PureWebGPURenderer.h" // Future implementation
+#include "WASM/PureWebGPURenderer.h"
 #endif
 
 // Future platform-specific includes will go here
@@ -19,6 +19,9 @@ GenericGraphicsModule::GenericGraphicsModule()
     , m_renderer(nullptr)
     , m_initialized(false)
     , m_performanceMonitoring(false)
+    , m_defaultTextureFiltering("linear")
+    , m_defaultBlending("alpha")
+    , m_maxTextureCacheSize(256) // 256MB default
 {
     // Auto-detect platform
     m_platform = DetectPlatform();
@@ -144,6 +147,45 @@ std::vector<std::string> GenericGraphicsModule::GetAvailableRenderers() const {
     return m_availableRenderers;
 }
 
+// ===== Module Information =====
+
+std::string GenericGraphicsModule::GetVersion() {
+    return "1.0.0";
+}
+
+std::string GenericGraphicsModule::GetBuildInfo() {
+    std::ostringstream oss;
+    oss << "GenericGraphicsModule v" << GetVersion() << "\n";
+    oss << "Build Date: " << __DATE__ << " " << __TIME__ << "\n";
+    oss << "Compiler: " << 
+#ifdef __EMSCRIPTEN__
+        "Emscripten"
+#elif defined(__GNUC__)
+        "GCC " << __GNUC__ << "." << __GNUC_MINOR__ << "." << __GNUC_PATCHLEVEL__
+#elif defined(_MSC_VER)
+        "MSVC " << _MSC_VER
+#else
+        "Unknown"
+#endif
+        << "\n";
+    oss << "Platform: " << 
+#ifdef __EMSCRIPTEN__
+        "WebAssembly"
+#elif defined(__APPLE__)
+        "macOS"
+#elif defined(_WIN32)
+        "Windows"
+#elif defined(__linux__)
+        "Linux"
+#elif defined(__ANDROID__)
+        "Android"
+#else
+        "Unknown"
+#endif
+        << "\n";
+    return oss.str();
+}
+
 // ===== Feature Detection & Capabilities =====
 
 bool GenericGraphicsModule::IsFeatureSupported(const std::string& feature) const {
@@ -195,6 +237,50 @@ void GenericGraphicsModule::SetFeatureEnabled(const std::string& feature, bool e
     std::cout << "Feature '" << feature << "' " << (enabled ? "enabled" : "disabled") << std::endl;
 }
 
+bool GenericGraphicsModule::SetConfiguration(const std::string& config) {
+    // Parse configuration string in key=value format
+    std::istringstream iss(config);
+    std::string line;
+    bool success = true;
+    
+    while (std::getline(iss, line)) {
+        size_t pos = line.find('=');
+        if (pos == std::string::npos) continue;
+        
+        std::string key = line.substr(0, pos);
+        std::string value = line.substr(pos + 1);
+        
+        // Trim whitespace
+        key.erase(0, key.find_first_not_of(" \t"));
+        key.erase(key.find_last_not_of(" \t") + 1);
+        value.erase(0, value.find_first_not_of(" \t"));
+        value.erase(value.find_last_not_of(" \t") + 1);
+        
+        if (key == "renderer") {
+            if (!SetPreferredRenderer(value)) {
+                success = false;
+            }
+        } else if (key == "texture_filtering") {
+            SetDefaultTextureFiltering(value);
+        } else if (key == "blending") {
+            SetDefaultBlending(value);
+        } else if (key == "max_texture_cache") {
+            try {
+                size_t size = std::stoul(value);
+                SetMaxTextureCacheSize(size);
+            } catch (const std::exception&) {
+                std::cerr << "Invalid texture cache size: " << value << std::endl;
+                success = false;
+            }
+        } else {
+            std::cerr << "Unknown configuration key: " << key << std::endl;
+            success = false;
+        }
+    }
+    
+    return success;
+}
+
 std::string GenericGraphicsModule::GetConfiguration() const {
     std::ostringstream oss;
     oss << "GenericGraphicsModule Configuration:\n";
@@ -207,8 +293,34 @@ std::string GenericGraphicsModule::GetConfiguration() const {
     }
     oss << "\n";
     oss << "  Performance Monitoring: " << (m_performanceMonitoring ? "Enabled" : "Disabled") << "\n";
+    oss << "  Default Texture Filtering: " << m_defaultTextureFiltering << "\n";
+    oss << "  Default Blending: " << m_defaultBlending << "\n";
+    oss << "  Max Texture Cache: " << m_maxTextureCacheSize << "MB\n";
     
     return oss.str();
+}
+
+void GenericGraphicsModule::SetDefaultTextureFiltering(const std::string& filtering) {
+    if (filtering == "linear" || filtering == "nearest") {
+        m_defaultTextureFiltering = filtering;
+        std::cout << "Default texture filtering set to: " << filtering << std::endl;
+    } else {
+        std::cerr << "Invalid texture filtering mode: " << filtering << std::endl;
+    }
+}
+
+void GenericGraphicsModule::SetDefaultBlending(const std::string& blending) {
+    if (blending == "alpha" || blending == "additive" || blending == "multiply") {
+        m_defaultBlending = blending;
+        std::cout << "Default blending set to: " << blending << std::endl;
+    } else {
+        std::cerr << "Invalid blending mode: " << blending << std::endl;
+    }
+}
+
+void GenericGraphicsModule::SetMaxTextureCacheSize(size_t sizeMB) {
+    m_maxTextureCacheSize = sizeMB;
+    std::cout << "Max texture cache size set to: " << sizeMB << "MB" << std::endl;
 }
 
 // ===== Performance & Monitoring =====
@@ -332,11 +444,10 @@ std::unique_ptr<IGenericRenderer> GenericGraphicsModule::CreateRenderer(const st
     
     if (m_platform == "WASM") {
         if (rendererType == "WebGL") {
-            return std::unique_ptr<IGenericRenderer>(new PureWebGLRenderer());
+            return std::unique_ptr<IGenericRenderer>(new GenericWebGLRenderer());
+        } else if (rendererType == "WebGPU") {
+            return std::unique_ptr<IGenericRenderer>(new GenericWebGPURenderer());
         }
-        // else if (rendererType == "WebGPU") {
-        //     return std::make_unique<PureWebGPURenderer>();
-        // }
     }
     
     // For other platforms, return nullptr (not implemented yet)
@@ -348,17 +459,20 @@ bool GenericGraphicsModule::InitializeWASMRenderers(int width, int height) {
     std::cout << "Initializing WASM renderers..." << std::endl;
     
     // Initialize WebGL renderer
-    m_wasmWebGLRenderer = std::unique_ptr<PureWebGLRenderer>(new PureWebGLRenderer());
+    m_wasmWebGLRenderer = std::unique_ptr<GenericWebGLRenderer>(new GenericWebGLRenderer());
     if (!m_wasmWebGLRenderer->Initialize(width, height)) {
         std::cerr << "Failed to initialize WASM WebGL renderer" << std::endl;
         return false;
     }
     
-    // Initialize WebGPU renderer (future)
-    // m_wasmWebGPURenderer = std::unique_ptr<PureWebGPURenderer>(new PureWebGPURenderer());
-    // if (!m_wasmWebGPURenderer->Initialize(width, height)) {
-    //     std::cout << "Warning: Failed to initialize WASM WebGPU renderer" << std::endl;
-    // }
+    // Initialize WebGPU renderer if possible
+    m_wasmWebGPURenderer = std::unique_ptr<GenericWebGPURenderer>(new GenericWebGPURenderer());
+    // Note: WebGPU initialization might be async or fail if not supported
+    if (!m_wasmWebGPURenderer->Initialize(width, height)) {
+        std::cout << "Available WebGPU renderer could not be initialized (might be standard behavior for fallback check)" << std::endl;
+    } else {
+        std::cout << "WASM WebGPU renderer initialized successfully" << std::endl;
+    }
     
     std::cout << "WASM renderers initialized successfully" << std::endl;
     return true;

@@ -6,7 +6,7 @@
 
 // ===== Constructor & Destructor =====
 
-PureWebGLRenderer::PureWebGLRenderer()
+GenericWebGLRenderer::GenericWebGLRenderer()
     : m_initialized(false)
     , m_screenWidth(0)
     , m_screenHeight(0)
@@ -46,13 +46,13 @@ PureWebGLRenderer::PureWebGLRenderer()
     };
 }
 
-PureWebGLRenderer::~PureWebGLRenderer() {
+GenericWebGLRenderer::~GenericWebGLRenderer() {
     Shutdown();
 }
 
 // ===== Core Initialization & Lifecycle =====
 
-bool PureWebGLRenderer::Initialize(int width, int height, const std::string& title) {
+bool GenericWebGLRenderer::Initialize(int width, int height, const std::string& title) {
     if (m_initialized) {
         std::cout << "PureWebGLRenderer already initialized!" << std::endl;
         return true;
@@ -93,7 +93,7 @@ bool PureWebGLRenderer::Initialize(int width, int height, const std::string& tit
     return true;
 }
 
-void PureWebGLRenderer::Shutdown() {
+void GenericWebGLRenderer::Shutdown() {
     if (!m_initialized) return;
     
     std::cout << "Shutting down PureWebGLRenderer..." << std::endl;
@@ -110,32 +110,32 @@ void PureWebGLRenderer::Shutdown() {
     std::cout << "PureWebGLRenderer shutdown complete!" << std::endl;
 }
 
-bool PureWebGLRenderer::IsInitialized() const {
+bool GenericWebGLRenderer::IsInitialized() const {
     return m_initialized;
 }
 
 // ===== Platform & Capability Detection =====
 
-std::string PureWebGLRenderer::GetRendererType() const {
+std::string GenericWebGLRenderer::GetRendererType() const {
     return "WebGL";
 }
 
-std::string PureWebGLRenderer::GetPlatform() const {
+std::string GenericWebGLRenderer::GetPlatform() const {
     return "WASM";
 }
 
-bool PureWebGLRenderer::IsFeatureSupported(const std::string& feature) const {
+bool GenericWebGLRenderer::IsFeatureSupported(const std::string& feature) const {
     auto it = m_featureSupport.find(feature);
     return (it != m_featureSupport.end()) ? it->second : false;
 }
 
-int PureWebGLRenderer::GetMaxTextureSize() const {
+int GenericWebGLRenderer::GetMaxTextureSize() const {
     return m_maxTextureSize;
 }
 
 // ===== Rendering & Display =====
 
-void PureWebGLRenderer::BeginFrame() {
+void GenericWebGLRenderer::BeginFrame() {
     if (!m_initialized) return;
     
     // Clear the screen
@@ -148,7 +148,7 @@ void PureWebGLRenderer::BeginFrame() {
     glUseProgram(m_defaultProgram);
 }
 
-void PureWebGLRenderer::EndFrame() {
+void GenericWebGLRenderer::EndFrame() {
     if (!m_initialized) return;
     
     // Update FPS counter
@@ -158,14 +158,14 @@ void PureWebGLRenderer::EndFrame() {
     // In a real implementation, you might swap buffers here
 }
 
-void PureWebGLRenderer::Clear(float r, float g, float b, float a) {
+void GenericWebGLRenderer::Clear(float r, float g, float b, float a) {
     if (!m_initialized) return;
     
     glClearColor(r, g, b, a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void PureWebGLRenderer::SetViewport(int x, int y, int width, int height) {
+void GenericWebGLRenderer::SetViewport(int x, int y, int width, int height) {
     if (!m_initialized) return;
     
     glViewport(x, y, width, height);
@@ -173,7 +173,7 @@ void PureWebGLRenderer::SetViewport(int x, int y, int width, int height) {
 
 // ===== Resource Management =====
 
-std::shared_ptr<ITexture> PureWebGLRenderer::CreateTexture(int width, int height, const uint8_t* data) {
+std::shared_ptr<ITexture> GenericWebGLRenderer::CreateTexture(int width, int height, const uint8_t* data) {
     if (!m_initialized) return nullptr;
     
     std::cout << "Creating WebGL texture: " << width << "x" << height << std::endl;
@@ -188,7 +188,7 @@ std::shared_ptr<ITexture> PureWebGLRenderer::CreateTexture(int width, int height
     return std::shared_ptr<ITexture>(new PureWebGLTexture(width, height, textureId));
 }
 
-std::shared_ptr<ITexture> PureWebGLRenderer::LoadTexture(const std::string& filepath) {
+std::shared_ptr<ITexture> GenericWebGLRenderer::LoadTexture(const std::string& filepath) {
     if (!m_initialized) return nullptr;
     
     std::cout << "Loading texture: " << filepath << std::endl;
@@ -198,7 +198,7 @@ std::shared_ptr<ITexture> PureWebGLRenderer::LoadTexture(const std::string& file
     return std::make_shared<class PureWebGLTexture>(256, 256); // Default size
 }
 
-std::shared_ptr<IShader> PureWebGLRenderer::CreateShader(const std::string& vertexSource, const std::string& fragmentSource) {
+std::shared_ptr<IShader> GenericWebGLRenderer::CreateShader(const std::string& vertexSource, const std::string& fragmentSource) {
     if (!m_initialized) return nullptr;
     
     std::cout << "Creating WebGL shader program" << std::endl;
@@ -215,7 +215,7 @@ std::shared_ptr<IShader> PureWebGLRenderer::CreateShader(const std::string& vert
 
 // ===== Rendering Operations =====
 
-void PureWebGLRenderer::RenderSprite(const std::shared_ptr<ISprite>& sprite, float x, float y, float scale, float rotation) {
+void GenericWebGLRenderer::RenderSprite(const std::shared_ptr<ISprite>& sprite, float x, float y, float scale, float rotation) {
     if (!m_initialized || !sprite) return;
     
     // For now, just log the render call
@@ -223,7 +223,7 @@ void PureWebGLRenderer::RenderSprite(const std::shared_ptr<ISprite>& sprite, flo
     std::cout << "Rendering sprite at (" << x << ", " << y << ") scale: " << scale << " rotation: " << rotation << std::endl;
 }
 
-void PureWebGLRenderer::RenderQuad(const std::shared_ptr<ITexture>& texture, float x, float y, float width, float height) {
+void GenericWebGLRenderer::RenderQuad(const std::shared_ptr<ITexture>& texture, float x, float y, float width, float height) {
     if (!m_initialized || !texture) return;
     
     std::cout << "Rendering WebGL quad with texture at (" << x << ", " << y << ") size " << width << "x" << height << std::endl;
@@ -282,7 +282,7 @@ void PureWebGLRenderer::RenderQuad(const std::shared_ptr<ITexture>& texture, flo
     CheckGLError("RenderQuad");
 }
 
-void PureWebGLRenderer::RenderText(const std::string& text, float x, float y, uint32_t color, int fontSize) {
+void GenericWebGLRenderer::RenderText(const std::string& text, float x, float y, uint32_t color, int fontSize) {
     if (!m_initialized) return;
     
     // For now, just log the render call
@@ -292,11 +292,11 @@ void PureWebGLRenderer::RenderText(const std::string& text, float x, float y, ui
 
 // ===== Performance & Monitoring =====
 
-float PureWebGLRenderer::GetFPS() const {
+float GenericWebGLRenderer::GetFPS() const {
     return m_fps;
 }
 
-std::string PureWebGLRenderer::GetMemoryStats() const {
+std::string GenericWebGLRenderer::GetMemoryStats() const {
     if (!m_initialized) return "Not initialized";
     
     // In WASM, we can't easily get detailed memory stats
@@ -306,7 +306,7 @@ std::string PureWebGLRenderer::GetMemoryStats() const {
     return oss.str();
 }
 
-std::string PureWebGLRenderer::GetPerformanceStats() const {
+std::string GenericWebGLRenderer::GetPerformanceStats() const {
     if (!m_initialized) return "Not initialized";
     
     std::ostringstream oss;
@@ -319,14 +319,14 @@ std::string PureWebGLRenderer::GetPerformanceStats() const {
     return oss.str();
 }
 
-void PureWebGLRenderer::SetPerformanceMonitoring(bool enabled) {
+void GenericWebGLRenderer::SetPerformanceMonitoring(bool enabled) {
     m_performanceMonitoring = enabled;
     std::cout << "Performance monitoring " << (enabled ? "enabled" : "disabled") << std::endl;
 }
 
 // ===== Advanced Features =====
 
-void PureWebGLRenderer::SetPostProcessEffect(const std::string& effect, bool enabled) {
+void GenericWebGLRenderer::SetPostProcessEffect(const std::string& effect, bool enabled) {
     auto it = m_enabledEffects.find(effect);
     if (it != m_enabledEffects.end()) {
         it->second = enabled;
@@ -334,7 +334,7 @@ void PureWebGLRenderer::SetPostProcessEffect(const std::string& effect, bool ena
     }
 }
 
-void PureWebGLRenderer::SetPostProcessParameter(const std::string& effect, const std::string& param, float value) {
+void GenericWebGLRenderer::SetPostProcessParameter(const std::string& effect, const std::string& param, float value) {
     auto effectIt = m_effectParams.find(effect);
     if (effectIt != m_effectParams.end()) {
         auto paramIt = effectIt->second.find(param);
@@ -345,7 +345,7 @@ void PureWebGLRenderer::SetPostProcessParameter(const std::string& effect, const
     }
 }
 
-std::shared_ptr<IParticleSystem> PureWebGLRenderer::CreateParticleSystem(size_t maxParticles) {
+std::shared_ptr<IParticleSystem> GenericWebGLRenderer::CreateParticleSystem(size_t maxParticles) {
     if (!m_initialized) return nullptr;
     
     std::cout << "Creating particle system with " << maxParticles << " particles" << std::endl;
@@ -357,7 +357,7 @@ std::shared_ptr<IParticleSystem> PureWebGLRenderer::CreateParticleSystem(size_t 
 
 // ===== Private Implementation Details =====
 
-bool PureWebGLRenderer::InitializeWebGL() {
+bool GenericWebGLRenderer::InitializeWebGL() {
     std::cout << "Initializing WebGL context..." << std::endl;
     
     // In WASM, the WebGL context should already be available
@@ -392,7 +392,7 @@ bool PureWebGLRenderer::InitializeWebGL() {
     return true;
 }
 
-bool PureWebGLRenderer::CreateDefaultShaders() {
+bool GenericWebGLRenderer::CreateDefaultShaders() {
     std::cout << "Creating default WebGL shaders..." << std::endl;
     
     // Vertex shader source (simple pass-through)
@@ -434,7 +434,7 @@ bool PureWebGLRenderer::CreateDefaultShaders() {
     return true;
 }
 
-bool PureWebGLRenderer::CreateScreenQuad() {
+bool GenericWebGLRenderer::CreateScreenQuad() {
     std::cout << "Creating WebGL screen quad..." << std::endl;
     
     // Create VAO
@@ -478,7 +478,7 @@ bool PureWebGLRenderer::CreateScreenQuad() {
     return true;
 }
 
-void PureWebGLRenderer::DestroyScreenQuad() {
+void GenericWebGLRenderer::DestroyScreenQuad() {
     // Clean up screen quad resources
     if (m_screenQuadVAO) {
         glDeleteVertexArrays(1, &m_screenQuadVAO);
@@ -491,7 +491,7 @@ void PureWebGLRenderer::DestroyScreenQuad() {
     }
 }
 
-void PureWebGLRenderer::UpdateFPS() {
+void GenericWebGLRenderer::UpdateFPS() {
     if (!m_performanceMonitoring) return;
     
     m_frameCount++;
@@ -510,7 +510,7 @@ void PureWebGLRenderer::UpdateFPS() {
 
 // ===== WebGL Helper Methods Implementation =====
 
-GLuint PureWebGLRenderer::CreateWebGLTexture(int width, int height, const uint8_t* data) {
+GLuint GenericWebGLRenderer::CreateWebGLTexture(int width, int height, const uint8_t* data) {
     GLuint textureId;
     glGenTextures(1, &textureId);
     
@@ -541,7 +541,7 @@ GLuint PureWebGLRenderer::CreateWebGLTexture(int width, int height, const uint8_
     return textureId;
 }
 
-GLuint PureWebGLRenderer::CompileShader(GLenum type, const std::string& source) {
+GLuint GenericWebGLRenderer::CompileShader(GLenum type, const std::string& source) {
     GLuint shader = glCreateShader(type);
     if (shader == 0) {
         std::cerr << "Failed to create shader" << std::endl;
@@ -570,7 +570,7 @@ GLuint PureWebGLRenderer::CompileShader(GLenum type, const std::string& source) 
     return shader;
 }
 
-GLuint PureWebGLRenderer::CreateShaderProgram(const std::string& vertexSource, const std::string& fragmentSource) {
+GLuint GenericWebGLRenderer::CreateShaderProgram(const std::string& vertexSource, const std::string& fragmentSource) {
     // Compile vertex shader
     GLuint vertexShader = CompileShader(GL_VERTEX_SHADER, vertexSource);
     if (vertexShader == 0) {
@@ -624,7 +624,7 @@ GLuint PureWebGLRenderer::CreateShaderProgram(const std::string& vertexSource, c
     return program;
 }
 
-bool PureWebGLRenderer::CheckGLError(const std::string& operation) {
+bool GenericWebGLRenderer::CheckGLError(const std::string& operation) {
     GLenum error = glGetError();
     if (error != GL_NO_ERROR) {
         std::cerr << "OpenGL error in " << operation << ": " << error << std::endl;
@@ -633,7 +633,7 @@ bool PureWebGLRenderer::CheckGLError(const std::string& operation) {
     return true;
 }
 
-void PureWebGLRenderer::SetupTextureParameters(GLuint textureId) {
+void GenericWebGLRenderer::SetupTextureParameters(GLuint textureId) {
     // Set texture filtering
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

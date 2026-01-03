@@ -64,3 +64,6 @@ Thumbs.db
 *.temp
 *.log
 debug.log
+
+# Demo build directory
+build_demo/

@@ -120,10 +120,10 @@ private:
  * This renderer provides WebGL graphics functionality directly through
  * the browser's WebGL API, without requiring any external libraries.
  */
-class PureWebGLRenderer : public IGenericRenderer {
+class GenericWebGLRenderer : public IGenericRenderer {
 public:
-    PureWebGLRenderer();
-    ~PureWebGLRenderer() override;
+    GenericWebGLRenderer();
+    ~GenericWebGLRenderer() override;
 
     // ===== Core Initialization & Lifecycle =====
     bool Initialize(int width, int height, const std::string& title = "") override;
