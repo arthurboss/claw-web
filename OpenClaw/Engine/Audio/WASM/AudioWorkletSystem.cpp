@@ -470,17 +470,21 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                     // TRACK THE ACTIVE SOURCE
                     window.activeSources = window.activeSources || new Map();
                     
-                    // Stop existing source for this path if it exists to prevent lost references
-                    if (window.activeSources.has(originalPath)) {
-                        try {
-                            window.activeSources.get(originalPath).stop();
-                        } catch(e) {}
+                    const isLooping = (loops === -1);
+
+                    // Only stop existing source if it's a loop or music to allow SFX overlap
+                    if (isLooping || isMusic) {
+                        if (window.activeSources.has(originalPath)) {
+                            try {
+                                console.log('Stopping existing looped sound/music:', originalPath);
+                                window.activeSources.get(originalPath).stop();
+                            } catch(e) {}
+                        }
+                        window.activeSources.set(originalPath, source);
                     }
                     
-                    window.activeSources.set(originalPath, source);
-                    
                     source.onended = function() {
-                        if (window.activeSources) {
+                        if (window.activeSources && window.activeSources.get(originalPath) === source) {
                              window.activeSources.delete(originalPath);
                         }
                     };
@@ -489,10 +493,12 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                     gainNode.connect(audioContext.destination);
                     source.start();
                     
-                    console.log('Playing buffer sound:', originalPath, 'volume:', volume);
+                    if (!isMusic) {
+                        console.log('Playing sound:', originalPath, 'volume:', finalVolume.toFixed(2), 'looping:', isLooping);
+                    }
                 })
                 .catch(function(error) {
-                    console.error('Error loading WAV file:', error);
+                    console.error('Error playing WAV file:', originalPath, error);
                     // Fallback to oscillator if WAV loading fails
                     window.soundBuffers = window.soundBuffers || new Map();
                     window.soundBuffers.set(originalPath, {
