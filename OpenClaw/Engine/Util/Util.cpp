@@ -430,11 +430,8 @@ namespace Util
         return GetSoundDurationMs(pSound.get());
     }
 
-#ifndef __EMSCRIPTEN__
     int GetSoundDurationMs(Mix_Chunk* pSound)
     {
-        uint32 points = 0;
-        uint32 frames = 0;
         int frequency = 0;
         uint16 format = 0;
         int channels = 0;
@@ -444,59 +441,10 @@ namespace Util
             return -1;
         }
 
-        points = (pSound->alen / ((format & 0xFF) / 8));
-        frames = points / channels;
+        uint32 points = (pSound->alen / ((format & 0xFF) / 8));
+        uint32 frames = points / channels;
         return ((frames * 1000) / frequency);
     }
-#else
-    int GetSoundDurationMs(Mix_Chunk* pSound)
-    {
-        int duration = -1;
-        while (duration < 0) {
-            duration = EM_ASM_INT(
-                    {
-                        var sdlAudio = SDL.audios[$0];
-                        if (sdlAudio) {
-                            var webAudio = sdlAudio.webAudio;
-                            if (webAudio) {
-                                var callbacks = webAudio.onDecodeComplete;
-                                if (callbacks) {
-                                    // The audio data is not decoded. We have to wait.
-                                    return -1;
-                                }
-                                var buffer = webAudio.decodedBuffer;
-                                if (buffer) {
-                                    return (buffer.duration * 1000)|0;
-                                }
-                            } else {
-                                // HTML5 AudioContext does not support this audio file format.
-                                var html5Audio = sdlAudio.audio;
-                                if (html5Audio) {
-                                    var duration = html5Audio.duration;
-                                    if (!duration) {
-                                        // TODO: find the way to separate errors. It could be a livelock
-                                        // The audio data is not loaded. We have to wait.
-                                        return -1;
-                                    } else {
-                                        return (duration * 1000)|0;
-                                    }
-                                }
-                            }
-                        }
-                        // Unknown error
-                        return -2;
-                    },
-                    pSound);
-            if (duration == -1) {
-                emscripten_sleep(20);
-            } else if (duration == -2) {
-                LOG_WARNING("Could not get sound duration for audio #" + ToStr((int) pSound));
-                duration = 0;
-            }
-        }
-        return duration;
-    }
-#endif
 
     SDL_Surface* CreateRGBSurface(Uint32 flags, int width, int height, int depth) {
         Uint32 rmask, gmask, bmask, amask;
