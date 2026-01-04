@@ -23,3 +23,5 @@ add_subdirectory(Scene)
 add_subdirectory(UserInterface)
 add_subdirectory(Util)
 add_subdirectory(Video)
+
+add_subdirectory(Platform)
