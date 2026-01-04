@@ -8,6 +8,7 @@
 #include "../Events/EventMgr.h"
 #include "../Graphics2D/Image.h"
 #include "../Audio/Audio.h"
+#include "../Video/Generic/IGenericVideo.h"
 
 #include "../Actor/Components/PositionComponent.h"
 #include "../Actor/Components/PickupComponents/PickupComponent.h"
@@ -165,6 +166,25 @@ bool BaseGameLogic::VEnterMenu(const char* xmlMenuResource)
     }
 
     return true;
+}
+
+void BaseGameLogic::VPlayCutscene(const std::string& videoSource)
+{
+    LOG("Playing cutscene: " + videoSource);
+    m_pActiveVideo = g_pApp->GetVideoModule()->CreateVideoPlayer();
+    if (m_pActiveVideo)
+    {
+        if (m_pActiveVideo->Load(videoSource))
+        {
+            m_pActiveVideo->Play();
+            VChangeState(GameState_Cutscene);
+        }
+        else
+        {
+            LOG_ERROR("Failed to load video: " + videoSource);
+            m_pActiveVideo.reset();
+        }
+    }
 }
 
 void RenderLoadingScreen(shared_ptr<Image> pBackground, SDL_Rect& renderRect, Point& scale, float progress)
@@ -781,7 +801,13 @@ void BaseGameLogic::VOnUpdate(uint32 msDiff)
             }
             else
             {
-                VChangeState(GameState_Menu);
+                // Try to play intro movie
+                VPlayCutscene("INTRO.MP4");
+                // If it failed/skipped immediately, it will fall through or we check state
+                if (m_GameState == GameState_Initializing)
+                {
+                    VChangeState(GameState_Menu);
+                }
             }
 #endif
             break;
@@ -850,6 +876,25 @@ void BaseGameLogic::VOnUpdate(uint32 msDiff)
                 break;
             }
 
+            break;
+        }
+
+        case GameState_Cutscene:
+        {
+            if (m_pActiveVideo)
+            {
+                m_pActiveVideo->Update(msDiff / 1000.0f);
+                if (!m_pActiveVideo->IsPlaying())
+                {
+                    LOG("Cutscene finished.");
+                    m_pActiveVideo.reset();
+                    VChangeState(GameState_Menu); // For now, always go to menu
+                }
+            }
+            else
+            {
+                VChangeState(GameState_Menu);
+            }
             break;
         }
 

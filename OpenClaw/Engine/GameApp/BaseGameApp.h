@@ -10,6 +10,7 @@
 #include "CommandHandler.h"
 #include "../UserInterface/Touch/TouchManager.h"
 #include "../Graphics/GraphicsAdapter.h"
+#include "../Video/Generic/GenericVideoModule.h"
 
 const int DEFAULT_SCREEN_WIDTH = 1280;
 const int DEFAULT_SCREEN_HEIGHT = 768;
@@ -290,6 +291,7 @@ public:
 
     // Graphics system access
     GraphicsAdapter* GetGraphicsAdapter() { return m_graphicsAdapter.get(); }
+    GenericVideoModule* GetVideoModule() { return m_videoModule.get(); }
     bool InitializeGraphicsSystem();
     void ShutdownGraphicsSystem();
 
@@ -324,6 +326,7 @@ protected:
 
     // Graphics system
     std::unique_ptr<GraphicsAdapter> m_graphicsAdapter;
+    std::unique_ptr<GenericVideoModule> m_videoModule;
 
     LocalizedStringsMap m_LocalizedStringsMap;
     FontMap m_FontMap;

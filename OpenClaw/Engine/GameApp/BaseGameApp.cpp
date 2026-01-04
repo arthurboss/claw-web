@@ -49,6 +49,8 @@ BaseGameApp::BaseGameApp()
     m_pAudio = NULL;
     m_pConsoleFont = NULL;
     m_pTouchManager = nullptr;
+    m_graphicsAdapter = nullptr;
+    m_videoModule = nullptr;
     m_IsRunning = false;
     m_QuitRequested = false;
     m_IsQuitting = false;
@@ -68,6 +70,10 @@ bool BaseGameApp::Initialize(int argc, char** argv)
     if (!InitializeLocalization(m_GameOptions)) return false;
     if (!InitializeTouchManager(m_GameOptions)) return false;
     if (!InitializeGraphicsSystem()) return false;
+    
+    m_videoModule.reset(new GenericVideoModule());
+    if (!m_videoModule->Initialize()) return false;
+
     if (!ReadActorXmlPrototypes(m_GameOptions)) return false;
     if (!ReadLevelMetadata(m_GameOptions)) return false;
 
@@ -105,6 +111,12 @@ void BaseGameApp::Terminate()
 
     // Shutdown graphics system
     ShutdownGraphicsSystem();
+
+    if (m_videoModule)
+    {
+        m_videoModule->Shutdown();
+        m_videoModule.reset();
+    }
 
     SAFE_DELETE(m_pGame);
     SDL_DestroyRenderer(m_pRenderer);

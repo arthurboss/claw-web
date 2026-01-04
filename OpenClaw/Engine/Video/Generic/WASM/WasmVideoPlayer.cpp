@@ -48,12 +48,27 @@ EM_JS(void, js_LoadVideo, (int id, const char* url), {
     if (player) {
          player.video.crossOrigin = "anonymous";
          player.video.src = UTF8ToString(url);
-         player.video.onloadedmetadata = function() {
-             player.ready = true;
-             // Call C++ back: OnVideoLoaded (pointer to this instance needed?)
-             // For simplicity, we just set state here.
-         };
-    }
+          player.video.onended = function() {
+              player.ended = true;
+          };
+          player.video.onerror = function() {
+              player.error = true;
+              console.error("Video load error for: " + player.video.src);
+          };
+     }
+});
+
+EM_JS(int, js_GetVideoState, (int id), {
+    var player = Module.genericVideoPlayers[id];
+    if (!player || !player.video) return 0;
+    
+    var state = 0;
+    if (!player.video.paused) state |= 1; // Playing
+    if (player.ended) state |= 2;        // Ended
+    if (player.ready) state |= 4;        // Ready
+    if (player.error) state |= 8;        // Error
+    
+    return state;
 });
 
 EM_JS(void, js_PlayVideo, (int id), {
@@ -108,7 +123,20 @@ void WasmVideoPlayer::Seek(double timeSeconds) {
 }
 
 void WasmVideoPlayer::Update(float deltaTime) {
-    // Sync time from JS if needed
+    int state = js_GetVideoState(m_jsPlayerHandle);
+    m_isPlaying = (state & 1) != 0;
+    bool ended = (state & 2) != 0;
+    bool error = (state & 8) != 0;
+    
+    if ((ended || error) && m_isPlaying) {
+        m_isPlaying = false;
+        OnVideoEnded();
+    }
+}
+
+void WasmVideoPlayer::OnVideoEnded() {
+    m_isPlaying = false;
+    std::cout << "Video finished playing." << std::endl;
 }
 
 std::shared_ptr<ITexture> WasmVideoPlayer::GetFrameTexture() {

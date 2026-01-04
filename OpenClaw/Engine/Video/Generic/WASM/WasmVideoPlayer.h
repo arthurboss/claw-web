@@ -33,6 +33,7 @@ public:
 
     // Callbacks from JS
     void OnVideoLoaded(double duration, int width, int height);
+    void OnVideoEnded();
     void OnFrameDecoded(int textureId, int width, int height); // For WebGL path
     // void OnFrameDecodedWebGPU(void* externalTexture); // For WebGPU path (todo)
 
