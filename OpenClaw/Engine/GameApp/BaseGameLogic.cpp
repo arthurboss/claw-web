@@ -802,7 +802,7 @@ void BaseGameLogic::VOnUpdate(uint32 msDiff)
             else
             {
                 // Try to play intro movie
-                VPlayCutscene("INTRO.MP4");
+                VPlayCutscene("videos/INTRO.mp4");
                 // If it failed/skipped immediately, it will fall through or we check state
                 if (m_GameState == GameState_Initializing)
                 {

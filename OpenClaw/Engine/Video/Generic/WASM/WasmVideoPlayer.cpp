@@ -50,10 +50,18 @@ EM_JS(void, js_LoadVideo, (int id, const char* url), {
          player.video.src = UTF8ToString(url);
           player.video.onended = function() {
               player.ended = true;
+              // Remove video element from DOM when playback ends
+              if (player.video.parentNode) {
+                  player.video.parentNode.removeChild(player.video);
+              }
           };
           player.video.onerror = function() {
               player.error = true;
               console.error("Video load error for: " + player.video.src);
+              // Remove video element on error too
+              if (player.video.parentNode) {
+                  player.video.parentNode.removeChild(player.video);
+              }
           };
      }
 });
@@ -73,7 +81,35 @@ EM_JS(int, js_GetVideoState, (int id), {
 
 EM_JS(void, js_PlayVideo, (int id), {
     var player = Module.genericVideoPlayers[id];
-    if (player && player.video) player.video.play();
+    if (player && player.video) {
+        // Attach video to DOM for rendering (hidden, but necessary for some browsers)
+        player.video.style.position = 'fixed';
+        player.video.style.top = '0';
+        player.video.style.left = '0';
+        player.video.style.width = '100%';
+        player.video.style.height = '100%';
+        player.video.style.zIndex = '9999';
+        player.video.style.backgroundColor = 'black';
+        document.body.appendChild(player.video);
+        
+        // Try to play with sound first, fallback to muted if blocked
+        player.video.play().catch(function(err) {
+            console.warn('Autoplay with sound blocked, trying muted:', err.message);
+            player.video.muted = true;
+            player.video.play().then(function() {
+                console.log('Playing muted video. Click to unmute.');
+                // Add click listener to unmute
+                document.addEventListener('click', function unmute() {
+                    player.video.muted = false;
+                    document.removeEventListener('click', unmute);
+                    console.log('Video unmuted after user interaction.');
+                }, { once: true });
+            }).catch(function(err2) {
+                console.error('Muted autoplay also failed:', err2.message);
+                player.error = true;
+            });
+        });
+    }
 });
 
 EM_JS(void, js_PauseVideo, (int id), {
