@@ -249,7 +249,8 @@ void BaseGameApp::Terminate() {
 bool BaseGameApp::VPerformStartupTests() {
   bool bTestsOk = true;
 
-  // Base SDL video, audio and events
+#ifndef __EMSCRIPTEN__
+  // Base SDL video, audio and events (not used in WASM build)
   STARTUP_TEST(SDL_WasInit(SDL_INIT_VIDEO),
                "SDL Video subsystem is unitialized");
   STARTUP_TEST(SDL_WasInit(SDL_INIT_AUDIO),
@@ -258,6 +259,10 @@ bool BaseGameApp::VPerformStartupTests() {
                "SDL Event subsystem is unitialized");
   STARTUP_TEST(m_pWindow != NULL, "SDL Window is NULL");
   STARTUP_TEST(m_pRenderer != NULL, "SDL Renderer is NULL");
+#else
+  // WASM build uses WebGPU/WebGL directly, no SDL initialization needed
+  LOG("WASM build: Skipping SDL subsystem checks");
+#endif
 
   // Game logic
   STARTUP_TEST(m_pGame != NULL, "Game Logic is NULL");
