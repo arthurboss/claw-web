@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  openclaw:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openclaw-wasm
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount Build_Release for live updates (optional)
+      - ./Build_Release:/game:ro
+    restart: unless-stopped
+    networks:
+      - openclaw-net
+
+  # Alternative: Use pre-built files without building
+  openclaw-prebuilt:
+    image: python:3.11-slim
+    container_name: openclaw-prebuilt
+    working_dir: /game
+    volumes:
+      - ./Build_Release:/game:ro
+    ports:
+      - "8081:8080"
+    command: python3 -m http.server 8080 --bind 0.0.0.0
+    profiles:
+      - prebuilt
+
+networks:
+  openclaw-net:
+    driver: bridge
