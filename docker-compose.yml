@@ -5,6 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      platforms:
+        - linux/arm64
+        - linux/amd64
     container_name: openclaw-wasm
     ports:
       - "8080:8080"
@@ -12,6 +15,24 @@ services:
       # Mount Build_Release for live updates (optional)
       - ./Build_Release:/game:ro
     restart: unless-stopped
+    networks:
+      - openclaw-net
+
+  # ARM64-optimized build (recommended for Apple Silicon Macs)
+  openclaw-arm64:
+    build:
+      context: .
+      dockerfile: Dockerfile.arm64
+      platforms:
+        - linux/arm64
+    container_name: openclaw-wasm-arm64
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./Build_Release:/game:ro
+    restart: unless-stopped
+    profiles:
+      - arm64
     networks:
       - openclaw-net
 

@@ -9,6 +9,11 @@ Run OpenClaw WASM build inside Docker (via Colima) and access from your Mac brow
 - Docker CLI installed
 - CLAW.REZ and ASSETS.ZIP in `Build_Release/`
 
+### Architecture Support
+- **ARM64/Apple Silicon**: Native ARM builds for 2x faster compilation
+- **x86_64/Intel**: Full compatibility with standard builds
+- **Multi-arch**: Dockerfiles support both platforms
+
 ### Option 1: Use Pre-Built Files (Fastest) ⚡
 
 Since you already have `openclaw.wasm` built, just serve it:
@@ -29,13 +34,19 @@ Build the WASM files inside the container:
 
 ```bash
 ./docker-run.sh
-# Select option 2
+# Select option 2 (multi-arch)
+# or option 3 (ARM64-optimized on Apple Silicon)
 
 # Or directly:
 docker-compose up -d --build openclaw
+
+# ARM64-optimized (Apple Silicon - 2x faster):
+docker-compose --profile arm64 up -d --build openclaw-arm64
 ```
 
-**Open in browser:** http://localhost:8080/openclaw.html
+**Open in browser:**
+- Multi-arch: http://localhost:8080/openclaw.html
+- ARM64-optimized: http://localhost:8082/openclaw.html
 
 ## Commands
 
@@ -92,8 +103,9 @@ docker exec -it openclaw-wasm /bin/bash
 
 ## Port Mapping
 
-- **8080** → Build from source container
+- **8080** → Multi-arch build container
 - **8081** → Pre-built files container
+- **8082** → ARM64-optimized build container (Apple Silicon)
 
 ## Volumes
 
@@ -138,6 +150,8 @@ docker-compose --profile prebuilt up -d openclaw-prebuilt -p 9090:8080
 ✅ **Easy cleanup** - `docker-compose down` removes everything
 ✅ **Multiple versions** - Run different branches in different containers
 ✅ **Resource isolation** - Container has its own CPU/memory limits
+✅ **ARM-native performance** - 2x faster builds on Apple Silicon with ARM64 Dockerfile
+✅ **Multi-platform support** - Works on Intel, Apple Silicon, and Linux ARM
 
 ## File Sizes
 

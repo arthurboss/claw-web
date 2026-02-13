@@ -18,16 +18,32 @@ fi
 echo "✅ Colima is running"
 echo ""
 
+# Detect architecture
+ARCH=$(uname -m)
+if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+    IS_ARM=true
+    echo "✅ ARM64 architecture detected (Apple Silicon or ARM)"
+else
+    IS_ARM=false
+    echo "✅ x86_64 architecture detected"
+fi
+echo ""
+
 # Function to display menu
 show_menu() {
     echo "Choose an option:"
     echo ""
     echo "1) 🎮 Run with pre-built WASM files (fastest - no rebuild)"
-    echo "2) 🔨 Build from source and run (takes ~10-15 minutes)"
-    echo "3) 🧹 Stop and remove containers"
-    echo "4) 📊 View container logs"
-    echo "5) 🐚 Shell into container"
-    echo "6) ❌ Exit"
+    if [ "$IS_ARM" = true ]; then
+        echo "2) 🔨 Build from source (multi-arch, ~15-20 minutes)"
+        echo "3) ⚡ Build from source (ARM64-optimized, ~8-12 minutes, recommended)"
+    else
+        echo "2) 🔨 Build from source and run (takes ~10-15 minutes)"
+    fi
+    echo "4) 🧹 Stop and remove containers"
+    echo "5) 📊 View container logs"
+    echo "6) 🐚 Shell into container"
+    echo "7) ❌ Exit"
     echo ""
 }
 
@@ -63,10 +79,10 @@ run_prebuilt() {
     echo "To stop: docker-compose down"
 }
 
-# Option 2: Build and run
+# Option 2: Build and run (multi-arch)
 build_and_run() {
-    echo "🔨 Building OpenClaw from source..."
-    echo "⏱️  This will take 10-15 minutes..."
+    echo "🔨 Building OpenClaw from source (multi-arch)..."
+    echo "⏱️  This will take 15-20 minutes..."
     echo ""
 
     docker-compose build openclaw
@@ -79,6 +95,26 @@ build_and_run() {
     echo ""
     echo "To view build logs: docker-compose logs -f openclaw"
     echo "To stop: docker-compose down"
+}
+
+# Option 3: Build and run (ARM64-optimized)
+build_and_run_arm64() {
+    echo "⚡ Building OpenClaw from source (ARM64-optimized)..."
+    echo "⏱️  This will take 8-12 minutes on Apple Silicon..."
+    echo ""
+
+    docker-compose --profile arm64 build openclaw-arm64
+    docker-compose --profile arm64 up -d openclaw-arm64
+
+    echo ""
+    echo "✅ Build complete and server started!"
+    echo "🌐 Open in your browser:"
+    echo "   http://localhost:8082/openclaw.html"
+    echo ""
+    echo "💡 Note: ARM64 build is ~2x faster than multi-arch!"
+    echo ""
+    echo "To view build logs: docker-compose --profile arm64 logs -f openclaw-arm64"
+    echo "To stop: docker-compose --profile arm64 down"
 }
 
 # Option 3: Stop containers
@@ -135,20 +171,32 @@ while true; do
             break
             ;;
         3)
-            stop_containers
+            if [ "$IS_ARM" = true ]; then
+                build_and_run_arm64
+                break
+            else
+                stop_containers
+            fi
             ;;
         4)
-            view_logs
+            stop_containers
             ;;
         5)
-            shell_into_container
+            view_logs
             ;;
         6)
+            shell_into_container
+            ;;
+        7)
             echo "👋 Goodbye!"
             exit 0
             ;;
         *)
-            echo "❌ Invalid choice. Please enter 1-6."
+            if [ "$IS_ARM" = true ]; then
+                echo "❌ Invalid choice. Please enter 1-7."
+            else
+                echo "❌ Invalid choice. Please enter 1-7."
+            fi
             echo ""
             ;;
     esac

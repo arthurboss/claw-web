@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.1.0)
+cmake_minimum_required(VERSION 3.22)
 
 # Build options
 option(Android "Android" OFF)

@@ -1,7 +1,9 @@
 # OpenClaw WebAssembly Build and Server Container
 # This Dockerfile builds the game and serves it via HTTP
+# Supports both ARM64 and AMD64 architectures
 
-FROM emscripten/emsdk:3.1.54 AS builder
+# Use platform-specific Emscripten base image
+FROM --platform=$BUILDPLATFORM emscripten/emsdk:3.1.54 AS builder
 
 # Install additional dependencies
 RUN apt-get update && apt-get install -y \
@@ -28,7 +30,8 @@ RUN mkdir -p build && cd build && \
     make -j$(nproc) || true
 
 # Runtime stage - serve the built files
-FROM python:3.11-slim
+# Use platform-specific Python image for optimal performance
+FROM --platform=$TARGETPLATFORM python:3.11-slim
 
 WORKDIR /game
 
