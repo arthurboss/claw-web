@@ -1,63 +1,42 @@
 # OpenClaw Docker Setup
 
-Run OpenClaw WASM build inside Docker (via Colima) and access from your Mac browser.
+Simple HTTP server to serve pre-built WASM files on macOS.
+
+## Overview
+
+**Build**: Use Linux VM (Fedora ARM64) - native, fast (2-5 minutes)
+**Serve**: Use Docker on macOS - simple HTTP server
 
 ## Quick Start
 
-### Prerequisites
-- Colima installed and running: `colima start`
-- Docker CLI installed
-- CLAW.REZ and ASSETS.ZIP in `Build_Release/`
-
-### Architecture Support
-- **ARM64/Apple Silicon**: Native ARM builds for 2x faster compilation
-- **x86_64/Intel**: Full compatibility with standard builds
-- **Multi-arch**: Dockerfiles support both platforms
-
-### Option 1: Use Pre-Built Files (Fastest) ⚡
-
-Since you already have `openclaw.wasm` built, just serve it:
-
+### 1. Build WASM in Linux VM
 ```bash
-./docker-run.sh
-# Select option 1
-
-# Or directly:
-docker-compose --profile prebuilt up -d openclaw-prebuilt
+# Inside your Fedora VM
+cd /path/to/OpenClaw
+./build_wasm.sh
 ```
 
-**Open in browser:** http://localhost:8081/openclaw.html
+Files will sync to macOS via VMware shared folders.
 
-### Option 2: Build from Source 🔨
-
-Build the WASM files inside the container:
-
+### 2. Serve on macOS
 ```bash
-./docker-run.sh
-# Select option 2 (multi-arch)
-# or option 3 (ARM64-optimized on Apple Silicon)
-
-# Or directly:
-docker-compose up -d --build openclaw
-
-# ARM64-optimized (Apple Silicon - 2x faster):
-docker-compose --profile arm64 up -d --build openclaw-arm64
+# On macOS
+docker-compose up -d
 ```
 
-**Open in browser:**
-- Multi-arch: http://localhost:8080/openclaw.html
-- ARM64-optimized: http://localhost:8082/openclaw.html
+### 3. Open in Browser
+http://localhost:8081/openclaw.html
 
 ## Commands
 
-### Start server with pre-built files
+### Start server
 ```bash
-docker-compose --profile prebuilt up -d openclaw-prebuilt
+docker-compose up -d
 ```
 
-### Build and run
+### Stop server
 ```bash
-docker-compose up -d --build openclaw
+docker-compose down
 ```
 
 ### View logs
@@ -65,108 +44,69 @@ docker-compose up -d --build openclaw
 docker-compose logs -f
 ```
 
-### Stop containers
+### Restart after rebuilding WASM
 ```bash
-docker-compose down
+docker-compose restart
 ```
 
-### Shell into container
-```bash
-docker exec -it openclaw-prebuilt /bin/bash
-# or
-docker exec -it openclaw-wasm /bin/bash
-```
-
-## Architecture
+## How It Works
 
 ```
 ┌─────────────────────────────────────────┐
-│  Mac Browser (Safari/Chrome)            │
-│  http://localhost:8080/openclaw.html    │
+│  Mac Browser (Chrome/Safari)            │
+│  http://localhost:8081/openclaw.html    │
 └─────────────────┬───────────────────────┘
-                  │ Port 8080/8081
+                  │ Port 8081
                   │
 ┌─────────────────▼───────────────────────┐
-│  Colima (Docker Engine)                 │
-│  ┌─────────────────────────────────┐   │
-│  │  Docker Container               │   │
-│  │  ┌───────────────────────────┐ │   │
-│  │  │ Python HTTP Server        │ │   │
-│  │  │ Serving: openclaw.wasm    │ │   │
-│  │  │          openclaw.js      │ │   │
-│  │  │          openclaw.html    │ │   │
-│  │  │          openclaw.data    │ │   │
-│  │  └───────────────────────────┘ │   │
-│  └─────────────────────────────────┘   │
+│  Docker Container (Python HTTP Server) │
+│  Serving: Build_Release/ (read-only)   │
+│  - openclaw.wasm                        │
+│  - openclaw.js                          │
+│  - openclaw.html                        │
+│  - openclaw.data                        │
 └─────────────────────────────────────────┘
 ```
 
-## Port Mapping
+## Workflow
 
-- **8080** → Multi-arch build container
-- **8081** → Pre-built files container
-- **8082** → ARM64-optimized build container (Apple Silicon)
-
-## Volumes
-
-The `docker-compose.yml` mounts `./Build_Release` as read-only into the container, so:
-- Changes to your local files are reflected immediately
-- No need to rebuild container for asset changes
-- Just refresh your browser
+1. **Edit code** on macOS (VSCode, any editor)
+2. **Build WASM** in Fedora VM: `./build_wasm.sh` (~2-5 minutes)
+3. **Files auto-sync** to macOS via VMware shared folders
+4. **Refresh browser** - Docker serves the new files automatically
+5. **Test and iterate**
 
 ## Troubleshooting
 
-### Colima not running
-```bash
-colima start
-# or with more resources:
-colima start --cpu 4 --memory 8
-```
-
 ### Port already in use
 ```bash
-# Check what's using the port
-lsof -i :8080
-
-# Use a different port
-docker-compose --profile prebuilt up -d openclaw-prebuilt -p 9090:8080
+lsof -i :8081
+# Change port in docker-compose.yml if needed
 ```
 
-### WASM files not loading
-1. Check browser console (F12)
-2. Verify files exist: `ls -lh Build_Release/*.wasm`
-3. Check container logs: `docker-compose logs -f`
+### Files not updating
+```bash
+# Restart the container to reload
+docker-compose restart
+```
 
-### WebGPU not working
-- Use Chrome/Edge for best WebGPU support
-- Check `chrome://gpu` to verify WebGPU is enabled
-- May need to enable flags: `chrome://flags/#enable-unsafe-webgpu`
+### Container not starting
+```bash
+# Check Colima is running
+colima status
 
-## Benefits of This Approach
+# Start Colima if needed
+colima start
+```
 
-✅ **No native build issues** - Linux container handles all compilation
-✅ **Consistent environment** - Same build every time
-✅ **Mac security bypassed** - Container runs the build, not macOS
+## Benefits
+
+✅ **No build complexity** - Just serves files
+✅ **Fast builds** - Native ARM64 in Linux VM (2-5 min)
+✅ **Simple workflow** - Edit, build, refresh
+✅ **Consistent serving** - Same HTTP environment every time
 ✅ **Easy cleanup** - `docker-compose down` removes everything
-✅ **Multiple versions** - Run different branches in different containers
-✅ **Resource isolation** - Container has its own CPU/memory limits
-✅ **ARM-native performance** - 2x faster builds on Apple Silicon with ARM64 Dockerfile
-✅ **Multi-platform support** - Works on Intel, Apple Silicon, and Linux ARM
-
-## File Sizes
-
-Expected sizes in `Build_Release/`:
-- `openclaw.wasm`: ~46MB (compiled game code)
-- `openclaw.data`: ~113MB (packed assets)
-- `openclaw.js`: ~434KB (JavaScript wrapper)
-- `CLAW.REZ`: ~113MB (original game assets)
-- `ASSETS.ZIP`: ~466KB (custom assets)
 
 ## Next Steps
 
-1. Run `./docker-run.sh` and choose option 1
-2. Open http://localhost:8081/openclaw.html
-3. Game should load with WebGPU graphics and Web Audio
-4. Check browser console for any errors
-
-Enjoy Captain Claw! 🐱‍👤
+See `VM_BUILD_SETUP.md` for Linux VM configuration.
