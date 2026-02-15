@@ -7,7 +7,10 @@
 #include <unordered_map>
 #include <iostream>
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) && !defined(DISABLE_WEBGPU)
+// Note: Emscripten 5.0+ uses Dawn WebGPU implementation
+// The header is provided via --use-port=emdawnwebgpu
+// TODO: Update code to use new Dawn API (WGPUSwapChain -> WGPUSurface, etc.)
 #include <webgpu/webgpu.h>
 #endif
 
@@ -76,8 +79,8 @@ private:
     bool m_initialized;
     int m_screenWidth;
     int m_screenHeight;
-    
-#ifdef __EMSCRIPTEN__
+
+#if defined(__EMSCRIPTEN__) && !defined(DISABLE_WEBGPU)
     WGPUInstance m_instance;
     WGPUSurface m_surface;
     WGPUAdapter m_adapter;
@@ -85,7 +88,7 @@ private:
     WGPUQueue m_queue;
     WGPUSwapChain m_swapChain;
     WGPUTextureFormat m_swapChainFormat;
-    
+
     WGPURenderPipeline m_pipeline;
     WGPUCommandEncoder m_commandEncoder;
     WGPURenderPassEncoder m_renderPassEncoder;

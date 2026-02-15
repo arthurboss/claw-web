@@ -445,9 +445,12 @@ std::unique_ptr<IGenericRenderer> GenericGraphicsModule::CreateRenderer(const st
     if (m_platform == "WASM") {
         if (rendererType == "WebGL") {
             return std::unique_ptr<IGenericRenderer>(new GenericWebGLRenderer());
-        } else if (rendererType == "WebGPU") {
+        }
+#ifndef DISABLE_WEBGPU
+        else if (rendererType == "WebGPU") {
             return std::unique_ptr<IGenericRenderer>(new GenericWebGPURenderer());
         }
+#endif
     }
     
     // For other platforms, return nullptr (not implemented yet)
@@ -466,6 +469,7 @@ bool GenericGraphicsModule::InitializeWASMRenderers(int width, int height) {
     }
     
     // Initialize WebGPU renderer if possible
+#ifndef DISABLE_WEBGPU
     m_wasmWebGPURenderer = std::unique_ptr<GenericWebGPURenderer>(new GenericWebGPURenderer());
     // Note: WebGPU initialization might be async or fail if not supported
     if (!m_wasmWebGPURenderer->Initialize(width, height)) {
@@ -473,7 +477,8 @@ bool GenericGraphicsModule::InitializeWASMRenderers(int width, int height) {
     } else {
         std::cout << "WASM WebGPU renderer initialized successfully" << std::endl;
     }
-    
+#endif
+
     std::cout << "WASM renderers initialized successfully" << std::endl;
     return true;
 }

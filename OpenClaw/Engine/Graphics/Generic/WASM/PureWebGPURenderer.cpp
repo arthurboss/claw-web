@@ -2,6 +2,8 @@
 #include <iostream>
 #include <sstream>
 
+#ifndef DISABLE_WEBGPU
+
 // Stub implementations for Texture and Shader classes specific to WebGPU could be added here
 // For now, we'll keep it minimal to focus on the renderer structure.
 
@@ -172,3 +174,4 @@ bool GenericWebGPURenderer::InitializeWebGPU() {
     return false;
 #endif
 }
+#endif // \!DISABLE_WEBGPU

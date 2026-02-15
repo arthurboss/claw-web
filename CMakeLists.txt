@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 4.1.0)
 
 # Build options
 option(Android "Android" OFF)
@@ -44,6 +44,11 @@ if (Emscripten)
     add_definitions(-DSDL_VIDEO_OPENGL=1)
     add_definitions(-DSDL_VIDEO_OPENGL_ES2_DISABLE_EXTERNAL_TEXTURE=1)
     add_definitions(-DSDL_VIDEO_OPENGL_ES2_DISABLE_ANDROID_TEXTURE=1)
+    # Temporarily disable WebGPU while we update to Dawn API
+    add_definitions(-DDISABLE_WEBGPU=1)
+    # TODO: Re-enable after updating WebGPU code for Emscripten 5.0+ Dawn API
+    # add_compile_options("--use-port=emdawnwebgpu")
+    # add_link_options("--use-port=emdawnwebgpu")
 endif (Emscripten)
 
 # Directories with libs
