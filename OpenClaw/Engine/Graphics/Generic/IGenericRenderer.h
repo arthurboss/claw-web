@@ -16,8 +16,8 @@ class IShader;
  * regardless of whether the project is built for WASM, Windows, Linux, or Android.
  * 
  * The actual implementation will be selected at build time:
- * - WASM: Pure WebGL/WebGPU renderers
- * - Windows/Linux: SDL2-based renderers  
+ * - WASM: Pure WebGL renderer
+ * - Windows/Linux: SDL2-based renderers
  * - Android: OpenGL ES renderers
  */
 class IGenericRenderer {
@@ -50,7 +50,7 @@ public:
     
     /**
      * @brief Get the renderer type/backend being used
-     * @return String describing the renderer (e.g., "WebGL", "WebGPU", "OpenGL", "Vulkan")
+     * @return String describing the renderer (e.g., "WebGL", "OpenGL", "Vulkan")
      */
     virtual std::string GetRendererType() const = 0;
     

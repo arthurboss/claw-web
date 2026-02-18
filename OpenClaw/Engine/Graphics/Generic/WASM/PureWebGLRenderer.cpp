@@ -26,7 +26,6 @@ GenericWebGLRenderer::GenericWebGLRenderer()
         {"particles", true},
         {"post_processing", true},
         {"webgl", true},
-        {"webgpu", false},
         {"opengl", false},
         {"vulkan", false},
         {"sdl", false}

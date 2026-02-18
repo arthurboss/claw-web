@@ -47,7 +47,7 @@ struct ParticleEmitter {
  * @brief ParticleSystem for GPU-accelerated particle rendering
  *
  * This class manages particle emitters and renders particles efficiently
- * using WebGL/WebGPU for optimal performance. It supports multiple
+ * using WebGL for optimal performance. It supports multiple
  * emitter types and particle behaviors.
  */
 class ParticleSystem {

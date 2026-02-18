@@ -300,7 +300,7 @@ bool PostProcessor::CreateFramebuffers() {
 }
 
 void PostProcessor::CleanupFramebuffers() {
-    // For Phase 5, we'll clean up actual WebGL/WebGPU resources
+    // For Phase 5, we'll clean up actual WebGL resources
     // For now, this is a placeholder that will be enhanced in future phases
     
     if (m_tempTexture > 0) {

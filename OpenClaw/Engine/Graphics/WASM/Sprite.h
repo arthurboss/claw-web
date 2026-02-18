@@ -12,7 +12,7 @@ class IRenderer;
  * @brief Sprite class for texture-based rendering in WASM builds
  * 
  * This class represents a textured sprite that can be rendered using
- * the WebGL/WebGPU renderers. It supports UV coordinates, alpha blending,
+ * the WebGL renderer. It supports UV coordinates, alpha blending,
  * and visibility controls.
  */
 class Sprite {

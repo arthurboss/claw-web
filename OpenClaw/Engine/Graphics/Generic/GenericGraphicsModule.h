@@ -18,7 +18,7 @@ class GenericWebGLRenderer;
  * a consistent API for 2D graphics, textures, shaders, and advanced effects.
  * 
  * Supported Platforms:
- * - WebAssembly (WebGL/WebGPU)
+ * - WebAssembly (WebGL)
  * - Desktop (OpenGL/Vulkan)
  * - Mobile (OpenGL ES)
  * 
@@ -91,7 +91,7 @@ public:
     
     /**
      * @brief Get the current renderer type being used
-     * @return Renderer type string (e.g., "WebGL", "WebGPU", "OpenGL", "Vulkan")
+     * @return Renderer type string (e.g., "WebGL", "OpenGL", "Vulkan")
      */
     std::string GetRendererType() const;
     
@@ -132,7 +132,7 @@ public:
     
     /**
      * @brief Set preferred renderer type (if multiple are available)
-     * @param rendererType Preferred renderer (e.g., "WebGPU", "WebGL", "OpenGL")
+     * @param rendererType Preferred renderer (e.g., "WebGL", "OpenGL", "Vulkan")
      * @return true if renderer type was set successfully
      */
     bool SetPreferredRenderer(const std::string& rendererType);

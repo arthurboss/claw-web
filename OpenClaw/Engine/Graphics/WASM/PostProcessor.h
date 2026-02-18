@@ -48,7 +48,7 @@ struct PostProcessParams {
  *
  * This class manages post-processing effects including blur, bloom,
  * color correction, and other visual enhancements. It works with
- * both WebGL and WebGPU renderers.
+ * the WebGL renderer.
  */
 class PostProcessor {
 public:

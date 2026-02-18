@@ -117,7 +117,6 @@ void GenericGraphicsModule::Shutdown() {
     // Shutdown platform-specific renderers
     if (m_platform == "WASM") {
         m_wasmWebGLRenderer.reset();
-        // m_wasmWebGPURenderer.reset();
     }
     
     m_initialized = false;
