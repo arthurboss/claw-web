@@ -59,7 +59,7 @@ graphics.SetPerformanceMonitoring(true);
 
 | Platform | Renderers | Status |
 |----------|-----------|--------|
-| **WebAssembly** | WebGL, WebGPU | ✅ Complete |
+| **WebAssembly** | WebGL | ✅ Complete |
 | **Windows** | OpenGL, Vulkan | 🔄 Planned |
 | **Linux** | OpenGL, Vulkan | 🔄 Planned |
 | **macOS** | OpenGL, Metal | 🔄 Planned |
@@ -145,7 +145,6 @@ std::string GetCapabilityInfo() const;
 
 ### Renderer Types
 - `"WebGL"` - WebGL 2.0 renderer (WASM)
-- `"WebGPU"` - WebGPU renderer (WASM, future)
 - `"OpenGL"` - OpenGL renderer (Desktop)
 - `"Vulkan"` - Vulkan renderer (Desktop, future)
 
@@ -269,7 +268,6 @@ std::cout << graphics.GetConfiguration() << std::endl;
 ## 🔮 **Roadmap**
 
 ### Version 1.1 (Planned)
-- [ ] WebGPU renderer implementation
 - [ ] Advanced post-processing effects
 - [ ] Particle system improvements
 - [ ] Texture compression support

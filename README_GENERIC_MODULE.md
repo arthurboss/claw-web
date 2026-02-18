@@ -8,7 +8,7 @@ A **cross-platform, reusable graphics module** that provides a unified interface
 - **🎯 Automatic Selection**: Automatically picks the best renderer for your platform
 - **🔧 Easy Integration**: Simple API that works the same everywhere
 - **⚡ High Performance**: Direct GPU access with optimized rendering
-- **🎨 Modern Graphics**: WebGL, WebGPU, OpenGL, and Vulkan support
+- **🎨 Modern Graphics**: WebGL, OpenGL, and Vulkan support
 - **📱 Mobile Ready**: Optimized for mobile platforms
 - **⚙️ Configurable**: Runtime configuration and customization options
 - **📊 Monitoring**: Built-in performance monitoring and statistics
