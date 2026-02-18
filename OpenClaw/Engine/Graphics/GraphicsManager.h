@@ -8,9 +8,8 @@
        class SDL_Renderer;
 
        #ifdef __EMSCRIPTEN__
-       // WASM builds: Use pure WebGL and WebGPU renderers
+       // WASM builds: Use pure WebGL renderer
        class PureWebGLRenderer;
-       class PureWebGPURenderer;
        class TextureManager;
        class SpriteRenderer;
        class PostProcessor;
@@ -18,14 +17,12 @@
        #else
        // Non-WASM builds: Use existing SDL-based renderers
        class WebGLRenderer;
-       class WebGPURenderer;
        #endif
 
 enum class RendererType {
     None,
     WebGL,
     WebGL2,
-    WebGPU,
     OpenGL,
     OpenGLES
 };
@@ -57,7 +54,6 @@ public:
     
     // Renderer information (for compatibility)
     std::string GetRendererName() const;
-    bool IsUsingWebGPU() const;
     bool IsUsingWebGL() const;
     std::string GetRendererStatus() const;
     float GetFrameTime() const;
@@ -82,14 +78,10 @@ private:
     bool InitializeInternal();
     
 #ifdef __EMSCRIPTEN__
-    // WASM: Try to initialize pure WebGPU renderer
-    bool TryInitializePureWebGPU();
-    
     // WASM: Try to initialize pure WebGL renderer
     bool TryInitializePureWebGL();
 #else
     // Non-WASM: Try to initialize SDL-based renderers
-    bool TryInitializeWebGPU();
     bool TryInitializeWebGL2();
     bool TryInitializeWebGL1();
 #endif
@@ -103,7 +95,7 @@ private:
     int m_drawCalls;
     
        #ifdef __EMSCRIPTEN__
-           // WASM: Use pure WebGL and WebGPU renderers
+           // WASM: Use pure WebGL renderer
            std::unique_ptr<TextureManager> m_textureManager;
            std::unique_ptr<SpriteRenderer> m_spriteRenderer;
            std::unique_ptr<PostProcessor> m_postProcessor;

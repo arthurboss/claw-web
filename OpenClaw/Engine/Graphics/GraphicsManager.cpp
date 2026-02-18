@@ -99,10 +99,7 @@ bool GraphicsManager::InitializeInternal() {
     }
 #else
     // Non-WASM: Use existing SDL-based renderers (unchanged)
-    if (TryInitializeWebGPU()) {
-        m_currentRendererType = RendererType::WebGPU;
-        std::cout << "Initialized WebGPU renderer" << std::endl;
-    } else if (TryInitializeWebGL2()) {
+    if (TryInitializeWebGL2()) {
         m_currentRendererType = RendererType::WebGL2;
         std::cout << "Initialized WebGL2 renderer" << std::endl;
     } else if (TryInitializeWebGL1()) {
@@ -180,10 +177,6 @@ std::string GraphicsManager::GetRendererName() const {
     return "None";
 }
 
-bool GraphicsManager::IsUsingWebGPU() const {
-    return m_currentRendererType == RendererType::WebGPU;
-}
-
 bool GraphicsManager::IsUsingWebGL() const {
     return m_currentRendererType == RendererType::WebGL || m_currentRendererType == RendererType::WebGL2;
 }
@@ -193,14 +186,13 @@ std::string GraphicsManager::GetRendererStatus() const {
     ss << "Graphics System Status:\n";
     ss << "  Initialized: " << (m_currentRenderer ? "Yes" : "No") << "\n";
     ss << "  Renderer Type: " << GetRendererName() << "\n";
-    ss << "  WebGPU Support: " << (IsUsingWebGPU() ? "Yes" : "No") << "\n";
     ss << "  WebGL Support: " << (IsUsingWebGL() ? "Yes" : "No") << "\n";
-    
+
     if (m_currentRenderer) {
         ss << "  Shader Support: " << (SupportsFeature(RendererFeature::ShaderSupport) ? "Yes" : "No") << "\n";
         ss << "  Texture Compression: " << (SupportsFeature(RendererFeature::TextureCompression) ? "Yes" : "No") << "\n";
     }
-    
+
     return ss.str();
 }
 
@@ -218,7 +210,6 @@ std::string GraphicsManager::GetPerformanceStats() const {
     ss << "  Renderer Type: ";
     
     switch (m_currentRendererType) {
-        case RendererType::WebGPU: ss << "WebGPU"; break;
         case RendererType::WebGL2: ss << "WebGL2"; break;
         case RendererType::WebGL: ss << "WebGL"; break;
         case RendererType::OpenGL: ss << "OpenGL"; break;

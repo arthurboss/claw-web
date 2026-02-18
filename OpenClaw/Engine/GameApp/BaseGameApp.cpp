@@ -260,7 +260,7 @@ bool BaseGameApp::VPerformStartupTests() {
   STARTUP_TEST(m_pWindow != NULL, "SDL Window is NULL");
   STARTUP_TEST(m_pRenderer != NULL, "SDL Renderer is NULL");
 #else
-  // WASM build uses WebGPU/WebGL directly, no SDL initialization needed
+  // WASM build uses WebGL directly, no SDL initialization needed
   LOG("WASM build: Skipping SDL subsystem checks");
 #endif
 
@@ -1670,11 +1670,9 @@ bool BaseGameApp::InitializeGraphicsSystem() {
   std::string rendererStatus = m_graphicsAdapter->GetRendererStatus();
   LOG(rendererStatus);
 
-  // Check WebGPU status
-  if (m_graphicsAdapter->IsUsingWebGPU()) {
-    LOG("🎉 WebGPU is active! Better performance expected.");
-  } else if (m_graphicsAdapter->IsUsingWebGL()) {
-    LOG("📱 Using WebGL fallback - Good compatibility");
+  // Check renderer status
+  if (m_graphicsAdapter->IsUsingWebGL()) {
+    LOG("📱 Using WebGL renderer - Good compatibility");
   } else {
     LOG("⚠️  No graphics system available");
   }

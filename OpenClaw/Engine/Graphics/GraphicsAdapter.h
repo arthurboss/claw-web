@@ -55,9 +55,8 @@ public:
     bool IsInitialized() const { return m_isInitialized; }
     GraphicsManager* GetGraphicsManager() { return m_graphicsManager.get(); }
     std::string GetRendererName() const;
-    
-    // WebGPU status methods
-    bool IsUsingWebGPU() const;
+
+    // Renderer status methods
     bool IsUsingWebGL() const;
     std::string GetRendererStatus() const;
     

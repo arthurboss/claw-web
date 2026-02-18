@@ -174,14 +174,6 @@ std::string GraphicsAdapter::GetRendererName() const {
     return "None";
 }
 
-// Check if using WebGPU
-bool GraphicsAdapter::IsUsingWebGPU() const {
-    if (m_graphicsManager) {
-        return m_graphicsManager->IsUsingWebGPU();
-    }
-    return false;
-}
-
 // Check if using WebGL
 bool GraphicsAdapter::IsUsingWebGL() const {
     if (m_graphicsManager) {
