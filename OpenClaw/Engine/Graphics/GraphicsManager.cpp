@@ -2,9 +2,8 @@
 #include "IRenderer.h"
 
        #ifdef __EMSCRIPTEN__
-       // WASM builds: Use pure WebGL and WebGPU renderers
+       // WASM builds: Use pure WebGL renderer
        #include "WASM/PureWebGLRenderer.h"
-       #include "WASM/PureWebGPURenderer.h"
        #include "WASM/TextureManager.h"
        #include "WASM/SpriteRenderer.h"
        #include "WASM/PostProcessor.h"
@@ -12,7 +11,6 @@
        #else
        // Non-WASM builds: Use existing SDL-based renderers
        #include "WebGL/WebGLRenderer.h"
-       #include "WebGPU/WebGPURenderer.h"
        #endif
 
 #include <iostream>
@@ -91,15 +89,12 @@ bool GraphicsManager::InitializeInternal() {
                return false;
            }
     
-    // WASM: Try WebGPU first, fallback to WebGL
-    if (TryInitializePureWebGPU()) {
-        m_currentRendererType = RendererType::WebGPU;
-        std::cout << "Initialized pure WebGPU renderer" << std::endl;
-    } else if (TryInitializePureWebGL()) {
+    // WASM: Use WebGL renderer
+    if (TryInitializePureWebGL()) {
         m_currentRendererType = RendererType::WebGL;
         std::cout << "Initialized pure WebGL renderer" << std::endl;
     } else {
-        std::cerr << "Failed to initialize any WASM renderer" << std::endl;
+        std::cerr << "Failed to initialize WebGL renderer" << std::endl;
         return false;
     }
 #else
@@ -123,16 +118,6 @@ bool GraphicsManager::InitializeInternal() {
 }
 
 #ifdef __EMSCRIPTEN__
-// WASM: Pure WebGPU renderer initialization
-bool GraphicsManager::TryInitializePureWebGPU() {
-    auto renderer = std::unique_ptr<PureWebGPURenderer>(new PureWebGPURenderer());
-    if (renderer->Initialize()) {
-        m_currentRenderer = std::move(renderer);
-        return true;
-    }
-    return false;
-}
-
 // WASM: Pure WebGL renderer initialization
 bool GraphicsManager::TryInitializePureWebGL() {
     auto renderer = std::unique_ptr<PureWebGLRenderer>(new PureWebGLRenderer());
@@ -144,11 +129,6 @@ bool GraphicsManager::TryInitializePureWebGL() {
 }
 #else
 // Non-WASM: SDL-based renderer initialization (unchanged)
-bool GraphicsManager::TryInitializeWebGPU() {
-    // Implementation for SDL-based WebGPU renderer
-    return false;
-}
-
 bool GraphicsManager::TryInitializeWebGL2() {
     // Implementation for SDL-based WebGL2 renderer
     return false;
@@ -190,7 +170,6 @@ void GraphicsManager::EndFrame() {
 std::string GraphicsManager::GetRendererName() const {
     if (m_currentRenderer) {
         switch (m_currentRendererType) {
-            case RendererType::WebGPU: return "Pure WebGPU (WASM)";
             case RendererType::WebGL: return "Pure WebGL (WASM)";
             case RendererType::WebGL2: return "WebGL2 (SDL)";
             case RendererType::OpenGL: return "OpenGL (SDL)";

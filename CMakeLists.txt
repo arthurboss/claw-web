@@ -44,11 +44,6 @@ if (Emscripten)
     add_definitions(-DSDL_VIDEO_OPENGL=1)
     add_definitions(-DSDL_VIDEO_OPENGL_ES2_DISABLE_EXTERNAL_TEXTURE=1)
     add_definitions(-DSDL_VIDEO_OPENGL_ES2_DISABLE_ANDROID_TEXTURE=1)
-    # Temporarily disable WebGPU while we update to Dawn API
-    add_definitions(-DDISABLE_WEBGPU=1)
-    # TODO: Re-enable after updating WebGPU code for Emscripten 5.0+ Dawn API
-    # add_compile_options("--use-port=emdawnwebgpu")
-    # add_link_options("--use-port=emdawnwebgpu")
 endif (Emscripten)
 
 # Directories with libs
@@ -79,12 +74,6 @@ add_subdirectory(OpenClaw)
             ${CMAKE_SOURCE_DIR}/OpenClaw/Engine/Graphics/WASM/js/graphics-bridge.js
             ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/graphics-bridge.js
             COMMENT "Copying WebGL graphics bridge JavaScript file for WASM build"
-        )
-        add_custom_command(TARGET openclaw POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_SOURCE_DIR}/OpenClaw/Engine/Graphics/WASM/js/webgpu-bridge.js
-            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/webgpu-bridge.js
-            COMMENT "Copying WebGPU graphics bridge JavaScript file for WASM build"
         )
         add_custom_command(TARGET openclaw POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy
