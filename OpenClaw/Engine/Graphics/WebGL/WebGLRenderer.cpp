@@ -209,7 +209,6 @@ bool WebGLRenderer::SupportsFeature(RendererFeature feature) {
         case RendererFeature::TextureCompression:
         case RendererFeature::ShaderSupport:
             return true;
-        case RendererFeature::WebGPU:
         case RendererFeature::MultiSampling:
             return false;
         default:

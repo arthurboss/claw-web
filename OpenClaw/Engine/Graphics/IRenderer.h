@@ -10,7 +10,6 @@ struct MenuTextData;
 
 // Renderer feature enumeration
 enum class RendererFeature {
-    WebGPU,
     WebGL2,
     WebGL1,
     TextureCompression,

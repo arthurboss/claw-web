@@ -186,7 +186,6 @@ bool PureWebGLRenderer::SupportsFeature(RendererFeature feature) {
         case RendererFeature::WebGL1:
         case RendererFeature::WebGL2:
             return true;
-        case RendererFeature::WebGPU:
         case RendererFeature::TextureCompression:
         case RendererFeature::ShaderSupport:
         case RendererFeature::MultiSampling:
