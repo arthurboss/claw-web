@@ -44,6 +44,11 @@ if (Emscripten)
     add_definitions(-DSDL_VIDEO_OPENGL=1)
     add_definitions(-DSDL_VIDEO_OPENGL_ES2_DISABLE_EXTERNAL_TEXTURE=1)
     add_definitions(-DSDL_VIDEO_OPENGL_ES2_DISABLE_ANDROID_TEXTURE=1)
+    # Temporarily disable WebGPU while we update to Dawn API
+    add_definitions(-DDISABLE_WEBGPU=1)
+    # TODO: Re-enable after updating WebGPU code for Emscripten 5.0+ Dawn API
+    # add_compile_options("--use-port=emdawnwebgpu")
+    # add_link_options("--use-port=emdawnwebgpu")
 endif (Emscripten)
 
 # Directories with libs
@@ -66,6 +71,28 @@ else (Android)
 endif(Android)
 
 add_subdirectory(OpenClaw)
+
+    # Copy JavaScript graphics bridges for WASM builds
+    if (Emscripten)
+        add_custom_command(TARGET openclaw POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/OpenClaw/Engine/Graphics/WASM/js/graphics-bridge.js
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/graphics-bridge.js
+            COMMENT "Copying WebGL graphics bridge JavaScript file for WASM build"
+        )
+        add_custom_command(TARGET openclaw POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/OpenClaw/Engine/Graphics/WASM/js/webgpu-bridge.js
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/webgpu-bridge.js
+            COMMENT "Copying WebGPU graphics bridge JavaScript file for WASM build"
+        )
+        add_custom_command(TARGET openclaw POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_SOURCE_DIR}/OpenClaw/Engine/Graphics/WASM/js/texture-bridge.js
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/texture-bridge.js
+            COMMENT "Copying texture bridge JavaScript file for WASM build"
+        )
+    endif (Emscripten)
 
 # Linker settings
 list(APPEND TARGET_LIBS
@@ -111,3 +138,42 @@ else (Emscripten)
 endif (Emscripten)
 
 target_link_libraries(openclaw ${TARGET_LIBS})
+
+# Generic Graphics Demo
+if (Emscripten)
+    add_executable(generic_graphics_demo 
+        examples/generic_graphics_demo.cpp
+        OpenClaw/Engine/Graphics/Generic/GenericGraphicsModule.cpp
+        OpenClaw/Engine/Graphics/Generic/WASM/PureWebGLRenderer.cpp
+        OpenClaw/Engine/Graphics/Generic/WASM/PureWebGPURenderer.cpp
+    )
+    
+    set_target_properties(generic_graphics_demo PROPERTIES 
+        LINK_FLAGS "-s USE_WEBGL2=1 -s MAX_WEBGL_VERSION=2 -s FETCH=1 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1"
+    )
+    
+    target_include_directories(generic_graphics_demo PRIVATE 
+        .
+        OpenClaw/Engine/Graphics/Generic
+    )
+
+    # Generic Video Demo
+    add_executable(generic_video_demo
+        examples/generic_video_demo.cpp
+        OpenClaw/Engine/Graphics/Generic/GenericGraphicsModule.cpp
+        OpenClaw/Engine/Graphics/Generic/WASM/PureWebGLRenderer.cpp
+        OpenClaw/Engine/Graphics/Generic/WASM/PureWebGPURenderer.cpp
+        OpenClaw/Engine/Video/Generic/GenericVideoModule.cpp
+        OpenClaw/Engine/Video/Generic/WASM/WasmVideoPlayer.cpp
+    )
+    
+    set_target_properties(generic_video_demo PROPERTIES 
+        LINK_FLAGS "-s USE_WEBGL2=1 -s MAX_WEBGL_VERSION=2 -s FETCH=1 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1"
+    )
+    
+    target_include_directories(generic_video_demo PRIVATE 
+        .
+        OpenClaw/Engine/Graphics/Generic
+        OpenClaw/Engine/Video/Generic
+    )
+endif (Emscripten)

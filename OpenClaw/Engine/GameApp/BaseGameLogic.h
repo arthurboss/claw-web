@@ -12,6 +12,7 @@ class GameSaveMgr;
 class LevelData;
 class ActorFactory;
 class BaseGameApp;
+class IGenericVideo;
 class BaseGameLogic : public IGameLogic
 {
     // This is just to give game app access to game views
@@ -60,6 +61,7 @@ public:
     virtual bool VLoadGame(const char* xmlLevelResource);
     virtual bool VLoadScoreScreen(const char* xmlScoreScreenResource);
     virtual bool VEnterMenu(const char* xmlMenuResource);
+    virtual void VPlayCutscene(const std::string& videoSource);
     virtual void VSetProxy();
 
     // Logic update
@@ -130,6 +132,8 @@ protected:
     shared_ptr<IGamePhysics> m_pPhysics;
     shared_ptr<LevelData> m_pCurrentLevel;
     shared_ptr<GameSaveMgr> m_pGameSaveMgr;
+
+    shared_ptr<IGenericVideo> m_pActiveVideo;
 
     int m_SelectedLevel;
 
