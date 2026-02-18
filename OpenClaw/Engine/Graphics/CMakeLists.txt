@@ -25,12 +25,10 @@ target_sources(openclaw PRIVATE
 
 # Platform-specific graphics implementations
 if (EMSCRIPTEN)
-           # WASM builds: Use pure WebGL/WebGPU renderers (no SDL dependencies)
+           # WASM builds: Use pure WebGL renderer (no SDL dependencies)
        target_sources(openclaw PRIVATE
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGLRenderer.h
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGLRenderer.cpp
-           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGPURenderer.h
-           ${CMAKE_CURRENT_SOURCE_DIR}/WASM/PureWebGPURenderer.cpp
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/TextureManager.h
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/TextureManager.cpp
            ${CMAKE_CURRENT_SOURCE_DIR}/WASM/Sprite.h
@@ -47,8 +45,6 @@ if (EMSCRIPTEN)
             # Generic module WASM renderers
             ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGLRenderer.h
             ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGLRenderer.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGPURenderer.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/Generic/WASM/PureWebGPURenderer.cpp
         )
 else()
     # Non-WASM builds: Use existing SDL-based renderers (unchanged)

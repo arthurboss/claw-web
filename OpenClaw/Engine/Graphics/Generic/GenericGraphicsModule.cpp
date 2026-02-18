@@ -5,7 +5,6 @@
 // Platform-specific includes
 #ifdef __EMSCRIPTEN__
 #include "WASM/PureWebGLRenderer.h"
-#include "WASM/PureWebGPURenderer.h"
 #endif
 
 // Future platform-specific includes will go here
@@ -427,7 +426,7 @@ std::vector<std::string> GenericGraphicsModule::GetPlatformRenderers() const {
     std::vector<std::string> renderers;
     
     if (m_platform == "WASM") {
-        renderers = {"WebGL", "WebGPU"};
+        renderers = {"WebGL"};
     } else if (m_platform == "Windows" || m_platform == "Linux") {
         renderers = {"OpenGL", "Vulkan"};
     } else if (m_platform == "Android") {
@@ -446,11 +445,6 @@ std::unique_ptr<IGenericRenderer> GenericGraphicsModule::CreateRenderer(const st
         if (rendererType == "WebGL") {
             return std::unique_ptr<IGenericRenderer>(new GenericWebGLRenderer());
         }
-#ifndef DISABLE_WEBGPU
-        else if (rendererType == "WebGPU") {
-            return std::unique_ptr<IGenericRenderer>(new GenericWebGPURenderer());
-        }
-#endif
     }
     
     // For other platforms, return nullptr (not implemented yet)
@@ -460,24 +454,13 @@ std::unique_ptr<IGenericRenderer> GenericGraphicsModule::CreateRenderer(const st
 
 bool GenericGraphicsModule::InitializeWASMRenderers(int width, int height) {
     std::cout << "Initializing WASM renderers..." << std::endl;
-    
+
     // Initialize WebGL renderer
     m_wasmWebGLRenderer = std::unique_ptr<GenericWebGLRenderer>(new GenericWebGLRenderer());
     if (!m_wasmWebGLRenderer->Initialize(width, height)) {
         std::cerr << "Failed to initialize WASM WebGL renderer" << std::endl;
         return false;
     }
-    
-    // Initialize WebGPU renderer if possible
-#ifndef DISABLE_WEBGPU
-    m_wasmWebGPURenderer = std::unique_ptr<GenericWebGPURenderer>(new GenericWebGPURenderer());
-    // Note: WebGPU initialization might be async or fail if not supported
-    if (!m_wasmWebGPURenderer->Initialize(width, height)) {
-        std::cout << "Available WebGPU renderer could not be initialized (might be standard behavior for fallback check)" << std::endl;
-    } else {
-        std::cout << "WASM WebGPU renderer initialized successfully" << std::endl;
-    }
-#endif
 
     std::cout << "WASM renderers initialized successfully" << std::endl;
     return true;

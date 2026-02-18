@@ -134,7 +134,6 @@ if (Emscripten)
         examples/generic_graphics_demo.cpp
         OpenClaw/Engine/Graphics/Generic/GenericGraphicsModule.cpp
         OpenClaw/Engine/Graphics/Generic/WASM/PureWebGLRenderer.cpp
-        OpenClaw/Engine/Graphics/Generic/WASM/PureWebGPURenderer.cpp
     )
     
     set_target_properties(generic_graphics_demo PROPERTIES 
@@ -151,7 +150,6 @@ if (Emscripten)
         examples/generic_video_demo.cpp
         OpenClaw/Engine/Graphics/Generic/GenericGraphicsModule.cpp
         OpenClaw/Engine/Graphics/Generic/WASM/PureWebGLRenderer.cpp
-        OpenClaw/Engine/Graphics/Generic/WASM/PureWebGPURenderer.cpp
         OpenClaw/Engine/Video/Generic/GenericVideoModule.cpp
         OpenClaw/Engine/Video/Generic/WASM/WasmVideoPlayer.cpp
     )

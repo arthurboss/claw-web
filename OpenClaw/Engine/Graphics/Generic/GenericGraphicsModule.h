@@ -9,7 +9,6 @@
 
 // Forward declarations for platform-specific implementations
 class GenericWebGLRenderer;
-class GenericWebGPURenderer;
 
 /**
  * @brief Generic Graphics Module - Cross-platform graphics solution
@@ -379,5 +378,4 @@ private:
     
     // Platform-specific renderer instances (for fallback)
     std::unique_ptr<GenericWebGLRenderer> m_wasmWebGLRenderer;
-    std::unique_ptr<GenericWebGPURenderer> m_wasmWebGPURenderer;
 };
