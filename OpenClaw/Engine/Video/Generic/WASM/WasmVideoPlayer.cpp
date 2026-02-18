@@ -160,6 +160,14 @@ EM_JS(void, js_PlayVideo, (int id), {
     player.video.style.top = '8px';
     player.video.style.left = '8px';
     player.video.style.objectFit = 'contain'; // Maintain aspect ratio
+
+    // Scale video to match canvas/game dimensions
+    var canvas = Module.canvas || document.querySelector('canvas');
+    if (canvas) {
+      player.video.style.width = canvas.width + 'px';
+      player.video.style.height = canvas.height + 'px';
+    }
+
     document.body.appendChild(player.video);
 
     // Try to play with sound first, fallback to muted if blocked
