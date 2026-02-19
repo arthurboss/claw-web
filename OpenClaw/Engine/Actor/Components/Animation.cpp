@@ -292,8 +292,6 @@ void Animation::PlayFrameSound(const std::string& sound)
 {
     assert(m_pOwner && m_pOwner->m_pOwner && m_pOwner->m_pOwner->GetPositionComponent());
 
-    std::cout << "Animation::PlayFrameSound: Anim=" << _name << ", Sound=" << sound << std::endl;
-
     SoundInfo soundInfo(sound);
     soundInfo.setDistanceEffect = true;
     soundInfo.soundSourcePosition = m_pOwner->m_pOwner->GetPositionComponent()->GetPosition();

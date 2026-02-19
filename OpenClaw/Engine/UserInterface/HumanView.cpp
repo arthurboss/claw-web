@@ -638,8 +638,6 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
                 assert(pSound != nullptr);
                 if (pSound && pSound->abuf) {
                     float volume = (static_cast<float>(soundProperties.volume) / 100.0f);
-                    // Log the loops value for debugging
-                    std::cout << "PlaySoundWithPath: " << pSoundInfo->soundToPlay << " loops=" << soundProperties.loops << std::endl;
                     g_pApp->GetAudio()->GetAudioSystem()->PlaySoundWithPath(pSoundInfo->soundToPlay, (const char*)pSound->abuf, pSound->alen, volume, soundProperties.loops);
                 }
 #else

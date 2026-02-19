@@ -116,10 +116,8 @@ bool GraphicsManager::TryInitializeWebGPU() {
     // WebGPU detection via JavaScript
     bool webgpuAvailable = EM_ASM_INT({
         if (typeof navigator !== 'undefined' && navigator.gpu) {
-            console.log('WebGPU detected in browser');
             return 1;
         }
-        console.log('WebGPU not available');
         return 0;
     });
     
@@ -146,10 +144,8 @@ bool GraphicsManager::TryInitializeWebGL2() {
         const canvas = document.createElement('canvas');
         const gl = canvas.getContext('webgl2');
         if (gl) {
-            console.log('WebGL2 available');
             return 1;
         }
-        console.log('WebGL2 not available');
         return 0;
     });
     
@@ -171,10 +167,8 @@ bool GraphicsManager::TryInitializeWebGL1() {
         const canvas = document.createElement('canvas');
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
         if (gl) {
-            console.log('WebGL1 available');
             return 1;
         }
-        console.log('WebGL1 not available');
         return 0;
     });
     

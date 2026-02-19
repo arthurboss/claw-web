@@ -32,8 +32,6 @@ bool TextureManager::Initialize() {
         }
         window.textureBridge.initialize();
     });
-    
-    EM_ASM({ console.log("TextureManager initialized via JS bridge."); });
 #endif
     return true;
 }
@@ -51,8 +49,6 @@ void TextureManager::Shutdown() {
             window.textureBridge = null;
         }
     });
-    
-    EM_ASM({ console.log("TextureManager shutdown complete."); });
 #endif
 }
 
@@ -144,14 +140,10 @@ bool TextureManager::LoadTextureInternal(const std::string& name, int textureId)
         m_nameToId[name] = textureId;
         m_totalMemoryUsage += memoryUsage;
         m_texturesLoaded++;
-        
-        EM_ASM_({ console.log("Texture loaded:", UTF8ToString($0), "ID:", $1, "Size:", $2, "x", $3); },
-                name.c_str(), textureId, width, height);
-        
+
         return true;
     }
-    
-    EM_ASM_({ console.error("Failed to load texture:", UTF8ToString($0)); }, name.c_str());
+
     return false;
 #else
     return false;

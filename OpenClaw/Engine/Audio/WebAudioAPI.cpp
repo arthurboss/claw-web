@@ -66,8 +66,6 @@ public:
                     document.addEventListener('click', resumeAudio);
                     document.addEventListener('keydown', resumeAudio);
                     document.addEventListener('touchstart', resumeAudio);
-                    
-                    console.log("Web Audio API initialized successfully");
                     return true;
                 }
             } catch (e) {
@@ -93,30 +91,21 @@ public:
 
     bool PlaySound(const std::string& name, float volume = 1.0f) {
         if (!isInitialized || !soundEnabled) return false;
-        
-        // For now, just log that we would play a sound
-        std::cout << "Would play sound: " << name << " at volume: " << volume << std::endl;
         return true;
     }
 
     bool PlayMusic(const std::string& name, bool looping = false) {
         if (!isInitialized || !musicEnabled) return false;
-        
-        // For now, just log that we would play music
-        std::cout << "Would play music: " << name << " looping: " << looping << std::endl;
         return true;
     }
 
     void StopMusic() {
-        std::cout << "Would stop music" << std::endl;
     }
 
     void PauseMusic() {
-        std::cout << "Would pause music" << std::endl;
     }
 
     void ResumeMusic() {
-        std::cout << "Would resume music" << std::endl;
     }
 
     void SetSoundVolume(float volume) {

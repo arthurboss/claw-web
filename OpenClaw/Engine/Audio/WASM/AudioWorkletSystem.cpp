@@ -44,12 +44,10 @@ bool AudioWorkletSystem::Initialize() {
     
     // Skip AudioWorklet for now, use direct Web Audio API
     m_initialized = true;
-    std::cout << "Web Audio API system initialized successfully" << std::endl;
     return true;
 #endif
 
     m_initialized = true;
-    std::cout << "AudioWorklet system initialized successfully" << std::endl;
     return true;
 }
 
@@ -68,8 +66,6 @@ void AudioWorkletSystem::Shutdown() {
 #ifdef __EMSCRIPTEN__
     Mix_CloseAudio();
 #endif
-    
-    std::cout << "AudioWorklet system shutdown" << std::endl;
 }
 
 bool AudioWorkletSystem::LoadSound(const std::string& name, const char* data, size_t size) {
@@ -79,16 +75,12 @@ bool AudioWorkletSystem::LoadSound(const std::string& name, const char* data, si
 
     // Store sound data
     m_soundBuffers[name] = std::vector<char>(data, data + size);
-    
-    // Try to load actual WAV files for menu sounds
-    std::cout << "Loading WAV file for: " << name << std::endl;
-    
+
 #ifdef __EMSCRIPTEN__
     // Try to load actual WAV files for menu sounds
     return EM_ASM_INT({
         try {
             const name = UTF8ToString($0);
-            console.log('Loading WAV file for:', name);
             
             // Map menu sound paths to our organized structure
             let wavFileName = 'sounds/menu/CLICK.WAV'; // default
@@ -102,12 +94,10 @@ bool AudioWorkletSystem::LoadSound(const std::string& name, const char* data, si
                 wavFileName = 'sounds/menu/MENUBED.WAV';
 
             }
-            
+
             // Use fetch to load the WAV file
-            console.log('Attempting to fetch:', wavFileName);
             fetch(wavFileName)
                 .then(function(response) {
-                    console.log('Fetch response status:', response.status, response.statusText);
                     if (!response.ok) {
                         throw new Error('Failed to load WAV file: ' + response.status + ' ' + response.statusText);
                     }
@@ -120,7 +110,6 @@ bool AudioWorkletSystem::LoadSound(const std::string& name, const char* data, si
                 .then(function(audioBuffer) {
                     window.soundBuffers = window.soundBuffers || new Map();
                     window.soundBuffers.set(name, audioBuffer);
-                    console.log('Loaded WAV sound:', name, 'size:', audioBuffer.length, 'channels:', audioBuffer.numberOfChannels, 'sampleRate:', audioBuffer.sampleRate);
                 })
                 .catch(function(error) {
                     console.error('Error loading WAV file:', error);
@@ -131,7 +120,6 @@ bool AudioWorkletSystem::LoadSound(const std::string& name, const char* data, si
                         frequency: 800,
                         duration: 0.5
                     });
-                    console.log('Fallback to oscillator for:', name);
                 });
             
             return true;
@@ -142,9 +130,6 @@ bool AudioWorkletSystem::LoadSound(const std::string& name, const char* data, si
     }, name.c_str());
 #endif
 
-    return true;
-
-    std::cout << "Loaded sound: " << name << " (size: " << size << " bytes)" << std::endl;
     return true;
 }
 
@@ -162,7 +147,6 @@ bool AudioWorkletSystem::PlaySound(const std::string& name, float volume) {
             
             const soundBuffers = window.soundBuffers;
             if (!soundBuffers || !soundBuffers.has(name)) {
-                console.log('Sound not loaded yet:', name, '- will retry later');
                 return false;
             }
             
@@ -184,8 +168,6 @@ bool AudioWorkletSystem::PlaySound(const std::string& name, float volume) {
                 gainNode.connect(audioContext.destination);
                 oscillator.start();
                 oscillator.stop(audioContext.currentTime + soundData.duration);
-                
-                console.log('Playing test sound:', name, 'frequency:', soundData.frequency, 'volume:', volume);
                 return true;
             } else {
                 // Play buffer-based sound (original code)
@@ -199,8 +181,6 @@ bool AudioWorkletSystem::PlaySound(const std::string& name, float volume) {
                 source.connect(gainNode);
                 gainNode.connect(audioContext.destination);
                 source.start();
-                
-                console.log('Playing buffer sound:', name, 'volume:', volume);
                 return true;
             }
         } catch (e) {
@@ -210,7 +190,6 @@ bool AudioWorkletSystem::PlaySound(const std::string& name, float volume) {
     }, name.c_str(), volume * m_soundVolume);
 #endif
 
-    std::cout << "Playing sound: " << name << " (volume: " << volume << ")" << std::endl;
     return true;
 }
 
@@ -278,7 +257,6 @@ bool AudioWorkletSystem::LoadMusic(const std::string& name, const char* data, si
     }, name.c_str(), data, size);
 #endif
 
-    std::cout << "Loaded music: " << name << " (size: " << size << " bytes)" << std::endl;
     return true;
 }
 
@@ -305,7 +283,6 @@ bool AudioWorkletSystem::PlayMusic(const std::string& name, bool looping) {
     }, name.c_str(), looping, m_musicVolume);
 #endif
 
-    std::cout << "Playing music: " << name << " (looping: " << (looping ? "yes" : "no") << ")" << std::endl;
     return true;
 }
 
@@ -335,8 +312,6 @@ void AudioWorkletSystem::StopMusic() {
         }
     });
 #endif
-
-    std::cout << "Music stopped" << std::endl;
 }
 
 void AudioWorkletSystem::PauseMusic() {
@@ -353,8 +328,6 @@ void AudioWorkletSystem::PauseMusic() {
         }
     });
 #endif
-
-    std::cout << "Music paused" << std::endl;
 }
 
 void AudioWorkletSystem::ResumeMusic() {
@@ -371,8 +344,6 @@ void AudioWorkletSystem::ResumeMusic() {
         }
     });
 #endif
-
-    std::cout << "Music resumed" << std::endl;
 }
 
 bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, const char* data, size_t size, float volume, int loops) {
@@ -382,16 +353,13 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
 
     // Store sound data
     m_soundBuffers[originalPath] = std::vector<char>(data, data + size);
-    
-    std::cout << "Loading WAV file for: " << originalPath << std::endl;
-    
+
 #ifdef __EMSCRIPTEN__
                     return EM_ASM_INT({
                     try {
                         const originalPath = UTF8ToString($0);
                         const volume = $1;
                         const loops = $2;
-            console.log('Loading WAV file for:', originalPath);
             
             // Map original paths to our organized structure
             let wavFileName = originalPath; // Default to trying the path directly
@@ -415,12 +383,10 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                  // Convert to lowercase if that matches your asset layout
                  wavFileName = wavFileName.toLowerCase();
             }
-            
+
             // Use fetch to load the WAV file
-            console.log('Attempting to fetch:', wavFileName);
             fetch(wavFileName)
                 .then(function(response) {
-                    // console.log('Fetch response status:', response.status, response.statusText);
                     if (!response.ok) {
                         throw new Error('Failed to load WAV file: ' + response.status + ' ' + response.statusText);
                     }
@@ -433,8 +399,7 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                 .then(function(audioBuffer) {
                     window.soundBuffers = window.soundBuffers || new Map();
                     window.soundBuffers.set(originalPath, audioBuffer);
-                    console.log('Loaded WAV sound:', originalPath, 'size:', audioBuffer.length, 'channels:', audioBuffer.numberOfChannels, 'sampleRate:', audioBuffer.sampleRate);
-                    
+
                     // Play the sound immediately after loading
                     const source = audioContext.createBufferSource();
                     const gainNode = audioContext.createGain();
@@ -476,7 +441,6 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                     if (isLooping || isMusic) {
                         if (window.activeSources.has(originalPath)) {
                             try {
-                                console.log('Stopping existing looped sound/music:', originalPath);
                                 window.activeSources.get(originalPath).stop();
                             } catch(e) {}
                         }
@@ -492,10 +456,6 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                     source.connect(gainNode);
                     gainNode.connect(audioContext.destination);
                     source.start();
-                    
-                    if (!isMusic) {
-                        console.log('Playing sound:', originalPath, 'volume:', finalVolume.toFixed(2), 'looping:', isLooping);
-                    }
                 })
                 .catch(function(error) {
                     console.error('Error playing WAV file:', originalPath, error);
@@ -506,7 +466,6 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                         frequency: 800,
                         duration: 0.5
                     });
-                    console.log('Fallback to oscillator for:', originalPath);
                 });
             
             return true;
@@ -620,8 +579,6 @@ bool AudioWorkletSystem::InitializeAudioWorklet() {
             document.addEventListener('click', resumeAudio);
             document.addEventListener('keydown', resumeAudio);
             document.addEventListener('touchstart', resumeAudio);
-            
-            console.log('AudioContext initialized for AudioWorklet');
             return true;
         } catch (e) {
             console.error('Error initializing AudioContext:', e);
@@ -683,7 +640,6 @@ bool AudioWorkletSystem::LoadAudioWorkletScript() {
                         try {
                             window.audioWorkletNode = new AudioWorkletNode(window.audioContext, 'game-audio-processor');
                             window.audioWorkletNode.connect(window.audioContext.destination);
-                            console.log('AudioWorklet loaded successfully');
                             resolve(true);
                         } catch (e) {
                             console.error('Error creating AudioWorkletNode:', e);

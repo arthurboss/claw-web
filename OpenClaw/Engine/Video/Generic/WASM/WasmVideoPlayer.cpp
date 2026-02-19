@@ -156,7 +156,6 @@ EM_JS(void, js_PlayVideo, (int id), {
     // Attach video to gameContainer so it's included in fullscreen context
     var gameContainer = document.getElementById('gameContainer');
     if (!gameContainer) {
-      console.error('gameContainer not found, falling back to body');
       gameContainer = document.body;
     }
 
@@ -172,18 +171,15 @@ EM_JS(void, js_PlayVideo, (int id), {
 
     // Try to play with sound first, fallback to muted if blocked
     player.video.play().catch(function(err) {
-      console.warn('Autoplay with sound blocked, trying muted:', err.message);
       player.video.muted = true;
       player.video.play()
           .then(function() {
-            console.log('Playing muted video. Click to unmute.');
             // Add click listener to unmute
             document.addEventListener(
                 'click',
                 function unmute() {
                   player.video.muted = false;
                   document.removeEventListener('click', unmute);
-                  console.log('Video unmuted after user interaction.');
                 },
                 {once : true});
           })
@@ -250,7 +246,6 @@ void WasmVideoPlayer::Update(float deltaTime) {
 
 void WasmVideoPlayer::OnVideoEnded() {
   m_isPlaying = false;
-  std::cout << "Video finished playing." << std::endl;
 }
 
 std::shared_ptr<ITexture> WasmVideoPlayer::GetFrameTexture() {
@@ -267,8 +262,6 @@ void WasmVideoPlayer::OnVideoLoaded(double duration, int width, int height) {
   m_duration = duration;
   m_width = width;
   m_height = height;
-  std::cout << "Video loaded: " << width << "x" << height << " (" << duration
-            << "s)" << std::endl;
 }
 
 void WasmVideoPlayer::OnFrameDecoded(int textureId, int width, int height) {
