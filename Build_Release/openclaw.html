@@ -1,237 +1,374 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
 
     <title>OpenClaw</title>
-    <meta name="description" content="Reimplementation of Captain Claw (1997) platformer">
+    <meta
+      name="description"
+      content="Reimplementation of Captain Claw (1997) platformer"
+    />
 
-    <meta property="og:title" content="OpenClaw project">
-    <meta property="og:description" content="OpenClaw open source project">
+    <meta property="og:title" content="OpenClaw project" />
+    <meta property="og:description" content="OpenClaw open source project" />
     <!--<meta property="og:image" content="preview.png">-->
 
     <!-- Change default viewport width here according to canvas width -->
-    <meta name="viewport" content="width=660">
+    <meta name="viewport" content="width=660" />
 
     <style>
-        :root {
-            color-scheme: light dark;
-            --primary-color: #4a90e2;
-            --primary-hover: #357abd;
-            --success-color: #52c41a;
-            --warning-color: #ff9800;
-            --danger-color: #f5222d;
-            --bg-primary: light-dark(#ffffff, #1a1a1a);
-            --bg-secondary: light-dark(#f5f5f5, #2a2a2a);
-            --text-primary: light-dark(#1a1a1a, #e0e0e0);
-            --text-secondary: light-dark(#666666, #999999);
-            --border-color: light-dark(#d0d0d0, #404040);
+      :root {
+        color-scheme: light dark;
+        --primary-color: #4a90e2;
+        --primary-hover: #357abd;
+        --success-color: #52c41a;
+        --warning-color: #ff9800;
+        --danger-color: #f5222d;
+        --bg-primary: light-dark(#ffffff, #1a1a1a);
+        --bg-secondary: light-dark(#f5f5f5, #2a2a2a);
+        --text-primary: light-dark(#1a1a1a, #e0e0e0);
+        --text-secondary: light-dark(#666666, #999999);
+        --border-color: light-dark(#d0d0d0, #404040);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: #000;
+        color: var(--text-primary);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica",
+          "Arial", sans-serif;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        width: 100vw;
+        height: 100vh;
+        transition:
+          background-color 0.3s,
+          color 0.3s;
+      }
+
+      .game-container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .game-header {
+        display: none; /* Hidden in fullscreen mobile mode */
+      }
+
+      .canvas-wrapper {
+        position: relative;
+        aspect-ratio: 4 / 3;
+        max-width: fit-content;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #000;
+      }
+
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #fff;
+        font-size: 1.2em;
+        text-align: center;
+      }
+
+      #canvasContainer {
+        position: relative;
+        display: flex;
+        max-width: 100%;
+        max-height: 100%;
+      }
+
+      canvas {
+        display: block;
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        outline: none;
+      }
+
+      canvas:focus {
+        outline: none;
+      }
+
+      .bottom-controls {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        z-index: 1000;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        opacity: 0;
+        animation: fadeInControls 0.3s ease-in 3.5s forwards;
+      }
+
+      @keyframes fadeInControls {
+        to {
+          opacity: 1;
         }
+      }
 
-        * {
-            box-sizing: border-box;
+      .control-btn {
+        width: 43px;
+        height: 43px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+        border-radius: 50%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+        transition: all 0.2s;
+        outline: none;
+        color: white;
+      }
+
+      .control-btn:hover {
+        background-color: rgba(0, 0, 0, 0.7);
+        transform: scale(1.1);
+      }
+
+      .control-btn:active {
+        transform: scale(0.95);
+      }
+
+      .control-btn.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+
+      /* FPS overlay - styled to match the in-game golden numbers with drop shadow */
+      #fpsOverlay {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        z-index: 999;
+        font-family: "Georgia", "Times New Roman", serif;
+        font-size: 22px;
+        font-weight: bold;
+        color: rgb(249, 229, 125);
+        /* Drop shadow towards bottom-right */
+        text-shadow:
+          2px 2px 0 #000,
+          2px 2px 0 #000,
+          2px 1px 0px rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+        user-select: none;
+        letter-spacing: 2px;
+      }
+
+      /* Initial page load animation */
+      #fpsOverlay.initial-load {
+        opacity: 0;
+        animation: fadeInOnLoad 0.3s ease-in 1s forwards;
+      }
+
+      @keyframes fadeInOnLoad {
+        to {
+          opacity: 1;
         }
+      }
 
-        body {
-            background-color: #000;
-            color: var(--text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            width: 100vw;
-            height: 100vh;
-            transition: background-color 0.3s, color 0.3s;
-        }
+      #fpsOverlay.hidden {
+        display: none;
+      }
 
-        .game-container {
-            width: 100%;
-            height: 100%;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .game-header {
-            display: none; /* Hidden in fullscreen mobile mode */
-        }
-
-        .canvas-wrapper {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #000;
-        }
-
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #fff;
-            font-size: 1.2em;
-            text-align: center;
-        }
-
-        canvas {
-            display: block;
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-            outline: none;
-        }
-
-        canvas:focus {
-            outline: none;
-        }
+      /* Hide FPS overlay and FPS button when video is playing */
+      body:has(video) #fpsOverlay,
+      body:has(video) #fpsBtn {
+        display: none;
+      }
 
 
+      .divider {
+        height: 1px;
+        background-color: var(--border-color);
+        margin: 15px 0;
+      }
 
-        .bottom-controls {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            z-index: 1000;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
+      #console {
+        width: 100%;
+        height: 200px;
+        display: block;
+        background-color: light-dark(#f5f5f5, #0a0a0a);
+        color: var(--text-primary);
+        font-family: "Consolas", "Monaco", "Courier New", monospace;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 10px;
+        font-size: 0.85em;
+        resize: vertical;
+        outline: none;
+      }
 
-        .fullscreen-btn {
-            width: 48px;
-            height: 48px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2em;
-            border-radius: 50%;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            cursor: pointer;
-            transition: all 0.2s;
-            outline: none;
-            color: white;
-        }
+      .debug_panel {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+      }
 
-        .fullscreen-btn:hover {
-            background-color: rgba(0, 0, 0, 0.7);
-            transform: scale(1.1);
-        }
+      .cheats {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
 
-        .fullscreen-btn:active {
-            transform: scale(0.95);
-        }
+      .cheats > div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
 
-        .divider {
-            height: 1px;
-            background-color: var(--border-color);
-            margin: 15px 0;
-        }
+      .cheats label {
+        font-weight: 600;
+        min-width: 120px;
+      }
 
-        #console {
-            width: 100%;
-            height: 200px;
-            display: block;
-            background-color: light-dark(#f5f5f5, #0a0a0a);
-            color: var(--text-primary);
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 10px;
-            font-size: 0.85em;
-            resize: vertical;
-            outline: none;
-        }
+      .cheats button {
+        background-color: var(--danger-color);
+        font-size: 0.85em;
+        padding: 8px 16px;
+      }
 
-        .debug_panel {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .cheats {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .cheats > div {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .cheats label {
-            font-weight: 600;
-            min-width: 120px;
-        }
-
-        .cheats button {
-            background-color: var(--danger-color);
-            font-size: 0.85em;
-            padding: 8px 16px;
-        }
-
-        .cheats button:hover {
-            background-color: #d32029;
-        }
-
+      .cheats button:hover {
+        background-color: #d32029;
+      }
     </style>
-</head>
-<body>
-<div class="game-container">
-    <div class="game-header">
-        <h1>OpenClaw - Captain Claw</h1>
-        <p>Classic platformer reimplemented in WebAssembly</p>
-    </div>
-
-    <div class="canvas-wrapper" id="gameContainer">
+  </head>
+  <body>
+    <div class="game-container">
+      <div class="canvas-wrapper" id="gameContainer">
         <span id="loading"></span>
-        <canvas id="canvas" width="640" height="480" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+        <div id="canvasContainer">
+          <canvas
+            id="canvas"
+            width="640"
+            height="480"
+            oncontextmenu="event.preventDefault()"
+            tabindex="-1"
+          ></canvas>
 
-        <!-- Bottom controls (just fullscreen) - inside gameContainer so it's visible in fullscreen -->
-        <div class="bottom-controls">
-            <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">⛶</button>
+          <!-- FPS overlay - styled to match in-game rendering -->
+          <div id="fpsOverlay" class="initial-load">60 FPS</div>
+
+          <!-- Bottom controls - inside canvasContainer so they're positioned relative to canvas -->
+          <div class="bottom-controls">
+            <button
+              class="control-btn active"
+              id="fpsBtn"
+              onclick="toggleFPS()"
+              title="Toggle FPS Display"
+            >
+              📊
+            </button>
+            <button
+              class="control-btn"
+              id="fullscreenBtn"
+              onclick="toggleFullscreen()"
+              title="Enter Fullscreen"
+            >
+              ⛶
+            </button>
+          </div>
         </div>
+      </div>
     </div>
-</div>
-<div class="debug_panel" style="display:none">
-    <div class="cheats">
+    <div class="debug_panel" style="display: none">
+      <div class="cheats">
         <div>
-            Cheat codes:
-            <button onclick="CheatCodeManager.infiniteJumps()">Infinite Jumps</button>
-            <button onclick="CheatCodeManager.invincible()">God Mode</button>
-            <button onclick="CheatCodeManager.physicsDebug()">Physics Debug</button>
-            <button onclick="CheatCodeManager.infiniteAmmo()">Infinite Ammo</button>
+          Cheat codes:
+          <button onclick="CheatCodeManager.infiniteJumps()">
+            Infinite Jumps
+          </button>
+          <button onclick="CheatCodeManager.invincible()">God Mode</button>
+          <button onclick="CheatCodeManager.physicsDebug()">
+            Physics Debug
+          </button>
+          <button onclick="CheatCodeManager.infiniteAmmo()">
+            Infinite Ammo
+          </button>
         </div>
         <div>
-            Powerups:
-            <button onclick="CheatCodeManager.write('catnip'.toUpperCase(), Module.canvas)">Catnip</button>
-            <button onclick="CheatCodeManager.write('firesword'.toUpperCase(), Module.canvas)">Fire Sword</button>
-            <button onclick="CheatCodeManager.write('frostsword'.toUpperCase(), Module.canvas)">Frost Sword</button>
-            <button onclick="CheatCodeManager.write('lightningsword'.toUpperCase(), Module.canvas)">Lightning Sword</button>
-            <button onclick="CheatCodeManager.write('invisible'.toUpperCase(), Module.canvas)">Invisible</button>
-            <button onclick="CheatCodeManager.write('invulnerable'.toUpperCase(), Module.canvas)">Invulnerable</button>
+          Powerups:
+          <button
+            onclick="
+              CheatCodeManager.write('catnip'.toUpperCase(), Module.canvas)
+            "
+          >
+            Catnip
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write('firesword'.toUpperCase(), Module.canvas)
+            "
+          >
+            Fire Sword
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write('frostsword'.toUpperCase(), Module.canvas)
+            "
+          >
+            Frost Sword
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write(
+                'lightningsword'.toUpperCase(),
+                Module.canvas,
+              )
+            "
+          >
+            Lightning Sword
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write('invisible'.toUpperCase(), Module.canvas)
+            "
+          >
+            Invisible
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write(
+                'invulnerable'.toUpperCase(),
+                Module.canvas,
+              )
+            "
+          >
+            Invulnerable
+          </button>
         </div>
+      </div>
+      <button onclick="Console.clear()">Clear Console</button>
+      <textarea id="console" rows="12"></textarea>
     </div>
-    <button onclick="Console.clear()">Clear Console</button>
-    <textarea id="console" rows="12"></textarea>
-</div>
 
-
-<script type='text/javascript'>
-    var CheatCodeManager = {
+    <script type="text/javascript">
+      var CheatCodeManager = {
         jumps: false,
         god: false,
         physics: false,
@@ -239,114 +376,195 @@
         winsize: "640 480",
         scale: -1,
         pushEvent: function (key, event, target) {
-            return target.dispatchEvent(
-                new KeyboardEvent(event, {
-                    'keyCode': key,
-                    'charCode': key,
-                    'view': window,
-                    'bubbles': true,
-                    'cancelable': true
-                }));
+          return target.dispatchEvent(
+            new KeyboardEvent(event, {
+              keyCode: key,
+              charCode: key,
+              view: window,
+              bubbles: true,
+              cancelable: true,
+            }),
+          );
         },
         click: function (key, target) {
-            if (CheatCodeManager.pushEvent(key, 'keydown', target)) {
-                CheatCodeManager.pushEvent(key, 'keypress', target);
-            }
-            CheatCodeManager.pushEvent(key, 'keyup', target);
+          if (CheatCodeManager.pushEvent(key, "keydown", target)) {
+            CheatCodeManager.pushEvent(key, "keypress", target);
+          }
+          CheatCodeManager.pushEvent(key, "keyup", target);
         },
         openOrCloseConsole: function (target) {
-            CheatCodeManager.click(192, target); // "`"
-            CheatCodeManager.click(8, target); // Backspace
-            CheatCodeManager.click(8, target); // Backspace
+          CheatCodeManager.click(192, target); // "`"
+          CheatCodeManager.click(8, target); // Backspace
+          CheatCodeManager.click(8, target); // Backspace
         },
         write: function (cheat, target) {
-            CheatCodeManager.openOrCloseConsole(target);
-            for (var i = 0; i < cheat.length; i++) {
-//            	console.log("Writing: " + cheat.charCodeAt(i));
-                CheatCodeManager.click(cheat.charCodeAt(i), target);
-            }
-            CheatCodeManager.click(13, target); // "Enter"
-            CheatCodeManager.openOrCloseConsole(target);
+          CheatCodeManager.openOrCloseConsole(target);
+          for (var i = 0; i < cheat.length; i++) {
+            //            	console.log("Writing: " + cheat.charCodeAt(i));
+            CheatCodeManager.click(cheat.charCodeAt(i), target);
+          }
+          CheatCodeManager.click(13, target); // "Enter"
+          CheatCodeManager.openOrCloseConsole(target);
         },
         infiniteJumps: function () {
-            CheatCodeManager.jumps = !CheatCodeManager.jumps;
-            CheatCodeManager.write("INFINITEJUMP " + (CheatCodeManager.jumps ? "ON" : "OFF"), Module.canvas);
+          CheatCodeManager.jumps = !CheatCodeManager.jumps;
+          CheatCodeManager.write(
+            "INFINITEJUMP " + (CheatCodeManager.jumps ? "ON" : "OFF"),
+            Module.canvas,
+          );
         },
         invincible: function () {
-            CheatCodeManager.god = !CheatCodeManager.god;
-            CheatCodeManager.write("INVINCIBLE " + (CheatCodeManager.god ? "ON" : "OFF"), Module.canvas);
+          CheatCodeManager.god = !CheatCodeManager.god;
+          CheatCodeManager.write(
+            "INVINCIBLE " + (CheatCodeManager.god ? "ON" : "OFF"),
+            Module.canvas,
+          );
         },
         physicsDebug: function () {
-            CheatCodeManager.physics = !CheatCodeManager.physics;
-            CheatCodeManager.write("PHYSICSDEBUG " + (CheatCodeManager.physics ? "ON" : "OFF"), Module.canvas);
+          CheatCodeManager.physics = !CheatCodeManager.physics;
+          CheatCodeManager.write(
+            "PHYSICSDEBUG " + (CheatCodeManager.physics ? "ON" : "OFF"),
+            Module.canvas,
+          );
         },
         infiniteAmmo: function () {
-            CheatCodeManager.ammo = !CheatCodeManager.ammo;
-            CheatCodeManager.write("INFINITEAMMO " + (CheatCodeManager.ammo ? "ON" : "OFF"), Module.canvas);
-        }
-    };
-</script>
-<script type='text/javascript'>
-    var Console = {
-        elem: document.getElementById('console'),
+          CheatCodeManager.ammo = !CheatCodeManager.ammo;
+          CheatCodeManager.write(
+            "INFINITEAMMO " + (CheatCodeManager.ammo ? "ON" : "OFF"),
+            Module.canvas,
+          );
+        },
+      };
+    </script>
+    <script type="text/javascript">
+      var Console = {
+        elem: document.getElementById("console"),
         enabled: false,
         toggleConsole: function () {
-            Console.enabled = !Console.enabled;
-            Console.elem.parentNode.style.display = Console.enabled ? "block" : "none";
+          Console.enabled = !Console.enabled;
+          Console.elem.parentNode.style.display = Console.enabled
+            ? "block"
+            : "none";
         },
         printToConsole: function (text) {
-            if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-            console.log(text);
-            Console.elem.value += text + "\n";
+          if (arguments.length > 1)
+            text = Array.prototype.slice.call(arguments).join(" ");
+          console.log(text);
+          Console.elem.value += text + "\n";
         },
         clear: function () {
-            Console.elem.value = '';
+          Console.elem.value = "";
         },
-    };
-</script>
-<script type='text/javascript'>
-    // Smart fullscreen function - always fullscreens the game container
-    function toggleFullscreen() {
-        var gameContainer = document.getElementById('gameContainer');
+      };
+    </script>
+    <script type="text/javascript">
+      // Remove initial-load class after animation completes
+      setTimeout(function() {
+        var overlay = document.getElementById("fpsOverlay");
+        if (overlay) {
+          overlay.classList.remove("initial-load");
+        }
+      }, 1300); // 1s delay + 0.3s animation
+
+      // FPS measurement and display
+      var fpsEnabled = true;
+      var fpsFrameCount = 0;
+      var fpsLastTime = performance.now();
+      var fpsCurrentValue = 60;
+
+      // Measure and update FPS
+      function updateFPSCounter() {
+        if (!fpsEnabled) return;
+
+        fpsFrameCount++;
+        var now = performance.now();
+        var elapsed = now - fpsLastTime;
+
+        // Update FPS every second
+        if (elapsed >= 1000) {
+          fpsCurrentValue = Math.round((fpsFrameCount * 1000) / elapsed);
+          fpsFrameCount = 0;
+          fpsLastTime = now;
+
+          // Update overlay
+          var overlay = document.getElementById("fpsOverlay");
+          if (overlay) {
+            overlay.textContent = fpsCurrentValue + " FPS";
+          }
+        }
+
+        // Continue measuring
+        requestAnimationFrame(updateFPSCounter);
+      }
+
+      // Start FPS counter when page loads
+      if (typeof requestAnimationFrame !== "undefined") {
+        requestAnimationFrame(updateFPSCounter);
+      }
+
+      // Toggle FPS display overlay
+      function toggleFPS() {
+        fpsEnabled = !fpsEnabled;
+        var btn = document.getElementById("fpsBtn");
+        var overlay = document.getElementById("fpsOverlay");
+
+        // Update button style and overlay visibility
+        if (fpsEnabled) {
+          btn.classList.add("active");
+          btn.title = "Hide FPS Display";
+          if (overlay) overlay.classList.remove("hidden");
+          // Restart measurement
+          fpsFrameCount = 0;
+          fpsLastTime = performance.now();
+          requestAnimationFrame(updateFPSCounter);
+        } else {
+          btn.classList.remove("active");
+          btn.title = "Show FPS Display";
+          if (overlay) overlay.classList.add("hidden");
+        }
+      }
+
+      // Smart fullscreen function - always fullscreens the game container
+      function toggleFullscreen() {
+        var gameContainer = document.getElementById("gameContainer");
         if (gameContainer) {
-            if (!document.fullscreenElement) {
-                gameContainer.requestFullscreen().catch(function(err) {
-                    console.error('Fullscreen request failed:', err);
-                });
-            } else {
-                document.exitFullscreen();
-            }
+          if (!document.fullscreenElement) {
+            gameContainer.requestFullscreen().catch(function (err) {
+              console.error("Fullscreen request failed:", err);
+            });
+          } else {
+            document.exitFullscreen();
+          }
         }
-    }
+      }
 
-    // Update fullscreen button icon based on state
-    function updateFullscreenButton() {
-        var btn = document.getElementById('fullscreenBtn');
+      // Update fullscreen button icon based on state
+      function updateFullscreenButton() {
+        var btn = document.getElementById("fullscreenBtn");
         if (btn) {
-            if (document.fullscreenElement) {
-                btn.textContent = '✕'; // Exit icon when in fullscreen
-                btn.title = 'Exit Fullscreen (ESC)';
-            } else {
-                btn.textContent = '⛶'; // Fullscreen icon when windowed
-                btn.title = 'Enter Fullscreen';
-            }
+          if (document.fullscreenElement) {
+            btn.textContent = "✕"; // Exit icon when in fullscreen
+            btn.title = "Exit Fullscreen (ESC)";
+          } else {
+            btn.textContent = "⛶"; // Fullscreen icon when windowed
+            btn.title = "Enter Fullscreen";
+          }
         }
-    }
+      }
 
-    // Listen for fullscreen changes to update button
-    document.addEventListener('fullscreenchange', updateFullscreenButton);
+      // Listen for fullscreen changes to update button
+      document.addEventListener("fullscreenchange", updateFullscreenButton);
 
-    // Initialize button state on load
-    updateFullscreenButton();
+      // Initialize button state on load
+      updateFullscreenButton();
+    </script>
+    <script type="text/javascript">
+      var loadingElement = document.getElementById("loading");
 
-</script>
-<script type='text/javascript'>
-    var loadingElement = document.getElementById("loading");
-
-    // Emscripten structure
-    var Module = {
-        preRun: [function () {
-            
+      // Emscripten structure
+      var Module = {
+        preRun: [
+          function () {
             // Here you can change canvas size dynamically if it's needed
             // var ratio = window.devicePixelRatio || 1;
             // Module.canvas.width = Math.max(screen.width, screen.height) * ratio;
@@ -355,103 +573,117 @@
             loadingElement.remove();
             loadingElement = null;
             Module.canvas.style.display = "block";
-        }],
+          },
+        ],
         canvas: (function () {
-            var canvas = document.getElementById('canvas');
+          var canvas = document.getElementById("canvas");
 
-            // As a default initial behavior, pop up an alert when webgl context is lost. To make your
-            // application robust, you may want to override this behavior before shipping!
-            // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
-            canvas.addEventListener("webglcontextlost", function (e) {
-                alert('WebGL context lost. You will need to reload the page.');
-                e.preventDefault();
-            }, false);
+          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+          // application robust, you may want to override this behavior before shipping!
+          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+          canvas.addEventListener(
+            "webglcontextlost",
+            function (e) {
+              alert("WebGL context lost. You will need to reload the page.");
+              e.preventDefault();
+            },
+            false,
+          );
 
-            return canvas;
+          return canvas;
         })(),
 
         dataFileDownloads: {
-            "openclaw.data": {
-                total: 0,
-                loaded: 0,
-            }
+          "openclaw.data": {
+            total: 0,
+            loaded: 0,
+          },
         },
         setStatus: function (text) {
-            if (loadingElement) {
-                Module.canvas.style.display = "none";
-                var progress = (Module.dataFileDownloads["openclaw.data"].loaded / Module.dataFileDownloads["openclaw.data"].total * 100) | 0;
-                if (progress < 100) {
-                    loadingElement.innerHTML = "Game resources are downloading... " + (progress | 0) + "%";
-                } else {
-                    loadingElement.innerHTML = "Game resources have been downloaded. Game is loading...";
-                }
+          if (loadingElement) {
+            Module.canvas.style.display = "none";
+            var progress =
+              ((Module.dataFileDownloads["openclaw.data"].loaded /
+                Module.dataFileDownloads["openclaw.data"].total) *
+                100) |
+              0;
+            if (progress < 100) {
+              loadingElement.innerHTML =
+                "Game resources are downloading... " + (progress | 0) + "%";
+            } else {
+              loadingElement.innerHTML =
+                "Game resources have been downloaded. Game is loading...";
             }
+          }
         },
 
         // Could be removed. This code for debug build only
         print: Console.printToConsole,
-        printErr: Console.printToConsole
-    };
+        printErr: Console.printToConsole,
+      };
 
-    function loadGame() {
+      function loadGame() {
         var script = document.createElement("script");
         script.async = !0;
         script.type = "text/javascript";
         script.src = "openclaw.js";
         script.onerror = function (t) {
-            console.error("Script Error");
-            console.error(t);
+          console.error("Script Error");
+          console.error(t);
         };
         var r = document.getElementsByTagName("script")[0];
         r.parentNode.insertBefore(script, r);
-    }
-    
-    // Use screen dimensions for resolution (works for both windowed and fullscreen)
-    // CSS will scale the canvas to fit the window
-    var screenWidth = screen.width;
-    var screenHeight = screen.height;
-    var targetAspect = 4 / 3;
+      }
 
-    var detectedWidth, detectedHeight;
+      // Use screen dimensions for resolution (works for both windowed and fullscreen)
+      // CSS will scale the canvas to fit the window
+      var screenWidth = screen.width;
+      var screenHeight = screen.height;
+      var targetAspect = 4 / 3;
 
-    if (screenWidth / screenHeight > targetAspect) {
+      var detectedWidth, detectedHeight;
+
+      if (screenWidth / screenHeight > targetAspect) {
         // Screen is wider than 4:3 - limit by height
         detectedHeight = screenHeight;
         detectedWidth = Math.round(screenHeight * targetAspect);
-    } else {
+      } else {
         // Screen is taller than 4:3 - limit by width
         detectedWidth = screenWidth;
         detectedHeight = Math.round(screenWidth / targetAspect);
-    }
+      }
 
-    // Cap at reasonable maximum to avoid performance issues
-    var maxDimension = 1920;
-    if (detectedHeight > maxDimension * (3/4)) {
-        detectedHeight = Math.round(maxDimension * (3/4));
+      // Cap at reasonable maximum to avoid performance issues
+      var maxDimension = 1920;
+      if (detectedHeight > maxDimension * (3 / 4)) {
+        detectedHeight = Math.round(maxDimension * (3 / 4));
         detectedWidth = Math.round(detectedHeight * targetAspect);
-    }
+      }
 
-    CheatCodeManager.winsize = detectedWidth + " " + detectedHeight;
-    CheatCodeManager.scale = -1; // Always use default scale
+      CheatCodeManager.winsize = detectedWidth + " " + detectedHeight;
+      CheatCodeManager.scale = -1; // Always use default scale
 
-    window.localStorage.setItem("width", detectedWidth);
-    window.localStorage.setItem("height", detectedHeight);
-    window.localStorage.setItem("scale", -1);
-    
-    if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+      window.localStorage.setItem("width", detectedWidth);
+      window.localStorage.setItem("height", detectedHeight);
+      window.localStorage.setItem("scale", -1);
+
+      if (
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent,
+        )
+      ) {
         //document.getElementById('viewport').width = "100%"
-//        document.getElementById('canvas').width = "640"
-//        document.getElementById('canvas').height = "480"
-    }
-    
-//    console.log("CW: " + document.getElementById('canvas').width + ", CH: " + document.getElementById('canvas').height);
-	
-    loadGame();
-</script>
+        //        document.getElementById('canvas').width = "640"
+        //        document.getElementById('canvas').height = "480"
+      }
 
-<!-- Graphics Bridges for WASM Module -->
-<script src="graphics-bridge.js"></script>
-<script src="texture-bridge.js"></script>
+      //    console.log("CW: " + document.getElementById('canvas').width + ", CH: " + document.getElementById('canvas').height);
 
-</body>
+      loadGame();
+    </script>
+
+    <!-- Graphics Bridges for WASM Module -->
+    <script src="graphics-bridge.js"></script>
+    <script src="texture-bridge.js"></script>
+  </body>
 </html>

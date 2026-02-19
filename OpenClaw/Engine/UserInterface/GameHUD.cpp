@@ -78,7 +78,7 @@ bool ScreenElementHUD::Initialize(SDL_Renderer* pRenderer, shared_ptr<CameraNode
         m_LivesNumbers[i] = PidResourceLoader::LoadAndReturnImage("/game/images/interface/smallnumbers/000.pid", g_pApp->GetCurrentPalette());
     }
 
-    UpdateFPS(0);
+    UpdateFPS(0, 0);
 
     return true;
 }
@@ -159,8 +159,9 @@ void ScreenElementHUD::VOnRender(uint32 msDiff)
     {
         SDL_Rect renderRect;
         SDL_QueryTexture(m_pFPSTexture, NULL, NULL, &renderRect.w, &renderRect.h);
-        renderRect.x = (int)((m_pCamera->GetWidth() / 2) / scale.x - 20);
-        renderRect.y = (int)(15 / scale.y);
+        // Position in bottom-left corner with small padding
+        renderRect.x = (int)(10 / scale.x);
+        renderRect.y = (int)((m_pCamera->GetHeight() / scale.y) - renderRect.h - 10);
         SDL_RenderCopy(m_pRenderer, m_pFPSTexture, NULL, &renderRect);
     }
 
@@ -193,18 +194,24 @@ void ScreenElementHUD::VOnRender(uint32 msDiff)
 
 void ScreenElementHUD::VOnUpdate(uint32 msDiff)
 {
-    static int msAccumulation = 0;
-    static int framesAccumulation = 0;
+    static uint32 fpsUpdateAccumulator = 0;
+    static uint32 lastRenderFPS = 0;
+    static uint32 lastLogicFPS = 0;
 
     UpdateCameraPosition();
 
-    msAccumulation += msDiff;
-    framesAccumulation++;
-    if (msAccumulation > 1000)
+    // Get FPS from BaseGameApp which tracks both render and logic FPS
+    uint32 renderFPS = g_pApp->GetRenderFPS();
+    uint32 logicFPS = g_pApp->GetLogicFPS();
+
+    // Only update FPS texture if values changed (updates every ~1 second)
+    fpsUpdateAccumulator += msDiff;
+    if (fpsUpdateAccumulator >= 500 || renderFPS != lastRenderFPS || logicFPS != lastLogicFPS)
     {
-        UpdateFPS(framesAccumulation);
-        msAccumulation = 0;
-        framesAccumulation = 0;
+        UpdateFPS(renderFPS, logicFPS);
+        lastRenderFPS = renderFPS;
+        lastLogicFPS = logicFPS;
+        fpsUpdateAccumulator = 0;
     }
 }
 
@@ -278,7 +285,7 @@ void ScreenElementHUD::UpdateStopwatchTime(uint32 newTime)
     SetImageText(newTime, 100, m_StopwatchNumbers, STOPWATCH_NUMBERS_COUNT, "/game/images/interface/scorenumbers/00");
 }
 
-void ScreenElementHUD::UpdateFPS(uint32 newFPS)
+void ScreenElementHUD::UpdateFPS(uint32 renderFPS, uint32 logicFPS)
 {
     if (m_pFPSTexture)
     {
@@ -291,7 +298,7 @@ void ScreenElementHUD::UpdateFPS(uint32 newFPS)
         return;
     }
 
-    std::string fpsString = "FPS: " + ToStr(newFPS);
+    std::string fpsString = ToStr(renderFPS) + " FPS";
     SDL_Surface* pFPSSurface = TTF_RenderText_Blended(g_pApp->GetConsoleFont(), fpsString.c_str(), { 255, 255, 255, 255 });
     m_pFPSTexture = SDL_CreateTextureFromSurface(m_pRenderer, pFPSSurface);
     SDL_FreeSurface(pFPSSurface);

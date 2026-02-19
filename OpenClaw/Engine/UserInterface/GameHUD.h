@@ -46,7 +46,7 @@ public:
     void UpdateLives(uint32 newLives);
     void UpdateStopwatchTime(uint32 newTime);
 
-    void UpdateFPS(uint32 newFPS);
+    void UpdateFPS(uint32 renderFPS, uint32 logicFPS);
 
 private:
     void BossHealthChangedDelegate(IEventDataPtr pEvent);

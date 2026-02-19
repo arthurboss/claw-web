@@ -16,6 +16,8 @@ For desktop builds (Windows, Linux, macOS, Android), visit the [original reposit
 - 🎵 **Audio:** SDL_Mixer with Web Audio backend
 - 📱 **Responsive:** Automatic 4:3 aspect ratio with letterbox/pillarbox on widescreen
 - ⚡ **No configuration:** Works out of the box - just load and play
+- 🎯 **High refresh rate support:** Enjoy buttery-smooth rendering on 120Hz/144Hz+
+  displays while gameplay stays perfectly consistent
 
 ## Tech Stack
 
@@ -118,6 +120,19 @@ For desktop builds (Windows, Linux, macOS, Android), visit the [original reposit
 - ✅ Firefox (latest)
 - ✅ Safari (latest)
 - ❌ Internet Explorer (no WebAssembly support)
+
+  **Configuration:**
+
+The game can be configured via `Build_Release/config.xml`. Notable options:
+
+```xml
+<GlobalOptions>
+  <ShowFps>true</ShowFps>           <!-- Show FPS counter in bottom-left -->
+  <GameLogicFps>60</GameLogicFps>   <!-- Game logic update rate (default: 60) -->
+</GlobalOptions>
+```
+
+**FPS Display:** Enable `ShowFps` to see real-time rendering frame rate. With the fixed timestep implementation, the game renders at your monitor's refresh rate (60Hz, 120Hz, 144Hz, etc.) while game logic stays locked at 60 updates/second for consistent gameplay.
 
   **Known Limitations:**
 
