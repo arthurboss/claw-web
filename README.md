@@ -46,18 +46,27 @@ For desktop builds (Windows, Linux, macOS, Android), visit the [original reposit
     ```
 
 - Make sure you have *python* and *cmake* packages. Ubuntu: `sudo apt install python cmake`.
-- Make sure you have fresh `ASSETS.ZIP` and `CLAW.REZ` files in `Build_Release` directory.
-  
+- Make sure you have `CLAW.REZ` in `Build_Release` directory.
+
   **Quick Build (Recommended):**
 
   ```shell script
     source ./emsdk/emsdk_env.sh
     ./build_wasm.sh
   ```
+
+  The build script automatically regenerates `ASSETS.ZIP` from the `Build_Release/ASSETS/` folder before compiling.
   
   **Manual Build:**
 
   ```shell script
+    # Rebuild ASSETS.ZIP from source
+    cd Build_Release
+    rm -f ASSETS.ZIP
+    (cd ASSETS && zip -r ../ASSETS.ZIP .)
+    cd ..
+
+    # Build the project
     mkdir build
     cd build
     emcmake cmake -DEmscripten=1 ..

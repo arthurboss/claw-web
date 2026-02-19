@@ -114,19 +114,7 @@
                 </GeneratedEvent>
             </KeyboardEvent>
         </MenuItem>
-        <MenuItem>
-            <Name>QUIT_BUTTON</Name>
-            <Type>Button</Type>
-            <Hotkey>Q</Hotkey>
-            <State>Inactive</State>
-            <InactiveImage>/STATES/MENU/IMAGES/MAIN/012_QUIT.PCX</InactiveImage>
-            <ActiveImage>/STATES/MENU/IMAGES/MAIN/013_QUIT.PCX</ActiveImage>
-            <Position x="272" y="420" />
-            <GeneratedEvent>
-                <Type>SwitchPage</Type>
-                <PageName>MenuPage_QuitGame</PageName>
-            </GeneratedEvent>
-        </MenuItem>
+        <!-- QUIT_BUTTON removed for WASM build - users can just close browser tab -->
     </MenuPage>
     
     <!-- SINGLE PLAYER PAGE -->
