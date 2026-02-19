@@ -21,23 +21,30 @@ if ! command -v emcmake &> /dev/null; then
     exit 1
 fi
 
-echo "1. Setting up build directory..."
+echo "1. Rebuilding ASSETS.ZIP from source..."
+cd Build_Release
+rm -f ASSETS.ZIP
+(cd ASSETS && zip -r ../ASSETS.ZIP .)
+echo "   ASSETS.ZIP created: $(du -h ASSETS.ZIP | cut -f1)"
+cd ..
+
+echo "2. Setting up build directory..."
 if [ ! -d "build" ]; then
     mkdir build
 fi
 cd build
 
-echo "2. Configuring CMake for Emscripten..."
+echo "3. Configuring CMake for Emscripten..."
 emcmake cmake -DEmscripten=1 ..
 
-echo "3. Building the project (first attempt to download SDL2)..."
+echo "4. Building the project (first attempt to download SDL2)..."
 make
 
-echo "4. Patching SDL2 shaders for WebGL compatibility..."
+echo "5. Patching SDL2 shaders for WebGL compatibility..."
 cd ..
 ./patch_sdl2_shaders.sh
 
-echo "5. Clearing SDL2 build cache and rebuilding..."
+echo "6. Clearing SDL2 build cache and rebuilding..."
 rm -rf ./emsdk/upstream/emscripten/cache/build/sdl2
 cd build
 make
