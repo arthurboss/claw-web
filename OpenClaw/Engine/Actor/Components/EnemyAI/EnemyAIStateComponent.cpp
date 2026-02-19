@@ -1173,7 +1173,14 @@ Point BaseAttackAIStateComponent::FindClosestHostileActorOffset()
 
 bool BaseAttackAIStateComponent::VCanEnter()
 {
-    if (m_EnemyAgroList.empty())
+    // Safety check: ensure we have valid attack actions and valid index
+    if (m_AttackActions.empty() || m_CurrentAttackActionIdx >= m_AttackActions.size())
+    {
+        return false;
+    }
+
+    // Check agro list - must be done BEFORE accessing any member data
+    if (m_EnemyAgroList.empty() || m_EnemyAgroList[0] == nullptr)
     {
         return false;
     }
@@ -1182,16 +1189,21 @@ bool BaseAttackAIStateComponent::VCanEnter()
     // Since the first found actor is picked
 
     // TODO: Revisit this if enemy ever has more than one attack action per AttackAIStateComponent
-    EnemyAttackAction& action = *m_AttackActions[m_CurrentAttackActionIdx];
+    // Get action - this might trigger memory access, so only do after validation
+    shared_ptr<EnemyAttackAction> pAttack = m_AttackActions[m_CurrentAttackActionIdx];
+    if (!pAttack)
+    {
+        return false;
+    }
 
     // Check if enemy is within line of sight
-    Point fromPoint = m_pOwner->GetPositionComponent()->GetPosition() + action.agroSensorFixture.offset;
+    Point fromPoint = m_pOwner->GetPositionComponent()->GetPosition() + pAttack->agroSensorFixture.offset;
     Point toPoint(m_EnemyAgroList[0]->GetPositionComponent()->GetPosition().x,
-            m_pOwner->GetPositionComponent()->GetPosition().y + action.agroSensorFixture.offset.y);
+            m_pOwner->GetPositionComponent()->GetPosition().y + pAttack->agroSensorFixture.offset.y);
 
     RaycastResult raycastResult = g_pApp->GetGameLogic()->VGetGamePhysics()->VRayCast(
-        fromPoint, 
-        toPoint, 
+        fromPoint,
+        toPoint,
         CollisionFlag_Solid);
     if (raycastResult.foundIntersection)
     {
