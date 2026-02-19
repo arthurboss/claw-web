@@ -63,6 +63,18 @@ BaseGameApp::BaseGameApp() {
   m_IsRunning = false;
   m_QuitRequested = false;
   m_IsQuitting = false;
+
+  // Initialize fixed timestep variables
+  m_accumulator = 0.0;
+  m_fixedTimestep = 1.0 / 60.0;  // 60 updates per second
+  m_alpha = 0.0;
+
+  // Initialize FPS tracking
+  m_logicUpdateCount = 0;
+  m_renderFrameCount = 0;
+  m_fpsCounterMs = 0;
+  m_lastLogicFPS = 0;
+  m_lastRenderFPS = 0;
 }
 
 void BaseGameApp::OnAppEvent(const AppEvent &event) {
@@ -178,6 +190,15 @@ bool BaseGameApp::Initialize(int argc, char **argv) {
   if (!VPerformStartupTests()) {
     LOG_ERROR("Failed to pass certain startup tests.");
     return false;
+  }
+
+  // Configure fixed timestep based on settings
+  if (m_GlobalOptions.gameLogicFps > 0) {
+    m_fixedTimestep = 1.0 / static_cast<double>(m_GlobalOptions.gameLogicFps);
+    LOG("Game logic update rate set to " + ToStr(m_GlobalOptions.gameLogicFps) + " FPS");
+  } else {
+    LOG_WARNING("Invalid gameLogicFps value, using default 60 FPS");
+    m_fixedTimestep = 1.0 / 60.0;
   }
 
   m_IsRunning = true;
@@ -306,20 +327,32 @@ void BaseGameApp::StepLoop() {
     // PROFILE_CPU("MAINLOOP");
 
     uint32 now = SDL_GetTicks();
-    uint32 elapsedTime = now - lastTime;
+    double frameTime = (now - lastTime) / 1000.0; // Convert to seconds
     lastTime = now;
 
     // This occurs when recovering program from background or after load
     // We want to ignore these situations
-    if (elapsedTime > 1000) {
+    if (frameTime > 1.0) {
       consecutiveLagSpikes++;
       if (consecutiveLagSpikes > 10) {
         LOG_ERROR("Experiencing lag spikes, " + ToStr(consecutiveLagSpikes) +
-                  "high latency frames in a row");
+                  " high latency frames in a row");
       }
       return;
     }
     consecutiveLagSpikes = 0;
+
+    // Cap frame time to prevent spiral of death (max 250ms = 4 FPS)
+    if (frameTime > 0.25) {
+      frameTime = 0.25;
+    }
+
+    // Accumulate time for fixed timestep updates
+    m_accumulator += frameTime;
+
+    // Track FPS
+    uint32 frameTimeMs = static_cast<uint32>(frameTime * 1000.0);
+    m_fpsCounterMs += frameTimeMs;
 
 // Handle all input events
 #ifdef __EMSCRIPTEN__
@@ -346,21 +379,42 @@ void BaseGameApp::StepLoop() {
     }
 
     if (m_pGame) {
-      // Update game
-      {
+      // Fixed timestep update loop - game logic runs at constant rate
+      while (m_accumulator >= m_fixedTimestep) {
         // PROFILE_CPU("ONLY GAME UPDATE");
         IEventMgr::Get()->VUpdate(
             20); // Allow event queue to process for up to 20 ms
-        m_pGame->VOnUpdate(elapsedTime);
+
+        // Convert fixed timestep back to milliseconds for game logic
+        uint32 fixedDeltaMs = static_cast<uint32>(m_fixedTimestep * 1000.0);
+        m_pGame->VOnUpdate(fixedDeltaMs);
+
+        m_accumulator -= m_fixedTimestep;
+        m_logicUpdateCount++;  // Track logic updates
       }
 
-      // Render game
+      // Calculate interpolation factor for smooth rendering
+      m_alpha = m_accumulator / m_fixedTimestep;
+
+      // Render game at display refresh rate
+      uint32 fixedDeltaMs = static_cast<uint32>(m_fixedTimestep * 1000.0);
       for (auto &pGameView : m_pGame->m_GameViews) {
         // PROFILE_CPU("ONLY RENDER");
-        pGameView->VOnRender(elapsedTime);
+        pGameView->VOnRender(fixedDeltaMs);
       }
+      m_renderFrameCount++;  // Track render frames
 
       // m_pGame->VRenderDiagnostics();
+    }
+
+    // Update FPS counters every second
+    if (m_fpsCounterMs >= 1000) {
+      m_lastLogicFPS = m_logicUpdateCount;
+      m_lastRenderFPS = m_renderFrameCount;
+      LOG("FPS Update - Render: " + ToStr(m_lastRenderFPS) + " Logic: " + ToStr(m_lastLogicFPS));
+      m_logicUpdateCount = 0;
+      m_renderFrameCount = 0;
+      m_fpsCounterMs -= 1000;
     }
 
     // Artificially decrease fps. Configurable from console
@@ -779,6 +833,9 @@ bool BaseGameApp::LoadGameOptions(const char *inConfigFile) {
     ParseValueFromXmlElem(
         &m_GlobalOptions.showPosition,
         pGlobalOptionsRootElem->FirstChildElement("ShowPosition"));
+    ParseValueFromXmlElem(
+        &m_GlobalOptions.gameLogicFps,
+        pGlobalOptionsRootElem->FirstChildElement("GameLogicFps"));
   }
 
   //-------------------------------------------------------------------------

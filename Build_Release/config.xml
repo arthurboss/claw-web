@@ -62,6 +62,7 @@
     <LoadAllLevelSaves>false</LoadAllLevelSaves>
     <ShowFps>false</ShowFps>
     <ShowPosition>false</ShowPosition>
+    <GameLogicFps>60</GameLogicFps>
   </GlobalOptions>
   <ControlOptions>
     <UseAlternateControls>false</UseAlternateControls>

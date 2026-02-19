@@ -150,6 +150,7 @@ struct GlobalOptions {
     loadAllLevelSaves = false;
     showFps = true;
     showPosition = true;
+    gameLogicFps = 60;  // Game logic update rate (independent of display FPS)
   }
 
   double maxJumpSpeed;
@@ -172,6 +173,7 @@ struct GlobalOptions {
   bool loadAllLevelSaves;
   bool showFps;
   bool showPosition;
+  int gameLogicFps;  // Target game logic update rate (default: 60)
 };
 
 struct ControlOptions {
@@ -309,6 +311,10 @@ public:
   const ControlOptions *GetControlOptions() const { return &m_ControlOptions; }
   const DebugOptions *GetDebugOptions() const { return &m_DebugOptions; }
 
+  // FPS tracking
+  uint32 GetLogicFPS() const { return m_lastLogicFPS; }
+  uint32 GetRenderFPS() const { return m_lastRenderFPS; }
+
   TiXmlElement *GetActorPrototypeElem(ActorPrototype proto);
 
   const shared_ptr<LevelMetadata> GetLevelMetadata(int levelNumber) const;
@@ -378,6 +384,18 @@ private:
 
   ActorXmlPrototypeMap m_ActorXmlPrototypeMap;
   LevelMetadataMap m_LevelMetadataMap;
+
+  // Fixed timestep variables for frame-rate independent game logic
+  double m_accumulator;         // Accumulated time for fixed updates
+  double m_fixedTimestep;       // Target physics/logic timestep in seconds (e.g., 1/60 for 60Hz)
+  double m_alpha;               // Interpolation factor for rendering between updates
+
+  // FPS tracking
+  uint32 m_logicUpdateCount;    // Number of logic updates in current second
+  uint32 m_renderFrameCount;    // Number of render frames in current second
+  uint32 m_fpsCounterMs;        // Time accumulator for FPS calculation
+  uint32 m_lastLogicFPS;        // Last measured logic update rate
+  uint32 m_lastRenderFPS;       // Last measured render frame rate
 };
 
 extern BaseGameApp *g_pApp;
