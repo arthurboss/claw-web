@@ -116,6 +116,14 @@
         display: flex;
         gap: 10px;
         align-items: center;
+        opacity: 0;
+        animation: fadeInControls 0.3s ease-in 3.5s forwards;
+      }
+
+      @keyframes fadeInControls {
+        to {
+          opacity: 1;
+        }
       }
 
       .control-btn {
@@ -170,7 +178,25 @@
         letter-spacing: 2px;
       }
 
+      /* Initial page load animation */
+      #fpsOverlay.initial-load {
+        opacity: 0;
+        animation: fadeInOnLoad 0.3s ease-in 1s forwards;
+      }
+
+      @keyframes fadeInOnLoad {
+        to {
+          opacity: 1;
+        }
+      }
+
       #fpsOverlay.hidden {
+        display: none;
+      }
+
+      /* Hide FPS overlay and FPS button when video is playing */
+      body:has(video) #fpsOverlay,
+      body:has(video) #fpsBtn {
         display: none;
       }
 
@@ -246,7 +272,7 @@
           ></canvas>
 
           <!-- FPS overlay - styled to match in-game rendering -->
-          <div id="fpsOverlay">60 FPS</div>
+          <div id="fpsOverlay" class="initial-load">60 FPS</div>
 
           <!-- Bottom controls - inside canvasContainer so they're positioned relative to canvas -->
           <div class="bottom-controls">
@@ -432,6 +458,14 @@
       };
     </script>
     <script type="text/javascript">
+      // Remove initial-load class after animation completes
+      setTimeout(function() {
+        var overlay = document.getElementById("fpsOverlay");
+        if (overlay) {
+          overlay.classList.remove("initial-load");
+        }
+      }, 1300); // 1s delay + 0.3s animation
+
       // FPS measurement and display
       var fpsEnabled = true;
       var fpsFrameCount = 0;
