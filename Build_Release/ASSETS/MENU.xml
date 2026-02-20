@@ -7,13 +7,6 @@
     <!-- MAIN (DEFAULT) PAGE -->
     <MenuPage>
         <PageName>MenuPage_Main</PageName>
-        <KeyboardEvent>
-            <KeyType>Escape</KeyType>
-            <GeneratedEvent>
-                <Type>SwitchPage</Type>
-                <PageName>MenuPage_QuitGame</PageName>
-            </GeneratedEvent>
-        </KeyboardEvent>
         <MenuItem>
             <Name>MAIN_MENU_TEXT</Name>
             <Type>Text</Type>
@@ -2122,48 +2115,6 @@
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/SAVE/001_PREVIOUSMENU.PCX</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/SAVE/002_PREVIOUSMENU.PCX</ActiveImage>
             <Position x="266" y="420" />
-            <GeneratedEvent>
-                <Type>SwitchPage</Type>
-                <PageName>MenuPage_Main</PageName>
-            </GeneratedEvent>
-        </MenuItem>
-    </MenuPage>
-
-    <!-- QUIT GAME PAGE -->
-    <MenuPage>
-        <PageName>MenuPage_QuitGame</PageName>
-        <KeyboardEvent>
-            <KeyType>Escape</KeyType>
-            <GeneratedEvent>
-                <Type>SwitchPage</Type>
-                <PageName>MenuPage_Main</PageName>
-            </GeneratedEvent>
-        </KeyboardEvent>
-        <MenuItem>
-            <Name>QUIT_GAME_TEXT</Name>
-            <Type>Text</Type>
-            <State>Inactive</State>
-            <InactiveImage>/STATES/MENU/IMAGES/MAIN/QUIT/005_AREYOUSURE.PCX</InactiveImage>
-            <Position x="164" y="190" />
-        </MenuItem>
-        <MenuItem>
-            <Name>YES_BUTTON</Name>
-            <Type>Button</Type>
-            <State>Active</State>
-            <InactiveImage>/STATES/MENU/IMAGES/MAIN/QUIT/001_YES.PCX</InactiveImage>
-            <ActiveImage>/STATES/MENU/IMAGES/MAIN/QUIT/002_YES.PCX</ActiveImage>
-            <Position x="282" y="295" />
-            <GeneratedEvent>
-                <Type>QuitGame</Type>
-            </GeneratedEvent>
-        </MenuItem>
-        <MenuItem>
-            <Name>NO_BUTTON</Name>
-            <Type>Button</Type>
-            <State>Active</State>
-            <InactiveImage>/STATES/MENU/IMAGES/MAIN/QUIT/003_NO.PCX</InactiveImage>
-            <ActiveImage>/STATES/MENU/IMAGES/MAIN/QUIT/004_NO.PCX</ActiveImage>
-            <Position x="292" y="335" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_Main</PageName>
