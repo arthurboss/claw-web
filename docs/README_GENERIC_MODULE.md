@@ -16,11 +16,13 @@ A **cross-platform, reusable graphics module** that provides a unified interface
 ## 🚀 **Quick Start**
 
 ### **1. Include the Module**
+
 ```cpp
 #include "GenericGraphicsModule.h"
 ```
 
 ### **2. Create and Initialize**
+
 ```cpp
 GenericGraphicsModule graphics;
 
@@ -31,6 +33,7 @@ if (graphics.Initialize(800, 600, "My Game")) {
 ```
 
 ### **3. Render Something**
+
 ```cpp
 graphics.BeginFrame();
 graphics.Clear(0.1f, 0.1f, 0.3f);  // Dark blue background
@@ -45,6 +48,7 @@ graphics.EndFrame();
 ```
 
 ### **4. Clean Up**
+
 ```cpp
 graphics.Shutdown();
 ```
@@ -61,6 +65,7 @@ graphics.Shutdown();
 ## 🔧 **Installation**
 
 ### **Option 1: Header-Only (Recommended)**
+
 Just copy the header files into your project:
 
 ```bash
@@ -69,6 +74,7 @@ cp Generic/GenericGraphicsModule.h your_project/
 ```
 
 ### **Option 2: CMake Integration**
+
 ```cmake
 # Add to your CMakeLists.txt
 add_subdirectory(generic-graphics-module)
@@ -76,6 +82,7 @@ target_link_libraries(your_target generic_graphics_module)
 ```
 
 ### **Option 3: Package Manager**
+
 ```bash
 # vcpkg
 vcpkg install generic-graphics-module
@@ -87,6 +94,7 @@ conan install generic-graphics-module/1.0.0
 ## 📚 **API Reference**
 
 ### **Core Methods**
+
 ```cpp
 // Initialization
 bool Initialize(int width, int height, const std::string& title = "");
@@ -103,6 +111,7 @@ void SetViewport(int x, int y, int width, int height);
 ```
 
 ### **Resource Management**
+
 ```cpp
 // Textures
 std::shared_ptr<ITexture> CreateTexture(int width, int height, const uint8_t* data);
@@ -116,6 +125,7 @@ void RenderSprite(const std::shared_ptr<ISprite>& sprite, float x, float y, floa
 ```
 
 ### **Advanced Features**
+
 ```cpp
 // Post-processing
 void SetPostProcessEffect(const std::string& effect, bool enabled);
@@ -242,22 +252,26 @@ std::cout << graphics.GetConfiguration() << std::endl;
 ## 🚀 **Building for Different Platforms**
 
 ### **WASM (Emscripten)**
+
 ```bash
 emcc main.cpp -o game.js -s USE_WEBGL2=1 -s USE_WEBGPU=1
 ```
 
 ### **Windows (Visual Studio)**
+
 ```cpp
 // Just include the headers - it automatically uses SDL2 + OpenGL
 #include "GenericGraphicsModule.h"
 ```
 
 ### **Linux (GCC/Clang)**
+
 ```bash
 g++ main.cpp -o game -lSDL2 -lGL -lGLEW
 ```
 
 ### **Android (NDK)**
+
 ```cmake
 # CMake automatically selects OpenGL ES renderer
 target_link_libraries(game android log GLESv3)
@@ -278,21 +292,25 @@ target_link_libraries(game android log GLESv3)
 ### **Common Issues**
 
 **"Failed to initialize graphics module"**
+
 - Check if your platform is supported
 - Ensure required dependencies are installed
 - Verify graphics drivers are up to date
 
 **"Feature not supported"**
+
 - Some features may not be available on all platforms
 - Use `IsFeatureSupported()` to check before using features
 - Provide fallback implementations for unsupported features
 
 **Performance issues**
+
 - Enable performance monitoring: `graphics.SetPerformanceMonitoring(true)`
 - Check FPS: `graphics.GetFPS()`
 - Monitor memory: `graphics.GetMemoryStats()`
 
 ### **Debug Mode**
+
 ```cpp
 // Enable debug output
 #ifdef _DEBUG
@@ -305,6 +323,7 @@ target_link_libraries(game android log GLESv3)
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ### **Development Setup**
+
 ```bash
 git clone https://github.com/your-org/generic-graphics-module.git
 cd generic-graphics-module
