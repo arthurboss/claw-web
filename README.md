@@ -6,7 +6,15 @@ This is a WebAssembly port of Captain Claw (1997) that runs natively in your bro
 
 Based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek - original multiplatform C++ reimplementation of Captain Claw (1997).
 
-For desktop builds (Windows, Linux, macOS, Android), visit the [original repository](https://github.com/pjasicek/OpenClaw).
+## ⚠️ Important: Asset Requirements
+
+**This is a WASM-only fork** focused on browser-based gameplay. Desktop builds are not supported.
+
+**You will need CLAW.REZ** from the original Captain Claw (1997) game. The game will prompt you to upload this file on first run. See [SETUP.md](SETUP.md) for detailed instructions.
+
+**Legal:** You must own the original game to use its assets. The game is no longer available for digital purchase - you must own the original physical release.
+
+**Note:** For desktop builds (Windows, Linux, macOS, Android), visit the [original repository](https://github.com/pjasicek/OpenClaw).
 
 ## Key Features
 
@@ -28,9 +36,9 @@ For desktop builds (Windows, Linux, macOS, Android), visit the [original reposit
 - **Compiler:** Emscripten (C++ to WebAssembly)
 
 ## Building for WebAssembly
-  
+
   The project can be compiled as wasm code. This code is executed by modern web browsers without any additional runtime dependencies. Compiled once this code can work on any devices with different operation systems.
-  
+
   **Prerequisites:**
 
 - Install [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) from official website. I'm not sure that compilation will be successful on a Windows platform. If you use Windows then don't show off, enable Windows Subsystem for Linux (WSL), download Linux-like system (for example, Ubuntu) from Windows Store and install Emscripten SDK. It should be something like:
@@ -46,7 +54,7 @@ For desktop builds (Windows, Linux, macOS, Android), visit the [original reposit
     ```
 
 - Make sure you have *python* and *cmake* packages. Ubuntu: `sudo apt install python cmake`.
-- Make sure you have `CLAW.REZ` in `Build_Release` directory.
+- **Do not include CLAW.REZ in build** - users provide it at runtime via browser upload.
 
   **Quick Build (Recommended):**
 
@@ -56,6 +64,8 @@ For desktop builds (Windows, Linux, macOS, Android), visit the [original reposit
   ```
 
   The build script automatically regenerates `ASSETS.ZIP` from the `Build_Release/ASSETS/` folder before compiling.
+
+  **Note:** CLAW.REZ is loaded from user's browser storage at runtime, not bundled into openclaw.data.
   
   **Manual Build:**
 
