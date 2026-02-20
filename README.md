@@ -6,7 +6,7 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 
 | Main Menu | Level 1 Gameplay |
 |-----------|------------------|
-| ![Game Menu](docs/images/game-menu.png) | ![Level 1 Gameplay](docs/images/gameplay-level1.png) |
+| ![Game Menu](docs/screenshots/game-menu.png) | ![Level 1 Gameplay](docs/screenshots/gameplay-level1.png) |
 
 ## 🎮 Quick Start
 
