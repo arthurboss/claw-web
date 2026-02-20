@@ -26,7 +26,6 @@ std::map<std::string, MenuPage> g_StringToMenuPageEnumMap =
     { "MenuPage_SinglePlayer_NewGame",          MenuPage_SinglePlayer_NewGame },
     { "MenuPage_SinglePlayer_LoadGame",         MenuPage_SinglePlayer_LoadGame },
     { "MenuPage_SinglePlayer_LoadCustomLevel",  MenuPage_SinglePlayer_LoadCustomLevel },
-    { "MenuPage_SinglePlayer_SaveGame",         MenuPage_SinglePlayer_SaveGame },
     { "MenuPage_SinglePlayer_UploadScores",     MenuPage_SinglePlayer_UploadScores },
     { "MenuPage_SinglePlayer_LoadGame_Level1",  MenuPage_SinglePlayer_LoadGame_Level1 },
     { "MenuPage_SinglePlayer_LoadGame_Level2",  MenuPage_SinglePlayer_LoadGame_Level2 },
