@@ -256,9 +256,188 @@
       .cheats button:hover {
         background-color: #d32029;
       }
+
+      /* Asset Upload UI */
+      #assetUpload {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.95);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        padding: 20px;
+      }
+
+      #assetUpload h2 {
+        font-size: 2em;
+        margin-bottom: 15px;
+        color: rgb(249, 229, 125);
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+      }
+
+      #assetUpload p {
+        font-size: 1.1em;
+        margin: 10px 0;
+        max-width: 600px;
+        text-align: center;
+        line-height: 1.6;
+      }
+
+      #assetUpload strong {
+        color: rgb(249, 229, 125);
+      }
+
+      #uploadArea {
+        margin-top: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      #clawRezFile {
+        padding: 10px;
+        font-size: 1em;
+        border: 2px solid rgba(249, 229, 125, 0.5);
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        cursor: pointer;
+      }
+
+      #uploadArea button {
+        padding: 12px 30px;
+        font-size: 1.1em;
+        font-weight: bold;
+        color: #000;
+        background-color: rgb(249, 229, 125);
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      #uploadArea button:hover {
+        background-color: rgb(255, 240, 150);
+        transform: scale(1.05);
+      }
+
+      #uploadArea button:active {
+        transform: scale(0.98);
+      }
+
+      #uploadArea button:disabled {
+        background-color: #666;
+        color: #999;
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      #uploadArea button:disabled:hover {
+        background-color: #666;
+        transform: none;
+      }
+
+      #uploadProgress {
+        margin-top: 30px;
+        text-align: center;
+      }
+
+      #uploadProgressBar {
+        width: 400px;
+        height: 30px;
+        border-radius: 5px;
+        overflow: hidden;
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      #uploadProgressBar::-webkit-progress-bar {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+      }
+
+      #uploadProgressBar::-webkit-progress-value {
+        background-color: rgb(249, 229, 125);
+        border-radius: 5px;
+      }
+
+      #uploadProgressBar::-moz-progress-bar {
+        background-color: rgb(249, 229, 125);
+        border-radius: 5px;
+      }
+
+      #uploadStatus {
+        display: block;
+        margin-top: 15px;
+        font-size: 1.2em;
+        color: rgb(249, 229, 125);
+      }
+
+      /* Loading Indicator */
+      #loadingIndicator {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: rgb(249, 229, 125);
+        padding: 15px 20px;
+        border-radius: 8px;
+        z-index: 9999;
+        display: none;
+        min-width: 250px;
+      }
+
+      #loadingText {
+        font-size: 1em;
+        margin-bottom: 10px;
+      }
+
+      #loadingBar {
+        width: 100%;
+        height: 20px;
+        border-radius: 3px;
+      }
+
+      #loadingPercent {
+        display: block;
+        margin-top: 5px;
+        text-align: right;
+        font-size: 0.9em;
+      }
     </style>
   </head>
   <body>
+    <!-- Asset Upload UI (shown on first run) -->
+    <div id="assetUpload" style="display: none;">
+      <h2>First Time Setup</h2>
+      <p>OpenClaw requires <strong>CLAW.REZ</strong> from the original Captain Claw (1997) game.</p>
+      <p><strong>Legal Notice:</strong> You must own Captain Claw (1997) to use this file legally.</p>
+      <p>The file will be stored in your browser's local storage and only needs to be uploaded once.</p>
+
+      <div id="uploadArea">
+        <input type="file" id="clawRezFile" accept=".REZ,.rez" onchange="validateClawRezFile()" />
+        <button id="uploadBtn" onclick="uploadClawRez()" disabled>Upload CLAW.REZ</button>
+      </div>
+
+      <div id="uploadProgress" style="display: none;">
+        <progress id="uploadProgressBar" max="100" value="0"></progress>
+        <span id="uploadStatus">Storing assets...</span>
+      </div>
+    </div>
+
+    <!-- Loading Indicator (for level loading) -->
+    <div id="loadingIndicator">
+      <div id="loadingText">Loading...</div>
+      <progress id="loadingBar" max="100" value="0"></progress>
+      <span id="loadingPercent">0%</span>
+    </div>
+
     <div class="game-container">
       <div class="canvas-wrapper" id="gameContainer">
         <span id="loading"></span>
@@ -565,6 +744,14 @@
       var Module = {
         preRun: [
           function () {
+            // Mount CLAW.REZ to virtual filesystem before game starts
+            if (window.mountClawRezToFS) {
+              const success = mountClawRezToFS();
+              if (!success) {
+                console.error('Failed to mount CLAW.REZ');
+              }
+            }
+
             // Here you can change canvas size dynamically if it's needed
             // var ratio = window.devicePixelRatio || 1;
             // Module.canvas.width = Math.max(screen.width, screen.height) * ratio;
@@ -679,11 +866,67 @@
 
       //    console.log("CW: " + document.getElementById('canvas').width + ", CH: " + document.getElementById('canvas').height);
 
-      loadGame();
+      // Game initialization will be called after asset scripts load
+      window.initGameWhenReady = async function() {
+        // Prepare CLAW.REZ from IndexedDB (loads into memory, ready for FS mounting)
+        const success = await prepareAssetStorage();
+        if (!success) {
+          console.error('Failed to prepare game assets');
+          return;
+        }
+
+        // Now load the game (Module.preRun will mount CLAW.REZ to FS)
+        loadGame();
+      };
+    </script>
+
+    <!-- Asset Management Scripts - must load before initialization -->
+    <script src="asset-storage.js"></script>
+    <script src="asset-loader.js"></script>
+    <script src="resource-loader.js"></script>
+
+    <!-- Initialize game after asset scripts are loaded -->
+    <script>
+      // Now that asset management scripts are loaded, initialize the game
+      window.initGameWhenReady();
     </script>
 
     <!-- Graphics Bridges for WASM Module -->
     <script src="graphics-bridge.js"></script>
     <script src="texture-bridge.js"></script>
+
+    <!-- Browser Support Check -->
+    <script>
+      function checkBrowserSupport() {
+        const required = {
+          wasm: typeof WebAssembly !== 'undefined',
+          indexeddb: 'indexedDB' in window,
+          file: 'File' in window && 'Blob' in window,
+        };
+
+        const unsupported = Object.entries(required)
+          .filter(([name, supported]) => !supported)
+          .map(([name]) => name);
+
+        if (unsupported.length > 0) {
+          alert(
+            `Your browser doesn't support: ${unsupported.join(', ')}\n\n` +
+            `Please use a modern browser:\n` +
+            `- Chrome 105+\n` +
+            `- Firefox 121+\n` +
+            `- Safari 16.4+\n` +
+            `- Edge 105+`
+          );
+          return false;
+        }
+        return true;
+      }
+
+      // Check browser support on load
+      if (!checkBrowserSupport()) {
+        document.getElementById('loading').textContent = 'Browser not supported';
+        throw new Error('Browser not supported');
+      }
+    </script>
   </body>
 </html>
