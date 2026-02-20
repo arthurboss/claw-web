@@ -12,7 +12,7 @@ let uploadResolve = null;
 function showAssetUpload() {
   const uploadDiv = document.getElementById('assetUpload');
   if (uploadDiv) {
-    uploadDiv.style.display = 'block';
+    uploadDiv.style.display = 'flex';
   }
 }
 

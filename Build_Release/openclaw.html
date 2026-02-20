@@ -277,20 +277,21 @@
       #assetUpload h2 {
         font-size: 2em;
         margin-bottom: 15px;
-        color: rgb(249, 229, 125);
+        color: #fff;
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        max-width: 600px;
       }
 
       #assetUpload p {
         font-size: 1.1em;
         margin: 10px 0;
         max-width: 600px;
-        text-align: center;
         line-height: 1.6;
       }
 
       #assetUpload strong {
-        color: rgb(249, 229, 125);
+        color: #4db8ff;
+        font-weight: 600;
       }
 
       #uploadArea {
@@ -304,7 +305,7 @@
       #clawRezFile {
         padding: 10px;
         font-size: 1em;
-        border: 2px solid rgba(249, 229, 125, 0.5);
+        border: 2px solid rgba(77, 184, 255, 0.5);
         border-radius: 5px;
         background-color: rgba(255, 255, 255, 0.1);
         color: #fff;
@@ -315,8 +316,8 @@
         padding: 12px 30px;
         font-size: 1.1em;
         font-weight: bold;
-        color: #000;
-        background-color: rgb(249, 229, 125);
+        color: #fff;
+        background-color: #4db8ff;
         border: none;
         border-radius: 5px;
         cursor: pointer;
@@ -324,7 +325,7 @@
       }
 
       #uploadArea button:hover {
-        background-color: rgb(255, 240, 150);
+        background-color: #66c2ff;
         transform: scale(1.05);
       }
 
@@ -363,12 +364,12 @@
       }
 
       #uploadProgressBar::-webkit-progress-value {
-        background-color: rgb(249, 229, 125);
+        background-color: #4db8ff;
         border-radius: 5px;
       }
 
       #uploadProgressBar::-moz-progress-bar {
-        background-color: rgb(249, 229, 125);
+        background-color: #4db8ff;
         border-radius: 5px;
       }
 
@@ -376,7 +377,7 @@
         display: block;
         margin-top: 15px;
         font-size: 1.2em;
-        color: rgb(249, 229, 125);
+        color: #fff;
       }
 
       /* Loading Indicator */
@@ -385,7 +386,7 @@
         bottom: 20px;
         right: 20px;
         background-color: rgba(0, 0, 0, 0.8);
-        color: rgb(249, 229, 125);
+        color: #fff;
         padding: 15px 20px;
         border-radius: 8px;
         z-index: 9999;
@@ -414,7 +415,7 @@
   </head>
   <body>
     <!-- Asset Upload UI (shown on first run) -->
-    <div id="assetUpload" style="display: none;">
+    <section id="assetUpload" style="display: none;">
       <h2>First Time Setup</h2>
       <p>OpenClaw requires <strong>CLAW.REZ</strong> from the original Captain Claw (1997) game.</p>
       <p><strong>Legal Notice:</strong> You must own Captain Claw (1997) to use this file legally.</p>
@@ -429,7 +430,7 @@
         <progress id="uploadProgressBar" max="100" value="0"></progress>
         <span id="uploadStatus">Storing assets...</span>
       </div>
-    </div>
+    </section>
 
     <!-- Loading Indicator (for level loading) -->
     <div id="loadingIndicator">
