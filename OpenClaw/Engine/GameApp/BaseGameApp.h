@@ -356,6 +356,7 @@ private:
   bool ReadConsoleConfig();
   bool ReadActorXmlPrototypes(GameOptions &gameOptions);
   bool ReadLevelMetadata(GameOptions &gameOptions);
+  bool LoadSingleLevelMetadata(int levelNumber);
 
   void RegisterEngineEvents();
 

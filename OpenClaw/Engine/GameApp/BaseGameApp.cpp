@@ -170,8 +170,10 @@ bool BaseGameApp::Initialize(int argc, char **argv) {
 
   if (!ReadActorXmlPrototypes(m_GameOptions))
     return false;
-  if (!ReadLevelMetadata(m_GameOptions))
-    return false;
+
+  // Level metadata is now lazy-loaded on-demand when levels are loaded
+  // This improves WASM startup performance by avoiding parsing 13 XML files
+  // The "reload levelmetadata" command still works for development
 
   RegisterAllDelegates();
 
@@ -1340,8 +1342,6 @@ bool BaseGameApp::ReadLevelMetadata(GameOptions &gameOptions) {
 
     m_LevelMetadataMap.insert(
         std::make_pair(pLevelMetadata->levelNumber, pLevelMetadata));
-
-    LOG("\"" + metadataFile + "\": level metadata file successfully loaded.");
   }
 
   if (m_LevelMetadataMap.empty()) {
@@ -1353,11 +1353,217 @@ bool BaseGameApp::ReadLevelMetadata(GameOptions &gameOptions) {
   return true;
 }
 
+bool BaseGameApp::LoadSingleLevelMetadata(int levelNumber) {
+  // Check if already loaded
+  if (m_LevelMetadataMap.find(levelNumber) != m_LevelMetadataMap.end()) {
+    return true; // Already loaded
+  }
+
+  // Build metadata file path
+  std::string metadataFile = "/LEVEL_METADATA/LEVEL" + ToStr(levelNumber) + ".XML";
+
+  // Load and parse XML
+  TiXmlElement *pRootElem =
+      XmlResourceLoader::LoadAndReturnRootXmlElement(metadataFile.c_str());
+  if (pRootElem == NULL) {
+    LOG_ERROR("Failed to parse level metadata file: " + metadataFile);
+    return false;
+  }
+
+  shared_ptr<LevelMetadata> pLevelMetadata =
+      shared_ptr<LevelMetadata>(new LevelMetadata);
+
+  // LevelMetadata.LevelNumber
+  if (!ParseValueFromXmlElem(&pLevelMetadata->levelNumber,
+                             pRootElem->FirstChildElement("LevelNumber"))) {
+    LOG_ERROR("Missing \"LevelNumber\" element in metadata file: " +
+              metadataFile);
+    return false;
+  }
+
+  // LevelMetadata.LevelName
+  if (!ParseValueFromXmlElem(&pLevelMetadata->levelName,
+                             pRootElem->FirstChildElement("LevelName"))) {
+    LOG_ERROR("Missing \"LevelName\" element in metadata file: " +
+              metadataFile);
+    return false;
+  }
+
+  // LevelMetadata.LogicsToActorPrototypes.*
+  TiXmlElement *pLogicToProtoRootElem =
+      pRootElem->FirstChildElement("LogicsToActorPrototypes");
+  if (pLogicToProtoRootElem == NULL) {
+    LOG_ERROR(
+        "Missing \"LogicsToActorPrototypes\" element in metadata file: " +
+        metadataFile);
+    return false;
+  }
+
+  for (TiXmlElement *pLogicToProtoElem =
+           pLogicToProtoRootElem->FirstChildElement("LogicToActorPrototype");
+       pLogicToProtoElem != NULL;
+       pLogicToProtoElem =
+           pLogicToProtoElem->NextSiblingElement("LogicToActorPrototype")) {
+    std::string logic;
+    std::string protoStr;
+
+    if (!ParseAttributeFromXmlElem(&logic, "logic", pLogicToProtoElem)) {
+      LOG_ERROR("Missing \"logic\" in LogicToActorPrototype element in "
+                "metadata file: " +
+                metadataFile);
+      return false;
+    }
+    if (!ParseAttributeFromXmlElem(&protoStr, "actorPrototype",
+                                   pLogicToProtoElem)) {
+      LOG_ERROR("Missing \"actorPrototype\" in LogicToActorPrototype element "
+                "in metadata file: " +
+                metadataFile);
+      return false;
+    }
+
+    ActorPrototype proto = StringToEnum_ActorPrototype(protoStr);
+    pLevelMetadata->logicToActorPrototypeMap.insert(
+        std::make_pair(logic, proto));
+  }
+
+  // LevelMetadata.ClawSpawnPositions.*
+  TiXmlElement *pSpawnPositionsRootElem =
+      pRootElem->FirstChildElement("ClawSpawnPositions");
+  if (pSpawnPositionsRootElem == NULL) {
+    LOG_ERROR("Missing \"ClawSpawnPositions\" element in metadata file: " +
+              metadataFile);
+    return false;
+  }
+
+  for (TiXmlElement *pSpawnPositionElem =
+           pSpawnPositionsRootElem->FirstChildElement("ClawSpawnPosition");
+       pSpawnPositionElem != NULL;
+       pSpawnPositionElem =
+           pSpawnPositionElem->NextSiblingElement("ClawSpawnPosition")) {
+    std::string spawnNumberStr;
+    int spawnNumber;
+    Point spawnPosition;
+
+    if (!ParseAttributeFromXmlElem(&spawnNumberStr, "spawnNumber",
+                                   pSpawnPositionElem)) {
+      LOG_ERROR("Missing \"spawnNumber\" in ClawSpawnPosition element in "
+                "metadata file: " +
+                metadataFile);
+      return false;
+    }
+
+    spawnNumber = std::stoi(spawnNumberStr);
+
+    if (!ParseValueFromXmlElem(&spawnPosition, pSpawnPositionElem, "x",
+                               "y")) {
+      LOG_ERROR("Missing spawn positon x and y in ClawSpawnPosition element "
+                "in metadata file: " +
+                metadataFile + " for spawnNumber: " + ToStr(spawnNumber));
+      return false;
+    }
+
+    pLevelMetadata->checkpointNumberToSpawnPositionMap.insert(
+        std::make_pair(spawnNumber, spawnPosition));
+  }
+
+  // LevelMetadata.TopLadderEnds.*
+  TiXmlElement *pTopLadderEndsRootElem =
+      pRootElem->FirstChildElement("TopLadderEnds");
+  if (pTopLadderEndsRootElem == NULL) {
+    LOG_ERROR("Missing \"TopLadderEnds\" element in metadata file: " +
+              metadataFile);
+    return false;
+  }
+
+  for (TiXmlElement *pTopLadderEndElem =
+           pTopLadderEndsRootElem->FirstChildElement("TopLadderEnd");
+       pTopLadderEndElem != NULL;
+       pTopLadderEndElem =
+           pTopLadderEndElem->NextSiblingElement("TopLadderEnd")) {
+    std::string tileIdStr;
+    int tileId;
+    Point offset;
+
+    if (!ParseAttributeFromXmlElem(&tileIdStr, "tileId", pTopLadderEndElem)) {
+      LOG_ERROR(
+          "Missing \"tileId\" in TopLadderEnd element in metadata file: " +
+          metadataFile);
+      return false;
+    }
+
+    tileId = std::stoi(tileIdStr);
+
+    if (!ParseValueFromXmlElem(&offset, pTopLadderEndElem, "offsetX",
+                               "offsetY")) {
+      LOG_ERROR("Missing ladder positon x and y in TopLadderEnd element in "
+                "metadata file: " +
+                metadataFile + " for tileId: " + ToStr(tileId));
+      return false;
+    }
+
+    pLevelMetadata->tileIdToTopLadderEndMap.insert(
+        std::make_pair(tileId, offset));
+  }
+
+  // LevelMetadata.TileDeathEffect
+  TiXmlElement *pTileDeathEffectElem =
+      pRootElem->FirstChildElement("TileDeathEffect");
+  if (pTileDeathEffectElem == NULL) {
+    LOG_ERROR("Missing \"TileDeathEffect\" element in metadata file: " +
+              metadataFile);
+    return false;
+  }
+
+  if (!ParseAttributeFromXmlElem(&pLevelMetadata->tileDeathEffectType, "type",
+                                 pTileDeathEffectElem)) {
+    LOG_ERROR(
+        "Missing \"type\" in TileDeathEffect element in metadata file: " +
+        metadataFile);
+    return false;
+  }
+
+  if (pLevelMetadata->tileDeathEffectType != "NONE") {
+    if (!ParseValueFromXmlElem(&pLevelMetadata->tileDeathEffectOffset,
+                               pTileDeathEffectElem, "offsetX", "offsetY")) {
+      LOG_ERROR("Missing death effect positon x and y in TileDeathEffect "
+                "element in metadata file: " +
+                metadataFile +
+                " for type: " + pLevelMetadata->tileDeathEffectType);
+      return false;
+    }
+  }
+
+  // Store in map
+  m_LevelMetadataMap.insert(
+      std::make_pair(pLevelMetadata->levelNumber, pLevelMetadata));
+
+  LOG("Lazy-loaded metadata for level " + ToStr(levelNumber));
+
+  return true;
+}
+
 const shared_ptr<LevelMetadata>
 BaseGameApp::GetLevelMetadata(int levelNumber) const {
+  // Check if already loaded
   auto findIt = m_LevelMetadataMap.find(levelNumber);
+  if (findIt != m_LevelMetadataMap.end()) {
+    return findIt->second; // Already loaded, return cached
+  }
+
+  // Lazy-load the metadata for this level
+  LOG("Requesting metadata for level " + ToStr(levelNumber));
+
+  // Need to cast away const because we're modifying m_LevelMetadataMap
+  BaseGameApp* mutableThis = const_cast<BaseGameApp*>(this);
+  if (!mutableThis->LoadSingleLevelMetadata(levelNumber)) {
+    LOG_ERROR("Failed to lazy-load level metadata for level: " + ToStr(levelNumber));
+    return NULL;
+  }
+
+  // Now it should be in the map
+  findIt = m_LevelMetadataMap.find(levelNumber);
   if (findIt == m_LevelMetadataMap.end()) {
-    LOG_ASSERT("LevelMetadata not found for level: " + ToStr(levelNumber));
+    LOG_ASSERT("LevelMetadata still not found after lazy-load for level: " + ToStr(levelNumber));
     return NULL;
   }
 
