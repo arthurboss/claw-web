@@ -664,7 +664,9 @@ void ScreenElementMenu::IngameMenuEndGameDelegate(IEventDataPtr pEventData)
 ScreenElementMenuPage::ScreenElementMenuPage(SDL_Renderer* pRenderer)
     :
     m_pBackground(NULL),
-    m_pRenderer(pRenderer)
+    m_pRenderer(pRenderer),
+    m_NumColumns(1),
+    m_ItemsInColumn(0)
 {
 
 }
@@ -726,6 +728,16 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
         else if (keyCode == SDL_SCANCODE_UP)
         {
             MoveToMenuItemIdx(activeMenuItemIdx, -1);
+            return true;
+        }
+        else if (keyCode == SDL_SCANCODE_LEFT)
+        {
+            MoveToMenuItemInColumn(activeMenuItemIdx, -1);
+            return true;
+        }
+        else if (keyCode == SDL_SCANCODE_RIGHT)
+        {
+            MoveToMenuItemInColumn(activeMenuItemIdx, 1);
             return true;
         }
         else if (m_KeyToEventMap.find(keyCode) != m_KeyToEventMap.end())
@@ -802,6 +814,16 @@ bool ScreenElementMenuPage::Initialize(TiXmlElement* pElem)
     std::string pageName;
     ParseValueFromXmlElem(&pageName, pElem->FirstChildElement("PageName"));
     m_PageType = StringToMenuPageEnum(pageName);
+
+    // Parse column layout (optional)
+    if (pElem->FirstChildElement("Columns"))
+    {
+        ParseValueFromXmlElem(&m_NumColumns, pElem->FirstChildElement("Columns"));
+    }
+    if (pElem->FirstChildElement("ItemsInColumn"))
+    {
+        ParseValueFromXmlElem(&m_ItemsInColumn, pElem->FirstChildElement("ItemsInColumn"));
+    }
 
     // This can be nullptr
     m_pBackground = LoadImageFromXmlElement(pElem->FirstChildElement("BackgroundImage"));
@@ -935,6 +957,100 @@ bool ScreenElementMenuPage::MoveToMenuItemIdx(int oldIdx, int idxIncrement, bool
     }
 
     return true;
+}
+
+bool ScreenElementMenuPage::MoveToMenuItemInColumn(int oldIdx, int columnOffset, bool playSound)
+{
+    // If no column layout is defined, do nothing
+    if (m_NumColumns <= 1 || m_ItemsInColumn == 0)
+    {
+        return false;
+    }
+
+    if (m_MenuItems.empty())
+    {
+        return false;
+    }
+
+    DeactivateAllMenuItems();
+
+    // Calculate current column and row
+    int currentColumn = oldIdx / m_ItemsInColumn;
+    int currentRow = oldIdx % m_ItemsInColumn;
+
+    // Calculate target column (with wrapping)
+    int targetColumn = currentColumn + columnOffset;
+    if (targetColumn < 0)
+    {
+        targetColumn = m_NumColumns - 1;
+    }
+    else if (targetColumn >= m_NumColumns)
+    {
+        targetColumn = 0;
+    }
+
+    // Calculate target index
+    int targetIdx = (targetColumn * m_ItemsInColumn) + currentRow;
+
+    // Make sure target index is within bounds
+    if (targetIdx >= (int)m_MenuItems.size())
+    {
+        // If we're out of bounds, try to find the last item in the target column
+        targetIdx = (targetColumn * m_ItemsInColumn) + m_ItemsInColumn - 1;
+        while (targetIdx >= (int)m_MenuItems.size() && targetIdx >= targetColumn * m_ItemsInColumn)
+        {
+            targetIdx--;
+        }
+    }
+
+    // Try to focus the target item, if it can't be focused, try adjacent items in the same column
+    int tryCount = 0;
+    int direction = (targetIdx > oldIdx) ? -1 : 1; // Try going up first in the target column
+
+    while (tryCount < m_ItemsInColumn)
+    {
+        if (targetIdx >= 0 && targetIdx < (int)m_MenuItems.size())
+        {
+            if (m_MenuItems[targetIdx]->Focus())
+            {
+                if (playSound)
+                {
+                    SoundInfo soundInfo(SOUND_MENU_CHANGE_MENU_ITEM);
+                    IEventMgr::Get()->VTriggerEvent(IEventDataPtr(
+                        new EventData_Request_Play_Sound(soundInfo)));
+                }
+                return true;
+            }
+        }
+
+        // Try next item in the same column
+        targetIdx += direction;
+
+        // If we've gone outside the column, switch direction
+        int targetCol = targetIdx / m_ItemsInColumn;
+        if (targetCol != targetColumn)
+        {
+            if (direction == -1)
+            {
+                direction = 1;
+                targetIdx = (targetColumn * m_ItemsInColumn) + currentRow + 1;
+            }
+            else
+            {
+                break; // We've tried both directions
+            }
+        }
+
+        tryCount++;
+    }
+
+    // If we couldn't find any focusable item in target column, stay on current item
+    if (oldIdx >= 0 && oldIdx < (int)m_MenuItems.size())
+    {
+        m_MenuItems[oldIdx]->Focus();
+    }
+
+    return false;
 }
 
 void ScreenElementMenuPage::OnPageLoaded()

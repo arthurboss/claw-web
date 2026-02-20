@@ -198,6 +198,7 @@ private:
     void DeactivateAllMenuItems();
     int GetActiveMenuItemIdx();
     bool MoveToMenuItemIdx(int oldIdx, int idxIncrement, bool playSound = true);
+    bool MoveToMenuItemInColumn(int oldIdx, int columnOffset, bool playSound = true);
     shared_ptr<ScreenElementMenuItem> GetActiveMenuItem();
 
     KeyToEventMap m_KeyToEventMap;
@@ -207,6 +208,10 @@ private:
 
     shared_ptr<Image> m_pBackground;
     SDL_Renderer* m_pRenderer;
+
+    // Column navigation support
+    int m_NumColumns;
+    int m_ItemsInColumn;
 };
 
 enum MenuItemType
