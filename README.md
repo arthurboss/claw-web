@@ -14,11 +14,17 @@ Browser-based reimplementation of the classic platformer using Emscripten and We
 
 ## Features
 
-- **Lazy Loading:** Initial download ~48MB (vs 160MB traditional build)
+- **Lazy Loading Architecture:**
+  - Initial download ~48MB (vs 160MB traditional build)
+  - Only menu/UI assets load at startup
+  - Level assets load on-demand when entering levels
+  - Level metadata (XML) loads on first visit, then cached
 - **IndexedDB Storage:** Upload CLAW.REZ once, cached forever in browser
 - **WebGL Rendering:** SDL2 with hardware acceleration
 - **Responsive Design:** Automatic 4:3 aspect ratio scaling
 - **HTTP/3 Support:** Optional fast loading with QUIC protocol
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details about the lazy loading system.
 
 ## Quick Start
 
