@@ -303,6 +303,10 @@ private:
     MenuItemImageMap m_Images;
     //MenuItemImageContainerList m_MenuItemImageContainerList;
     SDL_Renderer* m_pRenderer;
+
+    // Text overlay support
+    std::string m_Text;
+    bool m_bHasText;
 };
 
 #endif

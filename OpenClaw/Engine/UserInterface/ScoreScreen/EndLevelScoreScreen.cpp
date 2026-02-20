@@ -1,5 +1,6 @@
 #include "EndLevelScoreScreen.h"
 #include "../../GameApp/BaseGameApp.h"
+#include "../../GameApp/BaseGameLogic.h"
 #include "../../Resource/Loaders/PalLoader.h"
 #include "../../Resource/Loaders/PcxLoader.h"
 #include "../../Resource/Loaders/PidLoader.h"
@@ -479,13 +480,31 @@ void ScreenElementScoreScreen::LoadNextLevel()
 
     // Specify this
     int nextLevelNum = m_NextLevelNumber;
+    int finishedLevelNum = nextLevelNum - 1; // The level we just finished
 
     m_pProcessMgr->AbortAllProcesses(true);
     SAFE_DELETE(m_pProcessMgr);
     IEventMgr::Get()->VAbortAllEvents();
 
-    IEventDataPtr pEvent(new EventData_Menu_LoadGame(nextLevelNum, false, 0));
-    IEventMgr::Get()->VQueueEvent(pEvent);
+    // Play cutscene between levels (if available)
+    // CLAW1.mp4 plays after level 1, CLAW2.mp4 after level 2, etc.
+    if (finishedLevelNum >= 1 && finishedLevelNum <= 8)
+    {
+        std::string cutsceneFile = "videos/CLAW" + ToStr(finishedLevelNum) + ".mp4";
+        LOG("Triggering cutscene: " + cutsceneFile);
+
+        // Set the level to load after cutscene finishes
+        g_pApp->GetGameLogic()->SetLevelToLoadAfterCutscene(nextLevelNum);
+
+        // Play the cutscene
+        g_pApp->GetGameLogic()->VPlayCutscene(cutsceneFile);
+    }
+    else
+    {
+        // No cutscene available, load level directly
+        IEventDataPtr pEvent(new EventData_Menu_LoadGame(nextLevelNum, false, 0));
+        IEventMgr::Get()->VQueueEvent(pEvent);
+    }
 }
 
 void ScreenElementScoreScreen::FinishedLoadingRowDelegate(IEventDataPtr pEventData)

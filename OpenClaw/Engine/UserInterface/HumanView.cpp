@@ -306,6 +306,8 @@ void HumanView::RegisterAllDelegates()
     IEventMgr::Get()->VAddListener(MakeDelegate(
         this, &HumanView::LoadGameDelegate), EventData_Menu_LoadGame::sk_EventType);
     IEventMgr::Get()->VAddListener(MakeDelegate(
+        this, &HumanView::PlayCutsceneDelegate), EventData_Play_Cutscene::sk_EventType);
+    IEventMgr::Get()->VAddListener(MakeDelegate(
         this, &HumanView::SetVolumeDelegate), EventData_Set_Volume::sk_EventType);
     IEventMgr::Get()->VAddListener(MakeDelegate(
         this, &HumanView::SoundEnabledChangedDelegate), EventData_Sound_Enabled_Changed::sk_EventType);
@@ -341,6 +343,8 @@ void HumanView::RemoveAllDelegates()
     pEventMgr->VRemoveListener(MakeDelegate(this, &HumanView::RequestResetLevelDelegate), EventData_Request_Reset_Level::sk_EventType);
     IEventMgr::Get()->VRemoveListener(MakeDelegate(
         this, &HumanView::LoadGameDelegate), EventData_Menu_LoadGame::sk_EventType);
+    IEventMgr::Get()->VRemoveListener(MakeDelegate(
+        this, &HumanView::PlayCutsceneDelegate), EventData_Play_Cutscene::sk_EventType);
     IEventMgr::Get()->VRemoveListener(MakeDelegate(
         this, &HumanView::SetVolumeDelegate), EventData_Set_Volume::sk_EventType);
     IEventMgr::Get()->VRemoveListener(MakeDelegate(
@@ -701,6 +705,18 @@ void HumanView::LoadGameDelegate(IEventDataPtr pEventData)
 
             g_pApp->GetGameLogic()->VChangeState(GameState_LoadingLevel);
         }
+    }
+}
+
+void HumanView::PlayCutsceneDelegate(IEventDataPtr pEventData)
+{
+    shared_ptr<EventData_Play_Cutscene> pCastEventData =
+        static_pointer_cast<EventData_Play_Cutscene>(pEventData);
+
+    if (pCastEventData)
+    {
+        const std::string& videoPath = pCastEventData->GetVideoPath();
+        g_pApp->GetGameLogic()->VPlayCutscene(videoPath);
     }
 }
 

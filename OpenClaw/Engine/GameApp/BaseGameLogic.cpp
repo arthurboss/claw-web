@@ -52,6 +52,7 @@ BaseGameLogic::BaseGameLogic()
     m_Proxy = false;
     m_RenderDiagnostics = true;
     m_SelectedLevel = -1;
+    m_LevelToLoadAfterCutscene = -1;
     m_bRunning = true;
 
     m_pGameSaveMgr.reset(new GameSaveMgr());
@@ -888,7 +889,19 @@ void BaseGameLogic::VOnUpdate(uint32 msDiff)
                 {
                     LOG("Cutscene finished.");
                     m_pActiveVideo.reset();
-                    VChangeState(GameState_Menu); // For now, always go to menu
+
+                    // Check if there's a level to load after cutscene
+                    if (m_LevelToLoadAfterCutscene > 0)
+                    {
+                        LOG("Loading level " + ToStr(m_LevelToLoadAfterCutscene) + " after cutscene");
+                        IEventDataPtr pEvent(new EventData_Menu_LoadGame(m_LevelToLoadAfterCutscene, false, 0));
+                        IEventMgr::Get()->VQueueEvent(pEvent);
+                        m_LevelToLoadAfterCutscene = -1; // Reset
+                    }
+                    else
+                    {
+                        VChangeState(GameState_Menu); // Go to menu if no level specified
+                    }
                 }
             }
             else

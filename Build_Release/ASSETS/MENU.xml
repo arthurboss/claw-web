@@ -51,7 +51,7 @@
             <Name>REPLAY_MOVIES_BUTTON</Name>
             <Type>Button</Type>
             <Hotkey>R</Hotkey>
-            <State>Disabled</State>
+            <State>Inactive</State>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/005_REPLAYMOVIES.PCX</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/006_REPLAYMOVIES.PCX</ActiveImage>
             <DisabledImage>/STATES/MENU/IMAGES/MAIN/007_REPLAYMOVIES.PCX</DisabledImage>
@@ -2133,7 +2133,167 @@
             </GeneratedEvent>
         </MenuItem>
     </MenuPage>
-    
+
+    <!-- REPLAY MOVIES PAGE -->
+    <MenuPage>
+        <PageName>MenuPage_ReplayMovies</PageName>
+        <KeyboardEvent>
+            <KeyType>Escape</KeyType>
+            <GeneratedEvent>
+                <Type>SwitchPage</Type>
+                <PageName>MenuPage_Main</PageName>
+            </GeneratedEvent>
+        </KeyboardEvent>
+                <!-- Page Title -->
+        <MenuItem>
+            <Name>MOVIES_TITLE</Name>
+            <Type>Text</Type>
+            <State>Inactive</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/005_REPLAYMOVIES.PCX</InactiveImage>
+            <Position x="170" y="161" />
+        </MenuItem>
+        <!-- Intro Movie -->
+        <MenuItem>
+            <Name>INTRO_MOVIE_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/001_NEWGAME.PCX</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/002_NEWGAME.PCX</ActiveImage>
+            <Position x="120" y="120" />
+            <Text>Introduction</Text>
+            <GeneratedEvent>
+                <Type>PlayCutscene</Type>
+                <VideoPath>videos/INTRO.mp4</VideoPath>
+            </GeneratedEvent>
+        </MenuItem>
+        <!-- Level 1 Movie -->
+        <MenuItem>
+            <Name>LEVEL1_MOVIE_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/001_NEWGAME.PCX</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/002_NEWGAME.PCX</ActiveImage>
+            <Position x="120" y="160" />
+            <Text>Escape</Text>
+            <GeneratedEvent>
+                <Type>PlayCutscene</Type>
+                <VideoPath>videos/CLAW1.mp4</VideoPath>
+            </GeneratedEvent>
+        </MenuItem>
+        <!-- Level 2 Movie -->
+        <MenuItem>
+            <Name>LEVEL2_MOVIE_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/001_NEWGAME.PCX</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/002_NEWGAME.PCX</ActiveImage>
+            <Position x="120" y="200" />
+            <Text>Out of the Woods</Text>
+            <GeneratedEvent>
+                <Type>PlayCutscene</Type>
+                <VideoPath>videos/CLAW2.mp4</VideoPath>
+            </GeneratedEvent>
+        </MenuItem>
+        <!-- Level 3 Movie -->
+        <MenuItem>
+            <Name>LEVEL3_MOVIE_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/001_NEWGAME.PCX</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/002_NEWGAME.PCX</ActiveImage>
+            <Position x="120" y="240" />
+            <Text>The Tavern</Text>
+            <GeneratedEvent>
+                <Type>PlayCutscene</Type>
+                <VideoPath>videos/CLAW3.mp4</VideoPath>
+            </GeneratedEvent>
+        </MenuItem>
+        <!-- Level 4 Movie -->
+        <MenuItem>
+            <Name>LEVEL4_MOVIE_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/001_NEWGAME.PCX</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/002_NEWGAME.PCX</ActiveImage>
+            <Position x="120" y="280" />
+            <Text>The Chase</Text>
+            <GeneratedEvent>
+                <Type>PlayCutscene</Type>
+                <VideoPath>videos/CLAW4.mp4</VideoPath>
+            </GeneratedEvent>
+        </MenuItem>
+        <!-- Level 5 Movie -->
+        <MenuItem>
+            <Name>LEVEL5_MOVIE_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/001_NEWGAME.PCX</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/002_NEWGAME.PCX</ActiveImage>
+            <Position x="350" y="120" />
+            <Text>Reunion</Text>
+            <GeneratedEvent>
+                <Type>PlayCutscene</Type>
+                <VideoPath>videos/CLAW5.mp4</VideoPath>
+            </GeneratedEvent>
+        </MenuItem>
+        <!-- Level 6 Movie -->
+        <MenuItem>
+            <Name>LEVEL6_MOVIE_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/001_NEWGAME.PCX</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/002_NEWGAME.PCX</ActiveImage>
+            <Position x="350" y="160" />
+            <Text>Tiger Island</Text>
+            <GeneratedEvent>
+                <Type>PlayCutscene</Type>
+                <VideoPath>videos/CLAW6.mp4</VideoPath>
+            </GeneratedEvent>
+        </MenuItem>
+        <!-- Level 7 Movie -->
+        <MenuItem>
+            <Name>LEVEL7_MOVIE_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/001_NEWGAME.PCX</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/002_NEWGAME.PCX</ActiveImage>
+            <Position x="350" y="200" />
+            <Text>We Meet Again</Text>
+            <GeneratedEvent>
+                <Type>PlayCutscene</Type>
+                <VideoPath>videos/CLAW7.mp4</VideoPath>
+            </GeneratedEvent>
+        </MenuItem>
+        <!-- Level 8 Movie -->
+        <MenuItem>
+            <Name>LEVEL8_MOVIE_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/001_NEWGAME.PCX</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/002_NEWGAME.PCX</ActiveImage>
+            <Position x="350" y="240" />
+            <Text>The Ceremony</Text>
+            <GeneratedEvent>
+                <Type>PlayCutscene</Type>
+                <VideoPath>videos/CLAW8.mp4</VideoPath>
+            </GeneratedEvent>
+        </MenuItem>
+
+        <!-- Back Button -->
+        <MenuItem>
+            <Name>BACK_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Active</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/SAVE/001_PREVIOUSMENU.PCX</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/SAVE/002_PREVIOUSMENU.PCX</ActiveImage>
+            <Position x="266" y="420" />
+            <GeneratedEvent>
+                <Type>SwitchPage</Type>
+                <PageName>MenuPage_Main</PageName>
+            </GeneratedEvent>
+        </MenuItem>
+    </MenuPage>
+
     <!-- CREDITS PAGE -->
     <MenuPage>
         <PageName>MenuPage_Credits</PageName>
