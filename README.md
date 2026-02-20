@@ -25,12 +25,14 @@ Browser-based reimplementation of the classic platformer using Emscripten and We
 ### Running the Game
 
 **Option 1: HTTP/3 Server (Recommended)**
+
 ```bash
 ./scripts/start_http3_server.sh
 # Open https://localhost:8080/openclaw.html
 ```
 
 **Option 2: Python Server**
+
 ```bash
 python3 -m http.server 8080
 # Open http://localhost:8080/Build_Release/openclaw.html
@@ -54,6 +56,7 @@ Subsequent visits load instantly from browser cache.
 - Linux or WSL (Windows not directly supported)
 
 **Install Emscripten:**
+
 ```bash
 git clone https://github.com/emscripten-core/emsdk.git
 cd emsdk
@@ -70,6 +73,7 @@ source ./emsdk/emsdk_env.sh
 ```
 
 The build script automatically:
+
 - Regenerates ASSETS.ZIP from source
 - Patches SDL2 shaders for WebGL compatibility
 - Creates WASM binaries in Build_Release/
@@ -79,11 +83,13 @@ The build script automatically:
 ### When to Rebuild
 
 **Rebuild required:**
-- Modified C++ source files (*.cpp, *.h)
+
+- Modified C++ source files (*.cpp,*.h)
 - Changed CMakeLists.txt or build configuration
 - Updated C++ dependencies (Box2D, libwap)
 
 **Rebuild NOT required (just refresh browser):**
+
 - Modified JavaScript files (asset-loader.js, graphics-bridge.js, etc.)
 - Modified HTML (openclaw.html)
 - Modified CSS styles
@@ -92,13 +98,15 @@ The build script automatically:
 ## Architecture
 
 ### Tech Stack
+
 - **Graphics:** SDL2 + WebGL
 - **Audio:** SDL_Mixer + Web Audio API
 - **Physics:** Box2D
 - **Build:** Emscripten (C++ to WebAssembly)
 
 ### File Structure
-```
+
+```markdown
 Build_Release/
 ├── openclaw.wasm          # Game engine (47 MB)
 ├── openclaw.data          # Critical assets (600 KB) - was 113 MB!
@@ -149,15 +157,10 @@ Having issues? See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for:
 - Storage quota issues
 - Browser-specific problems
 
-## Known Limitations
-
-- MIDI audio disabled (browser limitation)
-- WAV audio issues in some browsers (Edge)
-- Firefox ALT key opens menu ([browser bug](https://bugzilla.mozilla.org/show_bug.cgi?id=1292053)) - use fullscreen
-
 ## Contributing
 
 This is a WASM-focused fork. Pull requests welcome for:
+
 - Browser compatibility improvements
 - Performance optimizations
 - Bug fixes
