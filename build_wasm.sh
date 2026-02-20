@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # OpenClaw WebAssembly Build Script
-# This script handles the complete build process including SDL2 shader patching
+# This script handles the complete build process with lazy loading architecture
+# CLAW.REZ is NOT bundled - users provide it at runtime via browser upload
 
 set -e  # Exit on any error
 
-echo "=== OpenClaw WebAssembly Build Script ==="
+echo "=== OpenClaw WASM Build (Lazy Loading Architecture) ==="
 echo ""
 
 # Check if we're in the right directory
@@ -21,30 +22,42 @@ if ! command -v emcmake &> /dev/null; then
     exit 1
 fi
 
-echo "1. Rebuilding ASSETS.ZIP from source..."
+echo "1. Checking prerequisites..."
+if [ ! -f "Build_Release/ASSETS.ZIP" ] && [ ! -d "Build_Release/ASSETS" ]; then
+    echo "Error: ASSETS.ZIP or ASSETS/ directory not found in Build_Release/"
+    exit 1
+fi
+
+echo "2. Rebuilding ASSETS.ZIP from source..."
 cd Build_Release
 rm -f ASSETS.ZIP
-(cd ASSETS && zip -r ../ASSETS.ZIP .)
+(cd ASSETS && zip -q -r ../ASSETS.ZIP .)
 echo "   ASSETS.ZIP created: $(du -h ASSETS.ZIP | cut -f1)"
+
+# Note about CLAW.REZ
+if [ -f "CLAW.REZ" ]; then
+    echo "   ⚠️  Warning: CLAW.REZ found in Build_Release/"
+    echo "   This file is NOT bundled into openclaw.data (users provide at runtime)"
+fi
 cd ..
 
-echo "2. Setting up build directory..."
+echo "3. Setting up build directory..."
 if [ ! -d "build" ]; then
     mkdir build
 fi
 cd build
 
-echo "3. Configuring CMake for Emscripten..."
+echo "4. Configuring CMake for Emscripten..."
 emcmake cmake -DEmscripten=1 ..
 
-echo "4. Building the project (first attempt to download SDL2)..."
+echo "5. Building the project (first attempt to download SDL2)..."
 make
 
-echo "5. Patching SDL2 shaders for WebGL compatibility..."
+echo "6. Patching SDL2 shaders for WebGL compatibility..."
 cd ..
 ./patch_sdl2_shaders.sh
 
-echo "6. Clearing SDL2 build cache and rebuilding..."
+echo "7. Clearing SDL2 build cache and rebuilding..."
 rm -rf ./emsdk/upstream/emscripten/cache/build/sdl2
 cd build
 make
@@ -52,8 +65,20 @@ make
 echo ""
 echo "=== Build completed successfully! ==="
 echo ""
-echo "To run the game:"
-echo "1. Start a web server: python3 -m http.server 8080"
-echo "2. Open: http://localhost:8080/Build_Release/openclaw.html"
+echo "Build artifacts:"
+echo "  - openclaw.wasm: $(du -h Build_Release/openclaw.wasm 2>/dev/null | cut -f1 || echo 'not built yet')"
+echo "  - openclaw.data: $(du -h Build_Release/openclaw.data 2>/dev/null | cut -f1 || echo 'not built yet')"
+echo "  - openclaw.js: $(du -h Build_Release/openclaw.js 2>/dev/null | cut -f1 || echo 'not built yet')"
 echo ""
-echo "Note: Make sure you have CLAW.REZ and ASSETS.ZIP in the Build_Release directory."
+echo "Lazy loading architecture:"
+echo "  ✓ Initial download: ~5MB (vs 160MB before)"
+echo "  ✓ CLAW.REZ loaded from user's browser storage (IndexedDB)"
+echo "  ✓ Assets load on-demand for optimal performance"
+echo ""
+echo "To run the game:"
+echo "1. Start HTTP/3 server (recommended): ./scripts/start_http3_server.sh"
+echo "   OR use Python server: python3 -m http.server 8080"
+echo "2. Open: https://localhost:8080/openclaw.html (HTTP/3)"
+echo "   OR: http://localhost:8080/Build_Release/openclaw.html (Python)"
+echo ""
+echo "Note: Users will be prompted to upload CLAW.REZ on first run."
