@@ -3,6 +3,8 @@
  * Handles lazy loading of CLAW.REZ from browser storage
  */
 
+import { AssetStorage } from './asset-storage.js';
+
 let assetStorage = null;
 let uploadResolve = null;
 
@@ -251,10 +253,18 @@ async function getStorageStats() {
   }
 }
 
-// Expose functions globally for HTML onclick/onchange handlers
+// Export functions for ES modules
+export {
+  validateClawRezFile,
+  uploadClawRez,
+  reuploadClawRez,
+  getStorageStats,
+  prepareAssetStorage,
+  mountClawRezToFS
+};
+
+// Keep window globals for HTML event handlers (permanent)
 window.validateClawRezFile = validateClawRezFile;
 window.uploadClawRez = uploadClawRez;
 window.reuploadClawRez = reuploadClawRez;
 window.getStorageStats = getStorageStats;
-window.prepareAssetStorage = prepareAssetStorage;
-window.mountClawRezToFS = mountClawRezToFS;

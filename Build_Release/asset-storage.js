@@ -2,7 +2,7 @@
  * IndexedDB wrapper for storing game assets (CLAW.REZ)
  * Provides persistent browser storage for large binary files
  */
-class AssetStorage {
+export class AssetStorage {
   constructor() {
     this.dbName = 'OpenClawAssets';
     this.storeName = 'files';
@@ -245,7 +245,7 @@ class AssetStorage {
   }
 }
 
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = AssetStorage;
+// Keep window global for backward compatibility during transition
+if (typeof window !== 'undefined') {
+  window.AssetStorage = AssetStorage;
 }

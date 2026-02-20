@@ -16,6 +16,16 @@
     <!-- Change default viewport width here according to canvas width -->
     <meta name="viewport" content="width=660" />
 
+    <!-- Preload critical ES modules for faster loading -->
+    <link rel="modulepreload" href="game-init.js" />
+    <link rel="modulepreload" href="asset-storage.js" />
+    <link rel="modulepreload" href="asset-loader.js" />
+    <link rel="modulepreload" href="resource-loader.js" />
+
+    <!-- Prefetch non-critical modules (low priority) -->
+    <link rel="prefetch" as="script" href="graphics-bridge.js" />
+    <link rel="prefetch" as="script" href="texture-bridge.js" />
+
     <style>
       :root {
         color-scheme: light dark;
@@ -867,34 +877,42 @@
 
       //    console.log("CW: " + document.getElementById('canvas').width + ", CH: " + document.getElementById('canvas').height);
 
-      // Game initialization will be called after asset scripts load
-      window.initGameWhenReady = async function() {
-        // Prepare CLAW.REZ from IndexedDB (loads into memory, ready for FS mounting)
-        const success = await prepareAssetStorage();
-        if (!success) {
-          console.error('Failed to prepare game assets');
-          return;
-        }
-
-        // Now load the game (Module.preRun will mount CLAW.REZ to FS)
-        loadGame();
-      };
+      // Note: window.initGameWhenReady will be defined by game-init.js module
     </script>
 
-    <!-- Asset Management Scripts - must load before initialization -->
-    <script src="asset-storage.js"></script>
-    <script src="asset-loader.js"></script>
-    <script src="resource-loader.js"></script>
+    <!-- Main ES Module - loads all dependencies and exposes functions to window -->
+    <script type="module" src="game-init.js"></script>
 
-    <!-- Initialize game after asset scripts are loaded -->
+    <!-- Initialize game after modules are loaded -->
     <script>
-      // Now that asset management scripts are loaded, initialize the game
-      window.initGameWhenReady();
+      // Wait for DOMContentLoaded to ensure game-init.js module has loaded
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          if (typeof window.initResourceLoader === 'function') {
+            window.initResourceLoader(Module);
+          }
+          if (typeof window.initGameWhenReady === 'function') {
+            window.initGameWhenReady();
+          } else {
+            console.error('[Init] initGameWhenReady not found. game-init.js may not have loaded.');
+          }
+        });
+      } else {
+        // DOM already loaded
+        if (typeof window.initResourceLoader === 'function') {
+          window.initResourceLoader(Module);
+        }
+        if (typeof window.initGameWhenReady === 'function') {
+          window.initGameWhenReady();
+        } else {
+          console.error('[Init] initGameWhenReady not found. game-init.js may not have loaded.');
+        }
+      }
     </script>
 
-    <!-- Graphics Bridges for WASM Module -->
-    <script src="graphics-bridge.js"></script>
-    <script src="texture-bridge.js"></script>
+    <!-- Graphics Bridges for WASM Module (optional - loaded by game-init.js) -->
+    <script type="module" src="graphics-bridge.js"></script>
+    <script type="module" src="texture-bridge.js"></script>
 
     <!-- Browser Support Check -->
     <script>

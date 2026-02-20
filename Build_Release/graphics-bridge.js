@@ -1,6 +1,6 @@
 /**
  * WebGL Graphics Bridge for WASM Module
- * 
+ *
  * This bridge provides WebGL functionality to the C++ WASM module
  * without requiring any SDL dependencies. It handles:
  * - WebGL context creation and management
@@ -9,7 +9,7 @@
  * - Simple 2D rendering operations
  */
 
-class WebGLBridge {
+export class WebGLBridge {
     constructor() {
         this.gl = null;
         this.canvas = null;
@@ -281,7 +281,10 @@ class WebGLBridge {
     }
 }
 
-// Create global instance
-window.webglBridge = new WebGLBridge();
+// Keep window global for C++ access and create instance
+if (typeof window !== 'undefined') {
+  window.WebGLBridge = WebGLBridge;
+  window.webglBridge = new WebGLBridge();
+}
 
 console.log('[WebGLBridge] Graphics bridge loaded and ready');
