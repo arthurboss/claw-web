@@ -1,6 +1,6 @@
 /**
  * Texture Bridge for WASM Module
- *
+ * 
  * This bridge provides texture functionality to the C++ WASM module
  * without requiring any SDL dependencies. It handles:
  * - Texture loading from various sources (URLs, data URLs, etc.)
@@ -9,7 +9,7 @@
  * - Texture format detection and conversion
  */
 
-export class TextureBridge {
+class TextureBridge {
     constructor() {
         this.textures = new Map(); // textureId -> texture data
         this.textureNames = new Map(); // textureId -> name mapping
@@ -379,6 +379,9 @@ export class TextureBridge {
         console.log('[TextureBridge] Texture bridge shutdown complete');
     }
 }
+
+// Export for ES modules and create global instance
+export { TextureBridge };
 
 // Keep window global for C++ access and create instance
 if (typeof window !== 'undefined') {

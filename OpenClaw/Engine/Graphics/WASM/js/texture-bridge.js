@@ -380,7 +380,13 @@ class TextureBridge {
     }
 }
 
-// Create global instance
-window.textureBridge = new TextureBridge();
+// Export for ES modules and create global instance
+export { TextureBridge };
+
+// Keep window global for C++ access and create instance
+if (typeof window !== 'undefined') {
+  window.TextureBridge = TextureBridge;
+  window.textureBridge = new TextureBridge();
+}
 
 console.log('[TextureBridge] Texture bridge loaded and ready');

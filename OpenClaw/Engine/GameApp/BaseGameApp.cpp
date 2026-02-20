@@ -616,41 +616,11 @@ bool BaseGameApp::LoadGameOptions(const char *inConfigFile) {
   }
 
 #ifdef __EMSCRIPTEN__
-  SDL_Point canvasSize;
-  if (Util::GetCanvasSize(canvasSize)) {
-    LOG(ToStr("Config window size is replaced by canvas size: ") +
-        ToStr(canvasSize.x) + ToStr("x") + ToStr(canvasSize.y));
-    m_GameOptions.windowWidth = canvasSize.x;
-    m_GameOptions.windowHeight = canvasSize.y;
-  }
-
-  int savedWidth = EM_ASM_INT(
-      if (window && window.localStorage && window.localStorage.width) {
-        return parseInt(window.localStorage.width);
-      } else { return -1; });
-  int savedHeight = EM_ASM_INT(
-      if (window && window.localStorage && window.localStorage.height) {
-        return parseInt(window.localStorage.height);
-      } else { return -1; });
-  float savedScale = EM_ASM_INT(
-      if (window && window.localStorage && window.localStorage.scale) {
-        return parseFloat(window.localStorage.scale);
-      } else { return -1.0; });
-
-  if (savedWidth > 0 && savedHeight > 0) {
-    m_GameOptions.windowWidth = savedWidth;
-    m_GameOptions.windowHeight = savedHeight;
-
-    if (savedScale > 0) {
-      m_GameOptions.scale = savedScale;
-    } else {
-      m_GameOptions.scale = (double)savedWidth / 640.0;
-    }
-  }
-
-  printf("Saved resolution: %d x %d @ %f\n", savedWidth, savedHeight,
-         savedScale);
-
+  // Canvas is fixed at 640x480 and scaled via CSS
+  m_GameOptions.windowWidth = 640;
+  m_GameOptions.windowHeight = 480;
+  m_GameOptions.scale = 1.0;
+  LOG("WASM: Canvas fixed at 640x480, scaled via CSS");
 #endif
 
   //-------------------------------------------------------------------------

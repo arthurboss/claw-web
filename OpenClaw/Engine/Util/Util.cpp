@@ -531,20 +531,4 @@ namespace Util
         return ~crcu32;
     }
 
-#ifdef __EMSCRIPTEN__
-    bool GetCanvasSize(SDL_Point &canvasSize) {
-        int width = EM_ASM_INT(
-                {return (Module && Module.canvas) ? Module.canvas.scrollWidth : -1;}
-        );
-        int height = EM_ASM_INT(
-                {return (Module && Module.canvas) ? Module.canvas.scrollHeight : -1;}
-        );
-        if (width >= 640 && height >= 480) {
-            canvasSize.x = width;
-            canvasSize.y = height;
-            return true;
-        }
-        return false;
-    }
-#endif
 };

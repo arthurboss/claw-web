@@ -76,11 +76,10 @@
 
       .canvas-wrapper {
         position: relative;
-        aspect-ratio: 4 / 3;
-        max-width: fit-content;
-        width: 100%;
-        height: 100%;
         display: flex;
+        aspect-ratio: 4 / 3;
+        height: 100%;
+        max-height: fit-content;
         align-items: center;
         justify-content: center;
         background-color: #000;
@@ -99,16 +98,15 @@
       #canvasContainer {
         position: relative;
         display: flex;
+        height: 100%;
         max-width: 100%;
         max-height: 100%;
       }
 
       canvas {
         display: block;
-        max-width: 100%;
-        max-height: 100%;
-        width: auto;
-        height: auto;
+        width: 100%;
+        height: 100%;
         image-rendering: pixelated;
         image-rendering: crisp-edges;
         outline: none;
@@ -753,6 +751,8 @@
 
       // Emscripten structure
       var Module = {
+        // Prevent Emscripten from manipulating canvas dimensions
+        // Canvas is fixed at 640x480 and scaled via CSS only
         preRun: [
           function () {
             // Mount CLAW.REZ to virtual filesystem before game starts
@@ -763,14 +763,25 @@
               }
             }
 
-            // Here you can change canvas size dynamically if it's needed
-            // var ratio = window.devicePixelRatio || 1;
-            // Module.canvas.width = Math.max(screen.width, screen.height) * ratio;
-            // Module.canvas.height = Math.min(screen.width, screen.height) * ratio;
+            // Lock canvas to 640x480 (no dynamic resizing)
+            Module.canvas.widthNative = 640;
+            Module.canvas.heightNative = 480;
 
             loadingElement.remove();
             loadingElement = null;
             Module.canvas.style.display = "block";
+          },
+        ],
+        postRun: [
+          function () {
+            // Disable Emscripten's automatic canvas resizing
+            if (typeof Browser !== 'undefined') {
+              Browser.resizeCanvas = false;
+              // Override resize functions to prevent any canvas manipulation
+              Browser.setFullscreenCanvasSize = function() {};
+              Browser.setWindowedCanvasSize = function() {};
+              Browser.updateCanvasDimensions = function() {};
+            }
           },
         ],
         canvas: (function () {
@@ -833,37 +844,9 @@
         r.parentNode.insertBefore(script, r);
       }
 
-      // Use screen dimensions for resolution (works for both windowed and fullscreen)
-      // CSS will scale the canvas to fit the window
-      var screenWidth = screen.width;
-      var screenHeight = screen.height;
-      var targetAspect = 4 / 3;
-
-      var detectedWidth, detectedHeight;
-
-      if (screenWidth / screenHeight > targetAspect) {
-        // Screen is wider than 4:3 - limit by height
-        detectedHeight = screenHeight;
-        detectedWidth = Math.round(screenHeight * targetAspect);
-      } else {
-        // Screen is taller than 4:3 - limit by width
-        detectedWidth = screenWidth;
-        detectedHeight = Math.round(screenWidth / targetAspect);
-      }
-
-      // Cap at reasonable maximum to avoid performance issues
-      var maxDimension = 1920;
-      if (detectedHeight > maxDimension * (3 / 4)) {
-        detectedHeight = Math.round(maxDimension * (3 / 4));
-        detectedWidth = Math.round(detectedHeight * targetAspect);
-      }
-
-      CheatCodeManager.winsize = detectedWidth + " " + detectedHeight;
-      CheatCodeManager.scale = -1; // Always use default scale
-
-      window.localStorage.setItem("width", detectedWidth);
-      window.localStorage.setItem("height", detectedHeight);
-      window.localStorage.setItem("scale", -1);
+      // Canvas is fixed at 640x480 and scaled via CSS
+      CheatCodeManager.winsize = "640 480";
+      CheatCodeManager.scale = -1;
 
       if (
         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
