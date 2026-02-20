@@ -256,11 +256,33 @@ Game configuration is in `Build_Release/config.xml`:
 - Updated C++ dependencies (Box2D, libwap)
 - Changed build flags or Emscripten settings
 
+**Partial rebuild (ASSETS.ZIP and relink):**
+- Modified XML files in `Build_Release/ASSETS/` (e.g., `MENU.xml`, level XMLs)
+- Changed custom assets in `Build_Release/ASSETS/`
+- **CRITICAL:** ASSETS.ZIP is embedded into `openclaw.data` during the Emscripten linking phase. Simply rebuilding ASSETS.ZIP is NOT enough - you must force a relink!
+- **Complete workflow (required for XML/asset changes):**
+  ```bash
+  # Step 1: Rebuild ASSETS.ZIP
+  cd Build_Release
+  rm -f ASSETS.ZIP
+  cd ASSETS
+  zip -q -r ../ASSETS.ZIP .
+  cd ../..
+
+  # Step 2: Force CMake to relink (picks up updated ASSETS.ZIP)
+  touch Build_Release/ASSETS.ZIP
+  cd build
+  cmake ..
+  make -j$(nproc)
+  ```
+- **After rebuild:** Hard refresh browser (Ctrl+Shift+R or Cmd+Shift+R) to clear cached WASM files
+- **Why this is needed:** Emscripten embeds ASSETS.ZIP at link time using `--preload-file`. The linking step only runs when CMake detects changes to dependencies. Touching ASSETS.ZIP forces CMake to detect it as modified and trigger a relink.
+
 **No rebuild needed (just refresh browser):**
 - Modified JavaScript files (`*.js` in Build_Release/)
 - Modified HTML (`openclaw.html`)
 - Modified CSS styles
-- Changed XML configuration (`config.xml`)
+- Changed `config.xml` (root level, not in ASSETS/)
 - Updated documentation
 
 ### Incremental Builds
