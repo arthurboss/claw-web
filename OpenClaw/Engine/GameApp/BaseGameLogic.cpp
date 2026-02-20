@@ -952,6 +952,12 @@ void BaseGameLogic::VChangeState(GameState newState)
         std::string levelName = "LEVEL" + ToStr(levelNumber);
         std::string wwdLevelPath = "/" + levelName + "/WORLDS/WORLD.WWD";
 
+        // Lazy loading: Preload level-specific assets on-demand
+        LOG("Loading assets for " + levelName + "...");
+        std::string levelAssetPath = "/" + levelName + "/*";
+        g_pApp->GetResourceCache()->Preload(levelAssetPath, NULL);
+        LOG("Level assets loaded for " + levelName);
+
         // Load saved level file, e.g. LEVEL1.xml
         if (!VLoadGame(wwdLevelPath.c_str()))
         {

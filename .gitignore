@@ -36,9 +36,25 @@ Build_Release/vim.exe.stackdump
 # WebAssembly build artifacts
 Build_Release/openclaw.*
 Build_Release/*.wasm
-Build_Release/*.js
 Build_Release/*.data
-Build_Release/*.html
+
+# Ignore WASM-generated JS/HTML but keep our asset management scripts
+Build_Release/openclaw.js
+Build_Release/openclaw.html
+!Build_Release/asset-*.js
+!Build_Release/resource-*.js
+!Build_Release/graphics-bridge.js
+!Build_Release/texture-bridge.js
+
+# Test and demo files (development only)
+Build_Release/test-*.html
+Build_Release/*_test.html
+Build_Release/test_*.html
+Build_Release/*_demo.html
+Build_Release/generic_*.js
+Build_Release/generic_*.html
+Build_Release/webgl_demo.html
+Build_Release/webgpu-bridge.js
 
 # Emscripten SDK (large external dependency)
 emsdk/
@@ -68,3 +84,13 @@ debug.log
 # Demo build directory
 build_demo/
 Build_Release/videos/
+
+# Desktop build artifacts (WASM-only fork)
+*.exe
+*.dll
+*.lib
+*.pdb
+MidiProc/
+ClawLauncher/
+cmake-build-debug/
+Release/

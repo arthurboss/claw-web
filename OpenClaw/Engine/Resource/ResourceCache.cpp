@@ -493,13 +493,16 @@ std::vector<std::string> ResourceCache::Match(const std::string pattern)
     return matchingNames;
 }
 using namespace std;
+// Lazy loading support: Preload resources matching a pattern
+// Progress callback allows UI updates during loading
+// TODO: Add async/yield support for WASM using emscripten_sleep() to prevent blocking
 int32 ResourceCache::Preload(const std::string pattern, void(*progressCallback)(int32, bool &))
 {
     if (_resourceFile == NULL)
     {
         return 0;
     }
-        
+
     int32 numFiles = _resourceFile->VGetNumResources();
     int32 loaded = 0;
     bool cancel = false;

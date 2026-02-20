@@ -181,11 +181,17 @@ bool BaseGameApp::Initialize(int argc, char **argv) {
     return false;
   }
 
-  m_pResourceMgr->VPreload("/CLAW/*", NULL, ORIGINAL_RESOURCE);
-  m_pResourceMgr->VPreload("/GAME/*", NULL, ORIGINAL_RESOURCE);
-  m_pResourceMgr->VPreload("/STATES/*", NULL, ORIGINAL_RESOURCE);
+  // Lazy loading architecture: Only load critical assets initially
+  // Menu and UI assets load first, level assets load on-demand
+  LOG("Loading critical assets (menu/UI)...");
+  m_pResourceMgr->VPreload("/STATES/MENU/*", NULL, ORIGINAL_RESOURCE);
+  m_pResourceMgr->VPreload("/GAME/FONTS/*", NULL, ORIGINAL_RESOURCE);
+  m_pResourceMgr->VPreload("/GAME/IMAGES/MENU/*", NULL, ORIGINAL_RESOURCE);
 
+  // Load custom assets
   m_pResourceMgr->VPreload("*", NULL, CUSTOM_RESOURCE);
+
+  LOG("Critical assets loaded. Level assets will load on-demand.");
 
   if (!VPerformStartupTests()) {
     LOG_ERROR("Failed to pass certain startup tests.");
