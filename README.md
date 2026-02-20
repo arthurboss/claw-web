@@ -34,9 +34,12 @@ Browser-based reimplementation of the classic platformer using Emscripten and We
 **Option 2: Python Server**
 
 ```bash
+cd Build_Release
 python3 -m http.server 8080
-# Open http://localhost:8080/Build_Release/openclaw.html
+# Open http://localhost:8080/openclaw.html
 ```
+
+**Important:** The server must run from the `Build_Release` directory where `openclaw.html` and the WASM files are located.
 
 ### First Run
 
