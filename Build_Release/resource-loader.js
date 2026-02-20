@@ -10,7 +10,7 @@ let resourceLoadProgress = 0;
 /**
  * Update loading UI with current progress
  */
-function updateLoadingUI(phase, resourceName, loaded, total) {
+export function updateLoadingUI(phase, resourceName, loaded, total) {
   currentResourceLoadingPhase = phase;
   currentResourceName = resourceName;
 
@@ -69,39 +69,46 @@ function showLoadingUI() {
 }
 
 /**
- * Called from C++ when resource loading starts
+ * Initialize resource loader with Module object
+ * Called after Module is defined
  */
-Module.onResourceLoadStart = function(phase) {
-  updateLoadingUI(phase, '', 0, 100);
-};
+export function initResourceLoader(Module) {
+  if (!Module) {
+    console.error('[Resource Loader] Module object not provided');
+    return;
+  }
 
-/**
- * Called from C++ during resource loading
- */
-Module.onResourceLoadProgress = function(resourceName, loaded, total) {
-  updateLoadingUI(currentResourceLoadingPhase, resourceName, loaded, total);
-};
+  /**
+   * Called from C++ when resource loading starts
+   */
+  Module.onResourceLoadStart = function(phase) {
+    updateLoadingUI(phase, '', 0, 100);
+  };
 
-/**
- * Called from C++ when resource loading completes
- */
-Module.onResourceLoadComplete = function() {
-  hideLoadingUI();
-};
+  /**
+   * Called from C++ during resource loading
+   */
+  Module.onResourceLoadProgress = function(resourceName, loaded, total) {
+    updateLoadingUI(currentResourceLoadingPhase, resourceName, loaded, total);
+  };
+
+  /**
+   * Called from C++ when resource loading completes
+   */
+  Module.onResourceLoadComplete = function() {
+    hideLoadingUI();
+  };
+
+  console.log('[Resource Loader] Bridge initialized');
+}
 
 /**
  * Get current loading state (for debugging)
  */
-function getLoadingState() {
+export function getLoadingState() {
   return {
     phase: currentResourceLoadingPhase,
     resource: currentResourceName,
     progress: resourceLoadProgress
   };
 }
-
-// Expose for debugging
-window.getLoadingState = getLoadingState;
-window.updateLoadingUI = updateLoadingUI;
-
-console.log('[Resource Loader] Bridge initialized');

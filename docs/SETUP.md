@@ -80,7 +80,7 @@ OpenClaw uses a lazy loading architecture optimized for WASM and modern browsers
 
 OpenClaw is an open-source game engine licensed under **GNU GPL v3**.
 
-- Source code: https://github.com/arthurboss/OpenClaw
+- Source code: <https://github.com/arthurboss/OpenClaw>
 - You may modify and distribute under GPL v3 terms
 
 ### Captain Claw Assets (CLAW.REZ)
@@ -99,11 +99,13 @@ The original Captain Claw game assets are **copyrighted by Monolith Productions*
 ### "Upload failed"
 
 **Possible causes:**
+
 - File is not named CLAW.REZ (case-insensitive)
 - File size is incorrect (~113 MB expected)
 - Browser storage quota exceeded
 
 **Solutions:**
+
 1. Verify file is exactly named `CLAW.REZ`
 2. Check file size is ~113 MB
 3. Clear browser cache and try again
@@ -112,10 +114,12 @@ The original Captain Claw game assets are **copyrighted by Monolith Productions*
 ### "Out of storage"
 
 **Possible causes:**
+
 - Browser storage quota too low
 - Other sites using storage space
 
 **Solutions:**
+
 1. Check browser storage quota:
    - Chrome: Settings → Privacy and security → Site Settings → Storage
    - Firefox: about:preferences#privacy → Cookies and Site Data
@@ -125,11 +129,13 @@ The original Captain Claw game assets are **copyrighted by Monolith Productions*
 ### "Assets not loading"
 
 **Possible causes:**
+
 - IndexedDB disabled in browser
 - Corrupted asset storage
 - Browser compatibility issue
 
 **Solutions:**
+
 1. Open browser console (F12) for error messages
 2. Check IndexedDB is enabled:
    - Chrome: chrome://settings/content/all → IndexedDB
@@ -142,11 +148,13 @@ The original Captain Claw game assets are **copyrighted by Monolith Productions*
 ### "Slow performance"
 
 **Possible causes:**
+
 - Browser hardware acceleration disabled
 - Insufficient system resources
 - Too many background tabs
 
 **Solutions:**
+
 1. Enable hardware acceleration:
    - Chrome: Settings → System → Use hardware acceleration
    - Firefox: about:preferences → Performance
@@ -156,11 +164,13 @@ The original Captain Claw game assets are **copyrighted by Monolith Productions*
 ### "WebGL context lost"
 
 **Possible causes:**
+
 - GPU driver crash
 - Browser tab suspended
 - System resource exhaustion
 
 **Solutions:**
+
 1. Reload the page (CLAW.REZ still cached)
 2. Update graphics drivers
 3. Close other GPU-intensive applications
@@ -176,6 +186,7 @@ getStorageStats().then(stats => console.log(stats))
 ```
 
 Output:
+
 ```
 {
   files: ["CLAW.REZ"],
@@ -208,12 +219,12 @@ See main [README.md](README.md) for build instructions.
 
 ## Support
 
-- **Issues:** https://github.com/arthurboss/OpenClaw/issues
+- **Issues:** <https://github.com/arthurboss/OpenClaw/issues>
 - **Original game:** Captain Claw (1997) by Monolith Productions
 - **This fork:** WASM-only implementation with modern lazy loading
 
 ## Credits
 
-- **Original OpenClaw:** https://github.com/pjasicek/OpenClaw
+- **Original OpenClaw:** <https://github.com/pjasicek/OpenClaw>
 - **Captain Claw:** Monolith Productions (1997)
 - **WASM Fork Maintainer:** Arthur Boss

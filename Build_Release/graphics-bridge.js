@@ -281,7 +281,13 @@ class WebGLBridge {
     }
 }
 
-// Create global instance
-window.webglBridge = new WebGLBridge();
+// Export for ES modules and create global instance
+export { WebGLBridge };
+
+// Keep window global for C++ access and create instance
+if (typeof window !== 'undefined') {
+  window.WebGLBridge = WebGLBridge;
+  window.webglBridge = new WebGLBridge();
+}
 
 console.log('[WebGLBridge] Graphics bridge loaded and ready');

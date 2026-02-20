@@ -89,28 +89,39 @@ void LocalAmbientSoundComponent::VOnActorLeftTrigger(Actor* pActorWhoLeft, Fixtu
 
 void LocalAmbientSoundComponent::PlayAmbientSound()
 {
-    assert(m_SoundChannel == -1);
+    // Defensive: Stop existing sound if already playing
+    if (m_SoundChannel != -1)
+    {
+        StopAmbientSound();
+    }
+
     assert(m_pActorInArea != NULL);
 
-#ifndef __EMSCRIPTEN__
-    m_SoundChannel = Mix_GroupAvailable(1);
-    assert(m_SoundChannel != -1 && "Could not get a channel from channel group");
-#else
+#ifdef __EMSCRIPTEN__
     // TODO: [EMSCRIPTEN] Try to implement Mix_Group* functions
+    // For now, ambient sounds are not supported in Emscripten builds
     m_SoundChannel = -1;
+    return;
 #endif
+
+    m_SoundChannel = Mix_GroupAvailable(1);
+    if (m_SoundChannel == -1)
+    {
+        // No available sound channel, silently fail
+        return;
+    }
 
     shared_ptr<Mix_Chunk> pSound = WavResourceLoader::LoadAndReturnSound(m_Properties.sound.c_str());
-    assert(pSound != nullptr);
+    if (pSound == nullptr)
+    {
+        // Failed to load sound, release channel and fail
+        m_SoundChannel = -1;
+        return;
+    }
 
-#ifndef __EMSCRIPTEN__
     int globalVolume = (int)((((float)g_pApp->GetAudio()->GetSoundVolume()) / 100.0f) * (float)MIX_MAX_VOLUME);
     int chunkVolume = (int)((((float)m_Properties.volume) / 100.0f) * (float)globalVolume);
-
     Mix_VolumeChunk(pSound.get(), chunkVolume);
-#else
-    // TODO: [EMSCRIPTEN] Try to implement Mix_VolumeChunk
-#endif
 
     m_SoundChannel = Mix_PlayChannel(m_SoundChannel, pSound.get(), -1);
 
@@ -120,7 +131,11 @@ void LocalAmbientSoundComponent::PlayAmbientSound()
 
 void LocalAmbientSoundComponent::StopAmbientSound()
 {
-    assert(m_SoundChannel != -1);
+    // Defensive: If no valid sound channel was allocated, nothing to stop
+    if (m_SoundChannel == -1)
+    {
+        return;
+    }
 
     Mix_HaltChannel(m_SoundChannel);
     m_SoundChannel = -1;
@@ -132,8 +147,11 @@ void LocalAmbientSoundComponent::UpdateAmbientSound()
     // TODO: [EMSCRIPTEN] Try to implement Mix_SetDistance
     return;
 #endif
-    assert(m_SoundChannel != -1);
-    assert(m_pActorInArea != NULL);
+    // Defensive: Don't update if no valid sound channel or actor
+    if (m_SoundChannel == -1 || m_pActorInArea == NULL)
+    {
+        return;
+    }
 
     Point soundDistanceDelta =
         m_pOwner->GetPositionComponent()->GetPosition() - m_pActorInArea->GetPositionComponent()->GetPosition();
