@@ -66,6 +66,25 @@ Based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek - original
   The build script automatically regenerates `ASSETS.ZIP` from the `Build_Release/ASSETS/` folder before compiling.
 
   **Note:** CLAW.REZ is loaded from user's browser storage at runtime, not bundled into openclaw.data.
+
+### When to Rebuild
+
+**You ONLY need to rebuild when:**
+- ✅ You modify C++ source files (*.cpp, *.h)
+- ✅ You change CMakeLists.txt or build configuration
+- ✅ You update Box2D, libwap, or other C++ dependencies
+
+**You do NOT need to rebuild when:**
+- ❌ You modify JavaScript files (asset-loader.js, graphics-bridge.js, etc.) - just refresh browser
+- ❌ You modify HTML (openclaw.html) - just refresh browser
+- ❌ You modify CSS styles - just refresh browser
+- ❌ You update documentation (*.md files)
+
+**Quick rebuild command:**
+```bash
+source ./emsdk/emsdk_env.sh
+./build_wasm.sh
+```
   
   **Manual Build:**
 
