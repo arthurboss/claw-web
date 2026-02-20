@@ -1,188 +1,114 @@
 # OpenClaw WASM
 
-> WebAssembly port of Captain Claw (1997) that runs in modern browsers
+> Play Captain Claw (1997) in your web browser - no installation needed!
 
-Browser-based reimplementation of the classic platformer using Emscripten and WebGL. Based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek.
+Browser-based version of the classic platformer. Based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek.
 
-## ⚠️ Asset Requirements
+| Main Menu | Level 1 Gameplay |
+|-----------|------------------|
+| ![Game Menu](docs/images/game-menu.png) | ![Level 1 Gameplay](docs/images/gameplay-level1.png) |
 
-**You will need CLAW.REZ** from the original Captain Claw (1997) game. The game will prompt you to upload this file on first run.
+## 🎮 Quick Start
 
-**Legal:** You must own the original game to use its assets legally. See [SETUP.md](SETUP.md) for details.
+### Requirements
 
-**Note:** This is a WASM-only fork. For desktop builds, visit the [original repository](https://github.com/pjasicek/OpenClaw).
+You'll need **CLAW.REZ** from the original Captain Claw (1997) game.
 
-## Features
+- The game will ask you to upload this file on first run
+- It's saved in your browser - you only upload once
+- **Legal:** You must own the original game to use its assets
 
-- **Lazy Loading Architecture:**
-  - Initial download ~48MB (vs 160MB traditional build)
-  - Only menu/UI assets load at startup
-  - Level assets load on-demand when entering levels
-  - Level metadata (XML) loads on first visit, then cached
-- **IndexedDB Storage:** Upload CLAW.REZ once, cached forever in browser
-- **WebGL Rendering:** SDL2 with hardware acceleration
-- **Responsive Design:** Automatic 4:3 aspect ratio scaling
-- **HTTP/3 Support:** Optional fast loading with QUIC protocol
+### How to Play
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details about the lazy loading system.
+1. **Start a local server by running the following in your computer's Terminal application** (pick one):
 
-## Quick Start
+   ```bash
+   # Recommended: HTTP/3 server (faster)
+   ./scripts/start_http3_server.sh
 
-### Running the Game
+   # Alternative: Python server
+   cd Build_Release
+   python3 -m http.server 8080
+   ```
 
-**Option 1: HTTP/3 Server (Recommended)**
+2. **Open in browser:**
+   - HTTP/3: <https://localhost:8080/openclaw.html>
+   - Python: <http://localhost:8080/openclaw.html>
 
-```bash
-./scripts/start_http3_server.sh
-# Open https://localhost:8080/openclaw.html
-```
+3. **First time only:** Upload your CLAW.REZ file when prompted
 
-**Option 2: Python Server**
+4. **Play!** The game loads in 2-3 seconds
 
-```bash
-cd Build_Release
-python3 -m http.server 8080
-# Open http://localhost:8080/openclaw.html
-```
+### Browser Requirements
 
-**Important:** The server must run from the `Build_Release` directory where `openclaw.html` and the WASM files are located.
+- Chrome 105+ / Firefox 121+ / Safari 16.4+ / Edge 105+
+- ~160MB free storage (for cached game files)
 
-### First Run
+## 💡 Features
 
-1. Browser will show "First Time Setup" screen
-2. Select your CLAW.REZ file from the original game
-3. File uploads and stores in browser (one-time process)
-4. Game starts automatically
+- **Fast Loading:** Only 48MB download, levels load as you play
+- **One-Time Setup:** Upload CLAW.REZ once, play forever
+- **Full Game:** All 14 levels, original graphics and audio
+- **Modern Browsers:** Hardware-accelerated WebGL rendering
+- **No Installation:** Runs entirely in your browser
 
-Subsequent visits load instantly from browser cache.
+## 🛠️ For Developers
 
-## Building from Source
+### Building from Source
 
-### Prerequisites
+See [BUILDING.md](docs/BUILDING.md) for:
 
-- [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)
-- Python 3 and CMake
-- Linux or WSL (Windows not directly supported)
+- How to compile the WASM build
+- Prerequisites and build tools
+- Development workflow
+- When to rebuild vs refresh
 
-**Install Emscripten:**
+### Architecture
 
-```bash
-git clone https://github.com/emscripten-core/emsdk.git
-cd emsdk
-./emsdk install latest
-./emsdk activate latest
-source ./emsdk_env.sh
-```
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for:
 
-### Build
+- Lazy loading system design
+- Resource management strategy
+- Performance optimizations
+- Code structure
 
-```bash
-source ./emsdk/emsdk_env.sh
-./build_wasm.sh
-```
+### Contributing
 
-The build script automatically:
-
-- Regenerates ASSETS.ZIP from source
-- Patches SDL2 shaders for WebGL compatibility
-- Creates WASM binaries in Build_Release/
-
-**Note:** CLAW.REZ is NOT bundled in the build. Users upload their own at runtime.
-
-### When to Rebuild
-
-**Rebuild required:**
-
-- Modified C++ source files (*.cpp,*.h)
-- Changed CMakeLists.txt or build configuration
-- Updated C++ dependencies (Box2D, libwap)
-
-**Rebuild NOT required (just refresh browser):**
-
-- Modified JavaScript files (asset-loader.js, graphics-bridge.js, etc.)
-- Modified HTML (openclaw.html)
-- Modified CSS styles
-- Updated documentation
-
-## Architecture
-
-### Tech Stack
-
-- **Graphics:** SDL2 + WebGL
-- **Audio:** SDL_Mixer + Web Audio API
-- **Physics:** Box2D
-- **Build:** Emscripten (C++ to WebAssembly)
-
-### File Structure
-
-```markdown
-Build_Release/
-├── openclaw.wasm          # Game engine (47 MB)
-├── openclaw.data          # Critical assets (600 KB) - was 113 MB!
-├── openclaw.js            # JavaScript glue code
-├── openclaw.html          # Main game page
-├── asset-storage.js       # IndexedDB wrapper
-├── asset-loader.js        # Emscripten FS integration
-├── resource-loader.js     # Progress tracking
-├── graphics-bridge.js     # WebGL bridge
-└── texture-bridge.js      # Texture management
-```
-
-### Lazy Loading Flow
-
-1. User visits page → Show upload UI if CLAW.REZ not cached
-2. User uploads CLAW.REZ → Store in IndexedDB (113 MB)
-3. Mount to Emscripten virtual filesystem
-4. Load critical assets (menu/UI)
-5. Game starts
-6. Level-specific assets load on-demand
-
-## Configuration
-
-Edit `Build_Release/config.xml` for game settings:
-
-```xml
-<GlobalOptions>
-  <ShowFps>true</ShowFps>           <!-- FPS counter -->
-  <GameLogicFps>60</GameLogicFps>   <!-- Game update rate -->
-</GlobalOptions>
-```
-
-## Browser Compatibility
-
-- ✅ Chrome 105+
-- ✅ Firefox 121+
-- ✅ Safari 16.4+
-- ✅ Edge 105+
-
-Requires: WebAssembly, IndexedDB, File API
-
-## Troubleshooting
-
-Having issues? See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for:
-
-- How to clear IndexedDB storage and re-upload CLAW.REZ
-- Common error messages and solutions
-- Storage quota issues
-- Browser-specific problems
-
-## Contributing
-
-This is a WASM-focused fork. Pull requests welcome for:
+Pull requests welcome for:
 
 - Browser compatibility improvements
 - Performance optimizations
 - Bug fixes
 - Documentation
 
-## License
+## 🐛 Troubleshooting
+
+Having issues? See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for:
+
+- How to clear cached files and re-upload CLAW.REZ
+- Common error messages and solutions
+- Browser-specific problems
+- Performance tips
+
+## 📋 Documentation
+
+- **[SETUP.md](docs/SETUP.md)** - Detailed setup instructions
+- **[BUILDING.md](docs/BUILDING.md)** - Build from source guide
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Technical architecture
+- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues and fixes
+
+## 📝 License
 
 GNU GPL v3 - See LICENSE file
 
 Original game assets (CLAW.REZ) remain copyright Monolith Productions.
 
-## Credits
+## 🙏 Credits
 
 - **Original Game:** Monolith Productions (1997)
 - **OpenClaw Engine:** [pjasicek](https://github.com/pjasicek/OpenClaw)
-- **WASM Fork:** Arthur Boss
+- **WASM port fix and modernisation:** Arthur Boss
+
+---
+
+**Note:** This is a WASM-only fork optimized for browsers. For native desktop builds, visit the [original OpenClaw repository](https://github.com/pjasicek/OpenClaw).

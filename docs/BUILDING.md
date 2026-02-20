@@ -1,0 +1,412 @@
+# Building OpenClaw WASM
+
+This guide covers building the WebAssembly version of OpenClaw from source.
+
+## Prerequisites
+
+### Required Tools
+
+- **Emscripten SDK** - Compiles C++ to WebAssembly
+- **CMake** 4.10+
+- **Python 3** - For local testing server
+- **Git** - For cloning dependencies
+
+### Operating System
+
+- **Linux** (Ubuntu, Debian, Fedora, etc.)
+- **macOS** with Xcode Command Line Tools
+- **Windows WSL2** (not directly supported on Windows)
+
+### Hardware
+
+- 8GB RAM minimum (16GB recommended)
+- 2GB free disk space for build artifacts
+- Multi-core CPU (faster compilation)
+
+## Setup
+
+### 1. Install Emscripten
+
+```bash
+# Clone Emscripten SDK
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+
+# Install and activate latest version
+./emsdk install latest
+./emsdk activate latest
+
+# Load environment (run this in each terminal session)
+source ./emsdk_env.sh
+```
+
+**Note:** The `source ./emsdk_env.sh` command must be run in every new terminal before building.
+
+### 2. Clone OpenClaw
+
+```bash
+git clone [your-repo-url]
+cd OpenClaw
+```
+
+### 3. Prepare Assets
+
+The build requires `ASSETS.ZIP` which is automatically generated from `Build_Release/ASSETS/`:
+
+```bash
+cd Build_Release
+rm -f ASSETS.ZIP
+(cd ASSETS && zip -r ../ASSETS.ZIP .)
+```
+
+This is handled automatically by `build_wasm.sh`.
+
+## Building
+
+### Quick Build (Recommended)
+
+```bash
+source ./emsdk/emsdk_env.sh
+./build_wasm.sh
+```
+
+This script handles everything:
+
+1. Regenerates ASSETS.ZIP
+2. Configures CMake for Emscripten
+3. Compiles C++ to WebAssembly
+4. Patches SDL2 shaders for WebGL compatibility
+5. Rebuilds with patched shaders
+6. Shows build summary
+
+**Build time:** 5-10 minutes (first build), 1-2 minutes (incremental)
+
+### Manual Build
+
+For advanced users or debugging:
+
+```bash
+# 1. Activate Emscripten
+source ./emsdk/emsdk_env.sh
+
+# 2. Configure with CMake
+mkdir build
+cd build
+emcmake cmake -DEmscripten=1 ..
+
+# 3. First build (downloads SDL2)
+make -j$(nproc)
+
+# 4. Patch SDL2 shaders for WebGL
+cd ..
+./patch_sdl2_shaders.sh
+
+# 5. Clear SDL2 cache and rebuild
+rm -rf ./emsdk/upstream/emscripten/cache/build/sdl2
+cd build
+make -j$(nproc)
+```
+
+### Build Outputs
+
+After successful build, you'll find in `Build_Release/`:
+
+```
+Build_Release/
+├── openclaw.wasm       # Compiled game engine (~40MB)
+├── openclaw.js         # Emscripten JavaScript runtime (~8MB)
+├── openclaw.data       # Preloaded assets (ASSETS.ZIP)
+├── openclaw.html       # Game entry point
+└── *.js                # Bridge modules (graphics, textures, etc.)
+```
+
+## Running Locally
+
+### Option 1: Python Server (Simple)
+
+```bash
+cd Build_Release
+python3 -m http.server 8080
+```
+
+Open: <http://localhost:8080/openclaw.html>
+
+### Option 2: HTTP/3 Server (Fast)
+
+Requires Caddy server (see `scripts/start_http3_server.sh`):
+
+```bash
+./scripts/start_http3_server.sh
+```
+
+Open: <https://localhost:8080/openclaw.html>
+
+**Benefits:**
+
+- HTTP/3 (QUIC protocol) for faster loading
+- Brotli/Zstd/Gzip compression
+- Automatic HTTPS
+
+## Development Workflow
+
+### When to Rebuild
+
+**Full rebuild required:**
+
+- Modified C++ source files (`*.cpp`, `*.h`)
+- Changed CMakeLists.txt
+- Updated C++ dependencies (Box2D, libwap)
+- Changed build flags or Emscripten settings
+
+**No rebuild needed (just refresh browser):**
+
+- Modified JavaScript files (`*.js` in Build_Release/)
+- Modified HTML (`openclaw.html`)
+- Modified CSS styles
+- Changed XML configuration (`config.xml`)
+- Updated documentation
+
+### Incremental Builds
+
+After the first build, subsequent builds are much faster:
+
+```bash
+source ./emsdk/emsdk_env.sh
+cd build
+make -j$(nproc)
+```
+
+Only modified files are recompiled.
+
+### Clean Build
+
+To start fresh:
+
+```bash
+rm -rf build
+./build_wasm.sh
+```
+
+## Build Configuration
+
+### CMake Options
+
+**Emscripten mode:**
+
+```bash
+emcmake cmake -DEmscripten=1 ..
+```
+
+**Embed config.xml in WASM (not recommended):**
+
+```bash
+emcmake cmake -DEmscripten=1 -DExtern_Config=0 ..
+```
+
+Default keeps config.xml external for easy editing.
+
+### Emscripten Flags
+
+Key flags in `CMakeLists.txt`:
+
+```cmake
+-s WASM=1                    # WebAssembly output
+-s USE_SDL=2                 # SDL2 support
+-s ASYNCIFY=1                # Enable async operations
+-s TOTAL_MEMORY=268435456    # 256MB memory
+-s FULL_ES3=1                # WebGL2 support
+-s ALLOW_MEMORY_GROWTH=1     # Dynamic memory
+```
+
+See `CMakeLists.txt` for full configuration.
+
+## Troubleshooting
+
+### Build Errors
+
+**"Emscripten not found"**
+
+```bash
+source ./emsdk/emsdk_env.sh
+```
+
+Run this in every new terminal session.
+
+**"SDL2 not found"**
+First build downloads SDL2. If it fails:
+
+```bash
+rm -rf ./emsdk/upstream/emscripten/cache
+make
+```
+
+**Linker errors**
+Clear build and start fresh:
+
+```bash
+rm -rf build
+./build_wasm.sh
+```
+
+### Runtime Issues
+
+**Black screen in browser**
+
+1. Open browser console (F12)
+2. Look for WebGL errors
+3. Check if shaders were patched correctly
+
+**"Cannot find CLAW.REZ"**
+CLAW.REZ is uploaded by users at runtime, not bundled in build.
+
+**Slow loading**
+Use HTTP/3 server instead of Python:
+
+```bash
+./scripts/start_http3_server.sh
+```
+
+## SDL2 Shader Patching
+
+The build requires patching SDL2 shaders for WebGL compatibility:
+
+**What it does:**
+
+- Disables `GL_OES_EGL_image_external` extension
+- Replaces `samplerExternalOES` with `sampler2D`
+
+**Why it's needed:**
+WebGL doesn't support external OES samplers. The patch makes SDL2 work in browsers.
+
+**How it works:**
+
+1. First build downloads SDL2 to Emscripten cache
+2. `patch_sdl2_shaders.sh` modifies shader source
+3. SDL2 cache is cleared
+4. Second build uses patched shaders
+
+**Manual patch:**
+
+```bash
+./patch_sdl2_shaders.sh
+rm -rf ./emsdk/upstream/emscripten/cache/build/sdl2
+cd build && make
+```
+
+## Advanced Topics
+
+### Debug Build
+
+Add debug flags to CMakeLists.txt:
+
+```cmake
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
+```
+
+Larger WASM file but easier debugging in browser.
+
+### Optimization Levels
+
+Default: `-O3` (maximum optimization)
+
+For faster builds during development:
+
+```cmake
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
+```
+
+### Memory Configuration
+
+Increase if game crashes with "out of memory":
+
+```cmake
+-s TOTAL_MEMORY=536870912  # 512MB
+-s ALLOW_MEMORY_GROWTH=1   # Dynamic allocation
+```
+
+Edit in `CMakeLists.txt`, then rebuild.
+
+### Custom ASSETS.ZIP
+
+To add custom content:
+
+1. Add files to `Build_Release/ASSETS/`
+2. Rebuild (automatically regenerates ASSETS.ZIP)
+3. Custom assets override CLAW.REZ files with same paths
+
+## Build System Details
+
+### File Structure
+
+```
+OpenClaw/
+├── build/                      # CMake build directory (gitignored)
+├── build_wasm.sh              # Main build script
+├── patch_sdl2_shaders.sh      # SDL2 shader patcher
+├── CMakeLists.txt             # Build configuration
+├── emsdk/                     # Emscripten SDK (gitignored)
+├── OpenClaw/Engine/           # C++ source code
+├── libwap/                    # Game format parser
+├── Box2D/                     # Physics engine
+├── ThirdParty/                # Dependencies
+└── Build_Release/             # Output directory
+    ├── ASSETS/                # Custom assets (source)
+    ├── ASSETS.ZIP             # Packaged assets (generated)
+    └── openclaw.*             # WASM outputs
+```
+
+### Dependencies
+
+**Automatically downloaded by Emscripten:**
+
+- SDL2 (graphics, input, audio)
+- SDL2_image (image loading)
+- SDL2_mixer (audio mixing)
+- SDL2_ttf (font rendering)
+- SDL2_gfx (graphics primitives)
+
+**Bundled in repository:**
+
+- Box2D (physics)
+- libwap (game format parser)
+- TinyXML (XML parsing)
+- FastDelegate (C++ delegates)
+
+## Performance Tips
+
+### Faster Compilation
+
+Use all CPU cores:
+
+```bash
+make -j$(nproc)
+```
+
+### Faster Linking
+
+Use `lld` linker (if available):
+
+```cmake
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=lld")
+```
+
+### Reduce Build Size
+
+Strip debug symbols (done by default):
+
+```cmake
+-s ASSERTIONS=0
+-s DEMANGLE_SUPPORT=0
+```
+
+## See Also
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and design
+- [CLAUDE.md](../CLAUDE.md) - Development guidelines and policies
+- [README.md](../README.md) - Quick start guide for players
+
+## Need Help?
+
+- Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues
+- Review Emscripten documentation: <https://emscripten.org/docs/>
+- Original OpenClaw: <https://github.com/pjasicek/OpenClaw>
