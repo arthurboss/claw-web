@@ -90,6 +90,8 @@ public:
     void SetRunning(bool running) { m_bRunning = running; }
     bool IsRunning() { return m_bRunning; }
 
+    void SetLevelToLoadAfterCutscene(int levelNumber) { m_LevelToLoadAfterCutscene = levelNumber; }
+
     StrongActorPtr GetClawActor();
 
     StrongActorPtr FindActorByName(const std::string& name, bool bIsUnique);
@@ -136,6 +138,7 @@ protected:
     shared_ptr<IGenericVideo> m_pActiveVideo;
 
     int m_SelectedLevel;
+    int m_LevelToLoadAfterCutscene; // -1 means no level to load, > 0 means load that level
 
     Point m_CurrentSpawnPosition;
 

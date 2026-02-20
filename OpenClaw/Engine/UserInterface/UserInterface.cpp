@@ -10,6 +10,7 @@
 #include "../Resource/ResourceMgr.h"
 #include "../Audio/Audio.h"
 
+#include <SDL2/SDL_ttf.h>
 #include <cctype>
 
 std::map<std::string, MenuPage> g_StringToMenuPageEnumMap =
@@ -358,6 +359,14 @@ static IEventDataPtr XmlElemToGeneratedEvent(TiXmlElement* pElem)
     else if (eventType == "EndGame")
     {
         pEventData.reset(new EventData_IngameMenu_End_Game());
+    }
+    else if (eventType == "PlayCutscene")
+    {
+        std::string videoPath;
+        ParseValueFromXmlElem(&videoPath, pElem->FirstChildElement("VideoPath"));
+
+        // Create an event that will play the cutscene when triggered
+        pEventData.reset(new EventData_Play_Cutscene(videoPath));
     }
     else
     {
@@ -967,7 +976,8 @@ ScreenElementMenuItem::ScreenElementMenuItem(SDL_Renderer* pRenderer)
     m_pRenderer(pRenderer),
     m_State(MenuItemState_None),
     m_Hotkey(SDL_SCANCODE_UNKNOWN),
-    m_bVisible(true)
+    m_bVisible(true),
+    m_bHasText(false)
 {
 
 }
@@ -1012,6 +1022,44 @@ void ScreenElementMenuItem::VOnRender(uint32 msDiff)
     renderRect.h = (int)(pCurrImage->GetHeight() * g_MenuScale.y);
 
     SDL_RenderCopy(m_pRenderer, pCurrImage->GetTexture(), NULL, &renderRect);
+
+    // Render text overlay if present
+    if (m_bHasText && !m_Text.empty())
+    {
+        static TTF_Font* s_pMenuFont = nullptr;
+        if (s_pMenuFont == nullptr)
+        {
+            s_pMenuFont = TTF_OpenFont("clacon.ttf", 16);
+            if (s_pMenuFont == nullptr)
+            {
+                LOG_ERROR("Failed to load menu font: clacon.ttf");
+                return;
+            }
+        }
+
+        SDL_Color textColor = {255, 255, 255, 255}; // White text
+        SDL_Surface* pTextSurface = TTF_RenderText_Blended(s_pMenuFont, m_Text.c_str(), textColor);
+        if (pTextSurface)
+        {
+            SDL_Texture* pTextTexture = SDL_CreateTextureFromSurface(m_pRenderer, pTextSurface);
+            if (pTextTexture)
+            {
+                // Center text on button
+                int textW, textH;
+                SDL_QueryTexture(pTextTexture, NULL, NULL, &textW, &textH);
+
+                SDL_Rect textRect;
+                textRect.x = renderRect.x + (renderRect.w - textW) / 2;
+                textRect.y = renderRect.y + (renderRect.h - textH) / 2;
+                textRect.w = textW;
+                textRect.h = textH;
+
+                SDL_RenderCopy(m_pRenderer, pTextTexture, NULL, &textRect);
+                SDL_DestroyTexture(pTextTexture);
+            }
+            SDL_FreeSurface(pTextSurface);
+        }
+    }
 }
 
 bool ScreenElementMenuItem::VOnEvent(SDL_Event& evt)
@@ -1151,6 +1199,12 @@ bool ScreenElementMenuItem::Initialize(TiXmlElement* pElem)
     if (shared_ptr<Image> pImage = LoadImageFromXmlElement(pElem->FirstChildElement("ActiveImage")))
     {
         m_Images.insert(std::make_pair(MenuItemState_Active, pImage));
+    }
+
+    // Parse text overlay if present
+    if (ParseValueFromXmlElem(&m_Text, pElem->FirstChildElement("Text")))
+    {
+        m_bHasText = true;
     }
 
     /*for (TiXmlElement* pMenuItemImageElem = pElem->FirstChildElement("MenuItemImage");

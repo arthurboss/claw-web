@@ -72,6 +72,7 @@ protected:
     void RequestPlaySoundDelegate(IEventDataPtr pEventData);
     void RequestResetLevelDelegate(IEventDataPtr pEventData);
     void LoadGameDelegate(IEventDataPtr pEventData);
+    void PlayCutsceneDelegate(IEventDataPtr pEventData);
     void SetVolumeDelegate(IEventDataPtr pEventData);
     void SoundEnabledChangedDelegate(IEventDataPtr pEventData);
     void ClawDiedDelegate(IEventDataPtr pEventData);
