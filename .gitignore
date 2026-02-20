@@ -46,6 +46,16 @@ Build_Release/openclaw.html
 !Build_Release/graphics-bridge.js
 !Build_Release/texture-bridge.js
 
+# Test and demo files (development only)
+Build_Release/test-*.html
+Build_Release/*_test.html
+Build_Release/test_*.html
+Build_Release/*_demo.html
+Build_Release/generic_*.js
+Build_Release/generic_*.html
+Build_Release/webgl_demo.html
+Build_Release/webgpu-bridge.js
+
 # Emscripten SDK (large external dependency)
 emsdk/
 
