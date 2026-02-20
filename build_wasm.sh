@@ -36,8 +36,8 @@ echo "   ASSETS.ZIP created: $(du -h ASSETS.ZIP | cut -f1)"
 
 # Note about CLAW.REZ
 if [ -f "CLAW.REZ" ]; then
-    echo "   ⚠️  Warning: CLAW.REZ found in Build_Release/"
-    echo "   This file is NOT bundled into openclaw.data (users provide at runtime)"
+    echo "   ℹ️  Note: CLAW.REZ present (useful for local testing)"
+    echo "   This file is NOT bundled - end users upload their own"
 fi
 cd ..
 
