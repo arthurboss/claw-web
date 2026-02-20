@@ -201,7 +201,6 @@ bool BaseGameApp::Initialize(int argc, char **argv) {
   // Configure fixed timestep based on settings
   if (m_GlobalOptions.gameLogicFps > 0) {
     m_fixedTimestep = 1.0 / static_cast<double>(m_GlobalOptions.gameLogicFps);
-    LOG("Game logic update rate set to " + ToStr(m_GlobalOptions.gameLogicFps) + " FPS");
   } else {
     LOG_WARNING("Invalid gameLogicFps value, using default 60 FPS");
     m_fixedTimestep = 1.0 / 60.0;
@@ -417,7 +416,6 @@ void BaseGameApp::StepLoop() {
     if (m_fpsCounterMs >= 1000) {
       m_lastLogicFPS = m_logicUpdateCount;
       m_lastRenderFPS = m_renderFrameCount;
-      LOG("FPS Update - Render: " + ToStr(m_lastRenderFPS) + " Logic: " + ToStr(m_lastLogicFPS));
       m_logicUpdateCount = 0;
       m_renderFrameCount = 0;
       m_fpsCounterMs -= 1000;
@@ -620,7 +618,6 @@ bool BaseGameApp::LoadGameOptions(const char *inConfigFile) {
   m_GameOptions.windowWidth = 640;
   m_GameOptions.windowHeight = 480;
   m_GameOptions.scale = 1.0;
-  LOG("WASM: Canvas fixed at 640x480, scaled via CSS");
 #endif
 
   //-------------------------------------------------------------------------

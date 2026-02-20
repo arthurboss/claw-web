@@ -982,7 +982,22 @@ void BaseGameLogic::VChangeState(GameState newState)
         }
     }
 
-    LOG("Changing to: " + ToStr(newState));
+    // Convert GameState enum to readable string
+    const char* stateNames[] = {
+        "Invalid",
+        "Initializing",
+        "LoadingMenu",
+        "Menu",
+        "LoadingLevel",
+        "IngameRunning",
+        "IngamePaused",
+        "LoadingScoreScreen",
+        "ScoreScreen",
+        "Cutscene"
+    };
+
+    std::string stateName = (newState >= 0 && newState < 10) ? stateNames[newState] : "Unknown";
+    LOG("Changing game state to: " + stateName);
     m_GameState = newState;
 }
 
