@@ -78,18 +78,6 @@ make -j$(nproc)
 
 **Important:** SDL2 shader patching is required to disable `GL_OES_EGL_image_external` and replace `samplerExternalOES` with `sampler2D` for WebGL compatibility.
 
-### Demo Programs
-
-For testing specific modules in isolation:
-
-```bash
-# After running ./build_wasm.sh, demo programs are automatically built:
-# - Build_Release/generic_graphics_demo.{html,js,wasm} - WebGL renderer testing
-# - Build_Release/generic_video_demo.{html,js,wasm} - Video player testing
-```
-
-These are useful for debugging graphics or video issues without loading the full game.
-
 ## Running the Game Locally
 
 ### Option 1: HTTP/3 Server (Recommended - Faster)
@@ -152,7 +140,6 @@ OpenClaw/
 │   └── texture-bridge.js     # Texture management bridge
 ├── docs/                     # Documentation
 ├── scripts/                  # Build and server scripts
-├── examples/                 # Demo programs (generic_graphics_demo, etc.)
 └── emsdk/                    # Emscripten SDK (gitignored)
 ```
 
@@ -300,7 +287,6 @@ rm -rf build
 Never commit these generated files:
 - `build/` - CMake build directory
 - `Build_Release/openclaw.{wasm,js,data}` - Compiled outputs
-- `Build_Release/generic_*.{wasm,js,html}` - Demo program outputs
 - `emsdk/` - Emscripten SDK (large, user-installed)
 - `Build_Release/ASSETS.ZIP` - Auto-generated from ASSETS/
 
@@ -313,10 +299,6 @@ This project does not have automated tests. Verify changes by:
 3. **Browser Console:** Check for JavaScript errors and warnings (F12)
 4. **Manual Testing:** Play through affected levels/features
 5. **Log Output:** Watch browser console for C++ logs (uses `LOG` macro)
-
-**Testing specific modules:** Use demo programs for isolated testing:
-- `generic_graphics_demo.html` - Test WebGL renderer without game logic
-- `generic_video_demo.html` - Test video playback system
 
 ## Key Implementation Files
 
