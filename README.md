@@ -140,6 +140,15 @@ Edit `Build_Release/config.xml` for game settings:
 
 Requires: WebAssembly, IndexedDB, File API
 
+## Troubleshooting
+
+Having issues? See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for:
+
+- How to clear IndexedDB storage and re-upload CLAW.REZ
+- Common error messages and solutions
+- Storage quota issues
+- Browser-specific problems
+
 ## Known Limitations
 
 - MIDI audio disabled (browser limitation)
