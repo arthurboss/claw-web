@@ -262,7 +262,16 @@ Game configuration is in `Build_Release/config.xml`:
 - **CRITICAL:** ASSETS.ZIP is embedded into `openclaw.data` during the Emscripten linking phase. Simply rebuilding ASSETS.ZIP is NOT enough - you must force a relink!
 - **Complete workflow (required for XML/asset changes):**
   ```bash
-  # Step 1: Rebuild ASSETS.ZIP
+  # Step 1: Decompress metadata for editing (if needed)
+  ./scripts/decompress_metadata.sh
+
+  # Step 2: Edit XMLs
+  # ... make your changes ...
+
+  # Step 3: Compress metadata before rebuild
+  ./scripts/compress_metadata.sh
+
+  # Step 4: Rebuild ASSETS.ZIP
   cd Build_Release
   rm -f ASSETS.ZIP
   cd ASSETS
@@ -348,6 +357,18 @@ This project does not have automated tests. Verify changes by:
 - `OpenClaw/Engine/Audio/WASM/AudioWorkletSystem.cpp` - Audio worklet implementation
 - `OpenClaw/Engine/UserInterface/HumanView.cpp:562` - MIDI handling (disabled for Emscripten)
 
+### Metadata Compression
+- Level metadata XMLs are gzip-compressed to reduce ASSETS.ZIP size by ~79%
+- `OpenClaw/Engine/Resource/Loaders/XmlLoader.cpp` - Automatic gzip decompression
+- `scripts/compress_metadata.sh` - Compress XMLs before build
+- `scripts/decompress_metadata.sh` - Decompress XMLs for editing
+- See `docs/METADATA_COMPRESSION.md` for details
+
+**Compression results:**
+- Original: 28,895 bytes (13 XML files)
+- Compressed: 5,955 bytes (79.4% smaller)
+- Runtime: ~0.1ms decompression per file (negligible impact)
+
 ## Build Configuration
 
 ### CMake Options
@@ -375,6 +396,7 @@ Key flags set in CMakeLists.txt line 98:
 -s USE_WEBGL2=1              # WebGL2 API
 -s MIN_WEBGL_VERSION=2       # Minimum WebGL version
 -s MAX_WEBGL_VERSION=2       # Maximum WebGL version
+-s USE_ZLIB=1                # Enable zlib for gzip decompression
 -s FETCH                     # Enable fetch API for async loading
 ```
 
