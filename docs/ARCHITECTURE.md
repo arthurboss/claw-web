@@ -152,15 +152,29 @@ LoadLevel(1)
 
 ```
 Build_Release/
-├─ openclaw.wasm        # Compiled game (~40MB)
-├─ openclaw.js          # Emscripten runtime (~8MB)
-├─ openclaw.data        # Preloaded assets (ASSETS.ZIP)
+├─ openclaw.wasm        # Compiled game code (~48MB)
+├─ openclaw.js          # Emscripten runtime loader (~413KB)
+├─ openclaw.data        # Preloaded assets
 ├─ openclaw.html        # Game entry point
-├─ *.js                 # Bridge modules (graphics, textures, etc.)
+├─ *.js                 # Bridge modules (graphics, textures, asset loading)
 └─ config.xml           # Game configuration
 ```
 
 ### Asset Archives
+
+**openclaw.data Structure:**
+
+Emscripten's virtual filesystem package created at link time. Contains files preloaded via `--preload-file`:
+
+- ASSETS.ZIP (~466KB) - Menu configs, custom game assets
+- console02.tga - Console background texture
+- clacon.ttf - Console font
+
+**Important:** When ASSETS.ZIP changes (e.g., editing MENU.xml), you must:
+
+1. Rebuild ASSETS.ZIP from `Build_Release/ASSETS/`
+2. Force relink to regenerate openclaw.data (see CLAUDE.md)
+3. Hard refresh browser to clear cached .data file
 
 ```
 CLAW.REZ (User-provided, 112MB)
@@ -171,9 +185,10 @@ CLAW.REZ (User-provided, 112MB)
 ├─ LEVEL2/*             # Loaded when entering Level 2
 └─ ... (13 levels)
 
-ASSETS.ZIP (Bundled, <1MB)
+ASSETS.ZIP (Bundled in openclaw.data, ~466KB)
 ├─ MENU.xml             # Menu configuration
-└─ Custom content       # Overrides/additions
+├─ ACTOR_PROTOTYPES/    # Actor definitions per level
+└─ Custom content       # Overrides/additions to CLAW.REZ
 ```
 
 ### Metadata Files
@@ -223,12 +238,12 @@ INFO: Level assets loaded for LEVEL2
 - `OpenClaw/Engine/GameApp/BaseGameApp.cpp:1356` - `LoadSingleLevelMetadata()`
 - `OpenClaw/Engine/GameApp/BaseGameApp.cpp:1545` - `GetLevelMetadata()` (with lazy load)
 
-### Resource Management
+### Resource Cache System
 
 - `OpenClaw/Engine/GameApp/BaseGameApp.cpp:186-196` - VPreload calls (startup assets)
 - Resource cache system (default 150 items, configurable in config.xml)
 
-### Asset Loading
+### Asset Loading Implementation
 
 - `Build_Release/asset-loader.js` - IndexedDB bridge for CLAW.REZ
 - `Build_Release/resource-loader.js` - Resource loading coordination

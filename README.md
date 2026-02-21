@@ -18,6 +18,8 @@ You'll need **CLAW.REZ** from the original Captain Claw (1997) game.
 - It's saved in your browser - you only upload once
 - **Legal:** You must own the original game to use its assets
 
+**Optional:** Video cutscenes from the original game are not included. The game works perfectly without them, but you can add them to `Build_Release/videos/` if you want cutscenes between levels.
+
 ### How to Play
 
 1. **Start a local server by running the following in your computer's Terminal application** (pick one):
