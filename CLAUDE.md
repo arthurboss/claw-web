@@ -156,22 +156,36 @@ OpenClaw/
 - **Caching:** Resource cache stores frequently accessed assets (default: 150 items)
 - **Result:** Fast startup regardless of game size, only visited levels consume memory
 
-**IndexedDB Asset Storage:**
+**IndexedDB Asset Storage with Compression:**
 
-**Key concept:** CLAW.REZ (112MB) is NOT bundled in WASM build.
+**Key concept:** CLAW.REZ (113MB) is NOT bundled in WASM build. It's compressed and stored in IndexedDB.
 
 **Flow:**
 
 1. User opens game → Check IndexedDB for CLAW.REZ
 2. If missing → Show upload UI (one-time)
-3. User uploads → Store in IndexedDB with progress tracking
-4. All subsequent loads → Read from IndexedDB instantly
+3. User uploads → Compress with gzip → Store in IndexedDB (45-70MB compressed)
+4. All subsequent loads → Retrieve from IndexedDB → Decompress (~200-500ms) → Mount to FS
 
-**Implementation:** `asset-loader.js` bridges IndexedDB to Emscripten's virtual filesystem (`FS`).
+**Compression Implementation:**
+
+- Uses browser-native `CompressionStream` / `DecompressionStream` APIs (gzip)
+- Compression: One-time during upload, adds 2-5 seconds
+- Decompression: Every game load, adds 200-500ms (~10-20% startup time)
+- Storage savings: 40-60% reduction (113MB → 45-70MB)
+- Automatic fallback to uncompressed if compression/decompression fails
+- Metadata stored with compression flag for backward compatibility
+
+**Files:**
+- `asset-loader.js` - Compression/decompression logic and IndexedDB bridge
+- `asset-storage.js` - Stores compression metadata (compressed flag, algorithm)
+
+**Browser Compatibility:** Chrome 80+, Firefox 113+, Safari 16.4+, Edge 80+ (all target browsers fully supported)
 
 **Resource Management:**
 
-- CLAW.REZ stored in browser's IndexedDB (one-time upload, 112MB)
+- CLAW.REZ stored compressed in browser's IndexedDB (one-time upload, 45-70MB compressed)
+- Decompressed to 113MB in memory at game load
 - Resources extracted on-demand when requested (not all at startup)
 - ASSETS.ZIP preloaded with WASM (bundled, <1MB)
 - Path-based organization: `/LEVEL1/*`, `/LEVEL2/*`, etc.

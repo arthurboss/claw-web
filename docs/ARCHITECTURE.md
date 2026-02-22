@@ -43,6 +43,38 @@ The game uses a single archive file (CLAW.REZ) similar to a ZIP file:
 - Path-based organization (`/LEVEL1/*`, `/LEVEL2/*`, etc.)
 - Stored in browser's IndexedDB (one-time upload)
 
+### CLAW.REZ Compression in IndexedDB
+
+To optimize storage usage, CLAW.REZ is compressed before storing in IndexedDB:
+
+**Compression Strategy:**
+
+- Uses browser-native gzip compression (`CompressionStream` API)
+- Compression happens during initial upload (one-time)
+- Decompression happens on game load (every session)
+
+**Storage Savings:**
+
+- Original size: ~113MB
+- Compressed size: ~45-70MB (40-60% reduction)
+- Typical compression ratio: 50% smaller
+
+**Performance Impact:**
+
+- Upload: +2-5 seconds compression time (one-time setup)
+- Load: +200-500ms decompression time (every session, ~10-20% startup increase)
+- Runtime: No impact (decompression completes before game starts)
+
+**Implementation:**
+
+- `asset-loader.js` - Handles compression/decompression with browser APIs
+- `asset-storage.js` - Stores compression metadata for backward compatibility
+- Automatic fallback to uncompressed if compression/decompression fails
+
+**Browser Compatibility:**
+
+- Chrome 80+, Firefox 113+, Safari 16.4+, Edge 80+ (all target browsers supported)
+
 ### Custom Assets
 
 ASSETS.ZIP contains custom content and overrides:

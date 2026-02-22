@@ -73,7 +73,40 @@ function validateClawRezFile() {
 }
 
 /**
- * Handle CLAW.REZ file upload
+ * Compress a Blob using gzip compression
+ * @param {Blob} blob - Blob to compress
+ * @param {Function} progressCallback - Progress callback (0.0 to 1.0)
+ * @returns {Promise<Blob>} Compressed Blob
+ */
+async function compressBlob(blob, progressCallback) {
+  const readableStream = blob.stream();
+  const compressionStream = new CompressionStream('gzip');
+  const compressedStream = readableStream.pipeThrough(compressionStream);
+
+  const chunks = [];
+  const reader = compressedStream.getReader();
+  let bytesRead = 0;
+  const totalBytes = blob.size;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    chunks.push(value);
+    bytesRead += value.length;
+
+    if (progressCallback) {
+      progressCallback(Math.min(bytesRead / totalBytes, 0.99));
+    }
+  }
+
+  if (progressCallback) progressCallback(1.0);
+
+  return new Blob(chunks, { type: 'application/gzip' });
+}
+
+/**
+ * Handle CLAW.REZ file upload with compression
  */
 async function uploadClawRez() {
   const fileInput = document.getElementById('clawRezFile');
@@ -96,9 +129,21 @@ async function uploadClawRez() {
   progressDiv.style.display = 'block';
 
   try {
-    // Store in IndexedDB with progress tracking
-    await assetStorage.storeFile('CLAW.REZ', file, (loaded, total) => {
-      const percent = (loaded / total) * 100;
+    console.log(`Original file size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+
+    // Compress file with progress tracking
+    const compressedBlob = await compressBlob(file, (progress) => {
+      document.getElementById('uploadProgressBar').value = progress * 50;
+      document.getElementById('uploadStatus').textContent =
+        `Compressing: ${(progress * 100).toFixed(1)}%`;
+    });
+
+    console.log(`Compressed size: ${(compressedBlob.size / 1024 / 1024).toFixed(2)}MB`);
+    console.log(`Compression ratio: ${((1 - compressedBlob.size / file.size) * 100).toFixed(1)}%`);
+
+    // Store compressed file in IndexedDB
+    await assetStorage.storeFile('CLAW.REZ', compressedBlob, (loaded, total) => {
+      const percent = 50 + (loaded / total) * 50;
       document.getElementById('uploadProgressBar').value = percent;
       document.getElementById('uploadStatus').textContent =
         `Storing assets: ${percent.toFixed(1)}%`;
@@ -118,6 +163,32 @@ async function uploadClawRez() {
 
   } catch (error) {
     console.error('Upload failed:', error);
+
+    // If compression failed, try fallback to uncompressed
+    if (error.message && error.message.includes('compress')) {
+      console.warn('Compression failed, falling back to uncompressed storage');
+      try {
+        await assetStorage.storeFile('CLAW.REZ', file, (loaded, total) => {
+          const percent = (loaded / total) * 100;
+          document.getElementById('uploadProgressBar').value = percent;
+          document.getElementById('uploadStatus').textContent =
+            `Storing assets (uncompressed): ${percent.toFixed(1)}%`;
+        });
+
+        document.getElementById('uploadStatus').textContent = 'Upload complete! Starting game...';
+        setTimeout(() => {
+          hideAssetUpload();
+          if (uploadResolve) {
+            uploadResolve();
+            uploadResolve = null;
+          }
+        }, 1000);
+        return;
+      } catch (fallbackError) {
+        console.error('Fallback upload also failed:', fallbackError);
+      }
+    }
+
     alert(`Upload failed: ${error.message}`);
 
     // Reset UI
@@ -161,6 +232,28 @@ function waitForUpload() {
 let clawRezData = null;
 
 /**
+ * Decompress a gzip-compressed Blob
+ * @param {Blob} compressedBlob - Compressed Blob
+ * @returns {Promise<Blob>} Decompressed Blob
+ */
+async function decompressBlob(compressedBlob) {
+  const readableStream = compressedBlob.stream();
+  const decompressionStream = new DecompressionStream('gzip');
+  const decompressedStream = readableStream.pipeThrough(decompressionStream);
+
+  const chunks = [];
+  const reader = decompressedStream.getReader();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+  }
+
+  return new Blob(chunks);
+}
+
+/**
  * Prepare CLAW.REZ from IndexedDB (but don't write to FS yet)
  */
 async function prepareAssetStorage() {
@@ -181,13 +274,40 @@ async function prepareAssetStorage() {
 
       // Get file metadata
       const metadata = await assetStorage.getFileMetadata('CLAW.REZ');
-      console.log(`CLAW.REZ size: ${(metadata.size / 1024 / 1024).toFixed(2)}MB`);
+      console.log(`Stored size: ${(metadata.size / 1024 / 1024).toFixed(2)}MB`);
+
+      if (metadata.compressed) {
+        console.log(`Compression: ${metadata.compressionAlgorithm || 'gzip'}`);
+      }
     }
 
     // Retrieve CLAW.REZ from IndexedDB
-    const clawRezBlob = await assetStorage.getFile('CLAW.REZ');
-    if (!clawRezBlob) {
+    console.log('Retrieving CLAW.REZ from IndexedDB...');
+    const storedBlob = await assetStorage.getFile('CLAW.REZ');
+    if (!storedBlob) {
       throw new Error('Failed to retrieve CLAW.REZ from storage');
+    }
+
+    // Check if file is compressed
+    const metadata = await assetStorage.getFileMetadata('CLAW.REZ');
+    let clawRezBlob = storedBlob;
+
+    if (metadata.compressed) {
+      console.log('Decompressing CLAW.REZ...');
+      const startTime = performance.now();
+
+      try {
+        clawRezBlob = await decompressBlob(storedBlob);
+        const decompressTime = performance.now() - startTime;
+
+        console.log(`Decompressed size: ${(clawRezBlob.size / 1024 / 1024).toFixed(2)}MB`);
+        console.log(`Decompression took: ${decompressTime.toFixed(0)}ms`);
+        console.log(`Compression ratio: ${((1 - storedBlob.size / clawRezBlob.size) * 100).toFixed(1)}%`);
+      } catch (decompressError) {
+        console.error('Decompression failed, trying to use file as-is:', decompressError);
+        // Fallback: try using the blob directly (might be uncompressed)
+        clawRezBlob = storedBlob;
+      }
     }
 
     // Convert Blob to ArrayBuffer and store for later
