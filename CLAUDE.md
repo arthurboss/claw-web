@@ -164,23 +164,25 @@ OpenClaw/
 
 1. User opens game → Check IndexedDB for CLAW.REZ
 2. If missing → Show upload UI (one-time)
-3. User uploads → Compress with gzip → Store in IndexedDB (45-70MB compressed)
+3. User uploads → Auto-detect best compression (zstd → brotli → gzip) → Store in IndexedDB (~62MB with gzip)
 4. All subsequent loads → Retrieve from IndexedDB → Decompress (~200-500ms) → Mount to FS
 
 **Compression Implementation:**
 
-- Uses browser-native `CompressionStream` / `DecompressionStream` APIs (gzip)
+- Multi-algorithm support: zstd (best) → brotli → gzip (fallback)
+- Uses browser-native `CompressionStream` / `DecompressionStream` APIs
+- Currently uses gzip (as of Chrome 145, zstd/brotli not yet in CompressionStream API)
+- Future-proof: Will automatically use zstd/brotli when browsers add support
 - Compression: One-time during upload, adds 2-5 seconds
 - Decompression: Every game load, adds 200-500ms (~10-20% startup time)
-- Storage savings: 40-60% reduction (113MB → 45-70MB)
+- Storage savings: 45% reduction with gzip (113MB → 62MB)
 - Automatic fallback to uncompressed if compression/decompression fails
-- Metadata stored with compression flag for backward compatibility
 
 **Files:**
-- `asset-loader.js` - Compression/decompression logic and IndexedDB bridge
-- `asset-storage.js` - Stores compression metadata (compressed flag, algorithm)
+- `asset-loader.js` - Multi-algorithm compression/decompression and IndexedDB bridge
+- `asset-storage.js` - Stores compression algorithm metadata
 
-**Browser Compatibility:** Chrome 80+, Firefox 113+, Safari 16.4+, Edge 80+ (all target browsers fully supported)
+**Browser Compatibility:** Chrome 80+, Firefox 113+, Safari 16.4+, Edge 80+ (gzip supported on all)
 
 **Resource Management:**
 

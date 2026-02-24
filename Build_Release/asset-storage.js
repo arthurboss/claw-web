@@ -50,8 +50,16 @@ export class AssetStorage {
       throw new Error('Database not initialized. Call init() first.');
     }
 
-    // Detect if blob is compressed by checking MIME type
-    const isCompressed = blob.type === 'application/gzip';
+    // Detect compression algorithm from MIME type
+    const compressionMap = {
+      'application/zstd': 'zstd',
+      'application/br': 'br',
+      'application/gzip': 'gzip',
+      'application/x-gzip': 'gzip'
+    };
+
+    const isCompressed = compressionMap.hasOwnProperty(blob.type);
+    const compressionAlgorithm = compressionMap[blob.type] || null;
 
     // Store metadata and blob
     const fileData = {
@@ -61,7 +69,7 @@ export class AssetStorage {
       type: blob.type,
       timestamp: Date.now(),
       compressed: isCompressed,
-      compressionAlgorithm: isCompressed ? 'gzip' : null
+      compressionAlgorithm: compressionAlgorithm
     };
 
     return new Promise((resolve, reject) => {

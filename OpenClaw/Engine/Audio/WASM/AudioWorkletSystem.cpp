@@ -379,9 +379,6 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
             const audioContext = window.audioContext;
             audioContext.decodeAudioData(arrayBuffer.slice(0))
                 .then(function(audioBuffer) {
-                    console.log('[Audio] ✓ Loaded from CLAW.REZ:', originalPath,
-                        '(' + (dataSize / 1024).toFixed(1) + 'KB)');
-
                     window.soundBuffers = window.soundBuffers || new Map();
                     window.soundBuffers.set(originalPath, audioBuffer);
 

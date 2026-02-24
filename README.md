@@ -44,7 +44,7 @@ You'll need **CLAW.REZ** from the original Captain Claw (1997) game.
 ### Browser Requirements
 
 - Chrome 105+ / Firefox 121+ / Safari 16.4+ / Edge 105+
-- ~160MB free storage (for cached game files)
+- ~100MB free storage (for compressed game files in IndexedDB)
 
 ## 💡 Features
 

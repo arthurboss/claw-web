@@ -49,15 +49,17 @@ To optimize storage usage, CLAW.REZ is compressed before storing in IndexedDB:
 
 **Compression Strategy:**
 
-- Uses browser-native gzip compression (`CompressionStream` API)
+- Automatic algorithm detection: zstd → brotli → gzip (priority order)
+- Uses browser-native `CompressionStream` API
+- Currently falls back to gzip (as of Chrome 145, zstd/brotli not yet supported by the `CompressionStream` API)
 - Compression happens during initial upload (one-time)
 - Decompression happens on game load (every session)
 
 **Storage Savings:**
 
 - Original size: ~113MB
-- Compressed size: ~45-70MB (40-60% reduction)
-- Typical compression ratio: 50% smaller
+- Compressed size (gzip): ~62MB (45% reduction)
+- Future: zstd could achieve 60-70% reduction when browser support arrives
 
 **Performance Impact:**
 
@@ -67,13 +69,14 @@ To optimize storage usage, CLAW.REZ is compressed before storing in IndexedDB:
 
 **Implementation:**
 
-- `asset-loader.js` - Handles compression/decompression with browser APIs
-- `asset-storage.js` - Stores compression metadata for backward compatibility
+- `asset-loader.js` - Multi-algorithm compression/decompression with automatic detection
+- `asset-storage.js` - Stores compression algorithm metadata
+- Future-proof: Will automatically use zstd/brotli when browsers add support
 - Automatic fallback to uncompressed if compression/decompression fails
 
 **Browser Compatibility:**
 
-- Chrome 80+, Firefox 113+, Safari 16.4+, Edge 80+ (all target browsers supported)
+- Chrome 80+, Firefox 113+, Safari 16.4+, Edge 80+ (gzip supported on all)
 
 ### Custom Assets
 
