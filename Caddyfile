@@ -1,16 +1,14 @@
-# OpenClaw HTTP/3 Development Server with Brotli Support
+# OpenClaw HTTP/3 Development Server with Compression Support
+{
+	auto_https off
+}
 
-localhost:8080 {
+:8080 {
 	root * Build_Release
 	file_server {
 		browse
 	}
-	encode br zstd gzip
-
-	tls internal {
-		protocols tls1.2 tls1.3
-		alpn h2 h3
-	}
+	encode zstd gzip
 
 	header {
 		# HTTP/3 support

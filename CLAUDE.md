@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 OpenClaw WASM is a browser-based version of Captain Claw (1997), a classic platformer game. This is a WASM-only fork that focuses on optimizing the WebAssembly implementation for modern browsers. The game uses assets from the original game archive (CLAW.REZ) which users upload once and store in IndexedDB.
 
 **Key Features:**
+
 - Fast loading: Only 48MB download, 2-3 second startup
 - Lazy-loading architecture: Assets load on-demand as you play
 - One-time setup: Upload CLAW.REZ once, play forever
@@ -43,6 +44,7 @@ source ./emsdk/emsdk_env.sh
 ```
 
 **What it does:**
+
 1. Regenerates ASSETS.ZIP from Build_Release/ASSETS/
 2. Configures CMake for Emscripten
 3. Compiles C++ to WebAssembly
@@ -88,6 +90,7 @@ make -j$(nproc)
 ```
 
 **Benefits:**
+
 - HTTP/3 (QUIC protocol) for 30-50% faster loading
 - Brotli/Zstd/Gzip compression
 - Automatic HTTPS
@@ -146,26 +149,45 @@ OpenClaw/
 ### Key Architectural Patterns
 
 **Lazy-Loading System:**
+
 - **Startup:** Only loads menu/UI assets (~150ms)
 - **Level Load:** Assets load on-demand when entering levels
 - **Metadata:** Level metadata (XML configs) load lazily on first level entry
 - **Caching:** Resource cache stores frequently accessed assets (default: 150 items)
 - **Result:** Fast startup regardless of game size, only visited levels consume memory
 
-**IndexedDB Asset Storage:**
+**IndexedDB Asset Storage with Compression:**
 
-**Key concept:** CLAW.REZ (112MB) is NOT bundled in WASM build.
+**Key concept:** CLAW.REZ (113MB) is NOT bundled in WASM build. It's compressed and stored in IndexedDB.
 
 **Flow:**
+
 1. User opens game → Check IndexedDB for CLAW.REZ
 2. If missing → Show upload UI (one-time)
-3. User uploads → Store in IndexedDB with progress tracking
-4. All subsequent loads → Read from IndexedDB instantly
+3. User uploads → Auto-detect best compression (zstd → brotli → gzip) → Store in IndexedDB (~62MB with gzip)
+4. All subsequent loads → Retrieve from IndexedDB → Decompress (~200-500ms) → Mount to FS
 
-**Implementation:** `asset-loader.js` bridges IndexedDB to Emscripten's virtual filesystem (`FS`).
+**Compression Implementation:**
+
+- Multi-algorithm support: zstd (best) → brotli → gzip (fallback)
+- Uses browser-native `CompressionStream` / `DecompressionStream` APIs
+- Currently uses gzip (as of Chrome 145, zstd/brotli not yet in CompressionStream API)
+- Future-proof: Will automatically use zstd/brotli when browsers add support
+- Compression: One-time during upload, adds 2-5 seconds
+- Decompression: Every game load, adds 200-500ms (~10-20% startup time)
+- Storage savings: 45% reduction with gzip (113MB → 62MB)
+- Automatic fallback to uncompressed if compression/decompression fails
+
+**Files:**
+- `asset-loader.js` - Multi-algorithm compression/decompression and IndexedDB bridge
+- `asset-storage.js` - Stores compression algorithm metadata
+
+**Browser Compatibility:** Chrome 80+, Firefox 113+, Safari 16.4+, Edge 80+ (gzip supported on all)
 
 **Resource Management:**
-- CLAW.REZ stored in browser's IndexedDB (one-time upload, 112MB)
+
+- CLAW.REZ stored compressed in browser's IndexedDB (one-time upload, 45-70MB compressed)
+- Decompressed to 113MB in memory at game load
 - Resources extracted on-demand when requested (not all at startup)
 - ASSETS.ZIP preloaded with WASM (bundled, <1MB)
 - Path-based organization: `/LEVEL1/*`, `/LEVEL2/*`, etc.
@@ -174,26 +196,33 @@ OpenClaw/
 **Resource Path Conventions:**
 
 **Important:** All resource paths are case-sensitive and use forward slashes:
+
 - Menu assets: `/STATES/MENU/*`, `/GAME/IMAGES/MENU/*`
 - Fonts: `/GAME/FONTS/*`
 - Level assets: `/LEVEL1/*`, `/LEVEL2/*`, etc. (14 levels total)
 - Custom assets in ASSETS.ZIP override CLAW.REZ by matching paths exactly
 
 **Game Loop:**
+
 - Main loop in `GameApp/MainLoop.cpp`
 - Process-based system for game logic updates
 - Event-driven communication between components
 
 **Physics:**
+
 - Box2D integration for platformer physics
 - Separate physics world management
 
 **Audio System:**
+
 - Web Audio API for audio playback in WASM builds
+- All audio loaded from CLAW.REZ via resource system (no HTTP fetches)
+- Memory-safe buffer copying to prevent use-after-free bugs
 - SDL_Mixer for native builds (if any)
 - Configurable sound/music volumes and channels
 
 **Actor System:**
+
 - Component-based actor architecture
 - Actor definitions loaded from XML
 - Various actor types: player, enemies, items, projectiles, triggers, effects
@@ -227,6 +256,7 @@ EM_ASM({
 ```
 
 **Key bridge modules:**
+
 - `Build_Release/asset-loader.js` - IndexedDB operations for CLAW.REZ
 - `Build_Release/asset-storage.js` - Asset storage abstraction
 - `Build_Release/graphics-bridge.js` - WebGL graphics bridge
@@ -251,18 +281,30 @@ Game configuration is in `Build_Release/config.xml`:
 ### When to Rebuild
 
 **Full rebuild required:**
+
 - Modified C++ source files (`*.cpp`, `*.h`)
 - Changed CMakeLists.txt
 - Updated C++ dependencies (Box2D, libwap)
 - Changed build flags or Emscripten settings
 
 **Partial rebuild (ASSETS.ZIP and relink):**
+
 - Modified XML files in `Build_Release/ASSETS/` (e.g., `MENU.xml`, level XMLs)
 - Changed custom assets in `Build_Release/ASSETS/`
 - **CRITICAL:** ASSETS.ZIP is embedded into `openclaw.data` during the Emscripten linking phase. Simply rebuilding ASSETS.ZIP is NOT enough - you must force a relink!
 - **Complete workflow (required for XML/asset changes):**
+
   ```bash
-  # Step 1: Rebuild ASSETS.ZIP
+  # Step 1: Decompress metadata for editing (if needed)
+  ./scripts/decompress_metadata.sh
+
+  # Step 2: Edit XMLs
+  # ... make your changes ...
+
+  # Step 3: Compress metadata before rebuild
+  ./scripts/compress_metadata.sh
+
+  # Step 4: Rebuild ASSETS.ZIP
   cd Build_Release
   rm -f ASSETS.ZIP
   cd ASSETS
@@ -275,10 +317,12 @@ Game configuration is in `Build_Release/config.xml`:
   cmake ..
   make -j$(nproc)
   ```
+
 - **After rebuild:** Hard refresh browser (Ctrl+Shift+R or Cmd+Shift+R) to clear cached WASM files
 - **Why this is needed:** Emscripten embeds ASSETS.ZIP at link time using `--preload-file`. The linking step only runs when CMake detects changes to dependencies. Touching ASSETS.ZIP forces CMake to detect it as modified and trigger a relink.
 
 **No rebuild needed (just refresh browser):**
+
 - Modified JavaScript files (`*.js` in Build_Release/)
 - Modified HTML (`openclaw.html`)
 - Modified CSS styles
@@ -307,6 +351,7 @@ rm -rf build
 ### Build Artifacts (Gitignored)
 
 Never commit these generated files:
+
 - `build/` - CMake build directory
 - `Build_Release/openclaw.{wasm,js,data}` - Compiled outputs
 - `emsdk/` - Emscripten SDK (large, user-installed)
@@ -325,12 +370,14 @@ This project does not have automated tests. Verify changes by:
 ## Key Implementation Files
 
 ### Lazy Loading
+
 - `OpenClaw/Engine/GameApp/BaseGameApp.cpp:173` - Startup (skips eager metadata load)
 - `OpenClaw/Engine/GameApp/BaseGameApp.cpp:1356` - `LoadSingleLevelMetadata()`
 - `OpenClaw/Engine/GameApp/BaseGameApp.cpp:1545` - `GetLevelMetadata()` (with lazy load)
 - `OpenClaw/Engine/GameApp/BaseGameApp.cpp:186-196` - VPreload calls (startup assets)
 
 ### Asset Management
+
 - `OpenClaw/Engine/Resource/ResourceMgr.cpp` - Resource manager implementation
 - `OpenClaw/Engine/Resource/ResourceCache.cpp` - Resource caching logic
 - `Build_Release/asset-loader.js` - IndexedDB bridge for CLAW.REZ
@@ -338,15 +385,33 @@ This project does not have automated tests. Verify changes by:
 - `Build_Release/resource-loader.js` - Resource loading coordination
 
 ### Graphics System
+
 - `OpenClaw/Engine/Graphics/WASM/PureWebGLRenderer.cpp` - WebGL renderer
 - `OpenClaw/Engine/Graphics/WASM/TextureManager.cpp` - Texture loading/management
 - `Build_Release/graphics-bridge.js` - Graphics system bridge
 - `Build_Release/texture-bridge.js` - Texture management bridge
 
 ### Audio System
+
 - `OpenClaw/Engine/Audio/WebAudioAPI.cpp` - Web Audio API integration
-- `OpenClaw/Engine/Audio/WASM/AudioWorkletSystem.cpp` - Audio worklet implementation
+- `OpenClaw/Engine/Audio/WASM/AudioWorkletSystem.cpp` - Audio playback from CLAW.REZ data
+- `OpenClaw/Engine/Resource/Loaders/WavLoader.cpp` - WAV loading with memory-safe buffer copying
+- `OpenClaw/Engine/UserInterface/HumanView.cpp:641` - Sound playback delegation
 - `OpenClaw/Engine/UserInterface/HumanView.cpp:562` - MIDI handling (disabled for Emscripten)
+
+### Metadata Compression
+
+- Level metadata XMLs are gzip-compressed to reduce ASSETS.ZIP size by ~79%
+- `OpenClaw/Engine/Resource/Loaders/XmlLoader.cpp` - Automatic gzip decompression
+- `scripts/compress_metadata.sh` - Compress XMLs before build
+- `scripts/decompress_metadata.sh` - Decompress XMLs for editing
+- See `docs/METADATA_COMPRESSION.md` for details
+
+**Compression results:**
+
+- Original: 28,895 bytes (13 XML files)
+- Compressed: 5,955 bytes (79.4% smaller)
+- Runtime: ~0.1ms decompression per file (negligible impact)
 
 ## Build Configuration
 
@@ -375,10 +440,12 @@ Key flags set in CMakeLists.txt line 98:
 -s USE_WEBGL2=1              # WebGL2 API
 -s MIN_WEBGL_VERSION=2       # Minimum WebGL version
 -s MAX_WEBGL_VERSION=2       # Maximum WebGL version
+-s USE_ZLIB=1                # Enable zlib for gzip decompression
 -s FETCH                     # Enable fetch API for async loading
 ```
 
 **Preloaded files:**
+
 - `ASSETS.ZIP` - Custom assets bundle
 - `console02.tga` - Console background
 - `clacon.ttf` - Console font
@@ -390,6 +457,7 @@ Key flags set in CMakeLists.txt line 98:
 ### Browser Console Logs
 
 **Startup (should see):**
+
 ```
 INFO: Loading critical assets (menu/UI)...
 INFO: Critical assets loaded. Level assets will load on-demand.
@@ -397,6 +465,7 @@ INFO: Actor prototypes loaded successfully.
 ```
 
 **First level entry (should see):**
+
 ```
 INFO: Loading assets for LEVEL2...
 INFO: Level assets loaded for LEVEL2
@@ -405,6 +474,7 @@ INFO: Lazy-loaded metadata for level 2
 ```
 
 **Second level entry (should NOT see metadata messages):**
+
 ```
 INFO: Loading assets for LEVEL2...
 INFO: Level assets loaded for LEVEL2
@@ -413,17 +483,20 @@ INFO: Level assets loaded for LEVEL2
 ### Console Commands
 
 In-game console (press ~ key):
+
 - `reload levelmetadata` - Reloads all metadata files (development feature)
 
 ### Common Issues
 
 **Black screen:**
+
 1. Open browser console (F12)
 2. Check for WebGL errors
 3. Verify SDL2 shaders were patched correctly
 4. Check if CLAW.REZ upload completed successfully
 
 **Asset loading errors:**
+
 1. Verify CLAW.REZ is in IndexedDB (check Application tab in DevTools)
 2. Clear IndexedDB and re-upload CLAW.REZ
 3. Check resource paths are case-sensitive and use forward slashes
@@ -431,15 +504,21 @@ In-game console (press ~ key):
 ## Known Limitations
 
 **Browser-Specific:**
+
 - Firefox ALT key opens window menu (browser bug) - use fullscreen or disable in about:config
 - Microsoft Edge may have WAV playback issues in older versions
 
 **WASM Platform:**
+
 - MIDI audio not yet supported (WAV/OGG work fine). Might add Web MIDI support
 - Death/teleport fade effects may have rendering quirks
 
 ## Recent Changes
 
+- **Audio system fix**: Fixed use-after-free bug causing game sounds to fail with "Invalid WAV header" errors
+  - All sounds now load directly from CLAW.REZ via data parameter
+  - Eliminated duplicate audio files and HTTP fetch overhead
+  - Proper memory management with buffer copying in WavLoader
 - Lazy-loading architecture for faster startup
 - HTTP/3 server support with Caddy (30-50% faster loading)
 - Brotli/Zstd compression for optimal transfer size
@@ -450,6 +529,7 @@ In-game console (press ~ key):
 ## Documentation
 
 See `docs/` directory for detailed information:
+
 - **SETUP.md** - Detailed setup instructions for players
 - **BUILDING.md** - Complete build guide for developers
 - **ARCHITECTURE.md** - Technical architecture and lazy-loading design
@@ -458,6 +538,6 @@ See `docs/` directory for detailed information:
 
 ## References
 
-- Original OpenClaw: https://github.com/pjasicek/OpenClaw
-- Emscripten Documentation: https://emscripten.org/docs/
-- SDL2 Documentation: https://wiki.libsdl.org/
+- Original OpenClaw: <https://github.com/pjasicek/OpenClaw>
+- Emscripten Documentation: <https://emscripten.org/docs/>
+- SDL2 Documentation: <https://wiki.libsdl.org/>

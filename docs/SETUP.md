@@ -33,7 +33,7 @@ OpenClaw is a web-based reimplementation of Captain Claw (1997), a classic platf
   - Safari 16.4+
   - Edge 105+
 - **IndexedDB enabled** (for asset storage)
-- **~150 MB available storage space** (browser local storage)
+- **~60-70 MB available storage space** (browser local storage for compressed CLAW.REZ)
 
 ## First-Time Setup
 
@@ -44,12 +44,16 @@ OpenClaw is a web-based reimplementation of Captain Claw (1997), a classic platf
 2. **Upload CLAW.REZ**
    - Click "Choose File" and select your CLAW.REZ
    - Click "Upload CLAW.REZ"
-   - Wait for upload to complete (progress bar shows status)
+   - Wait for compression and upload to complete (progress bar shows status)
+   - **Note:** File is automatically compressed during upload (~2-5 seconds) to save storage space
 
 3. **Asset storage**
-   - CLAW.REZ is stored in your browser's IndexedDB
+   - CLAW.REZ is compressed and stored in your browser's IndexedDB
+   - Original size: ~113MB → Compressed: ~62MB (45% reduction with gzip)
+   - Compression: Automatic algorithm detection (zstd → brotli → gzip)
    - You only need to upload it once
    - It persists across browser sessions
+   - Decompresses automatically on game load (~200-500ms, barely noticeable)
 
 4. **Game starts automatically**
    - After upload completes, the game loads

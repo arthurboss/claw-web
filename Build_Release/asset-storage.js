@@ -50,13 +50,26 @@ export class AssetStorage {
       throw new Error('Database not initialized. Call init() first.');
     }
 
+    // Detect compression algorithm from MIME type
+    const compressionMap = {
+      'application/zstd': 'zstd',
+      'application/br': 'br',
+      'application/gzip': 'gzip',
+      'application/x-gzip': 'gzip'
+    };
+
+    const isCompressed = compressionMap.hasOwnProperty(blob.type);
+    const compressionAlgorithm = compressionMap[blob.type] || null;
+
     // Store metadata and blob
     const fileData = {
       name: name,
       blob: blob,
       size: blob.size,
       type: blob.type,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      compressed: isCompressed,
+      compressionAlgorithm: compressionAlgorithm
     };
 
     return new Promise((resolve, reject) => {
@@ -171,7 +184,9 @@ export class AssetStorage {
             name: result.name,
             size: result.size,
             type: result.type,
-            timestamp: result.timestamp
+            timestamp: result.timestamp,
+            compressed: result.compressed || false,
+            compressionAlgorithm: result.compressionAlgorithm || null
           });
         } else {
           resolve(null);

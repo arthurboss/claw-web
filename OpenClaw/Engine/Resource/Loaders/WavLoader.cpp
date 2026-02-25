@@ -27,10 +27,15 @@ void WavResourceExtraData::LoadWavSound(char* rawBuffer, uint32 size)
 {
     // Create a dummy Mix_Chunk for compatibility
     _sound = shared_ptr<Mix_Chunk>(new Mix_Chunk(), DeleteMixChunk);
-    _sound->abuf = (Uint8*)rawBuffer;
+
+    // CRITICAL FIX: Copy the buffer instead of storing the pointer
+    // The rawBuffer will be deleted by ResourceCache after VLoadResource returns,
+    // so we need our own copy of the WAV data
+    _sound->abuf = new Uint8[size];
+    memcpy(_sound->abuf, rawBuffer, size);
     _sound->alen = size;
-    _sound->allocated = 0; // Don't let SDL free our buffer
-    
+    _sound->allocated = 1; // Mark as allocated so SDL will free it
+
     // The actual audio loading will be handled by the Audio class when PlaySound is called
 }
 

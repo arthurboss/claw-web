@@ -38,18 +38,27 @@ window.initResourceLoader = function(Module) {
 window.initGameWhenReady = async function() {
   console.log('[Game Init] Starting game initialization...');
 
-  const success = await prepareAssetStorage();
+  try {
+    const success = await prepareAssetStorage();
 
-  if (success) {
-    console.log('[Game Init] Assets ready, loading game...');
-    // loadGame() is defined in inline script and handles openclaw.js injection
-    if (typeof window.loadGame === 'function') {
-      window.loadGame();
+    if (success) {
+      console.log('[Game Init] Assets ready, loading game...');
+
+      // Small delay to ensure all async operations are complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // loadGame() is defined in inline script and handles openclaw.js injection
+      if (typeof window.loadGame === 'function') {
+        window.loadGame();
+      } else {
+        console.error('[Game Init] loadGame() function not found');
+      }
     } else {
-      console.error('[Game Init] loadGame() function not found');
+      console.error('[Game Init] Failed to prepare assets');
     }
-  } else {
-    console.error('[Game Init] Failed to prepare assets');
+  } catch (error) {
+    console.error('[Game Init] Initialization error:', error);
+    alert(`Game initialization failed: ${error.message}`);
   }
 };
 

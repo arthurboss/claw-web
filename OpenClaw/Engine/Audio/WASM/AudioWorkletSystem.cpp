@@ -355,58 +355,40 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
     m_soundBuffers[originalPath] = std::vector<char>(data, data + size);
 
 #ifdef __EMSCRIPTEN__
-                    return EM_ASM_INT({
-                    try {
-                        const originalPath = UTF8ToString($0);
-                        const volume = $1;
-                        const loops = $2;
-            
-            // Map original paths to our organized structure
-            let wavFileName = originalPath; // Default to trying the path directly
-            
-            // Clean up path separators and make lowercase for web server compatibility if needed?
-            // Since we are fetching via HTTP, case sensitivity depends on the server.
-            // But let's handle the specific overrides we know about.
-            
-            if (originalPath.includes('SELECT.WAV') || originalPath.includes('SELECT_MENU_ITEM')) {
-                wavFileName = 'sounds/menu/SELECT.WAV';
-            } else if (originalPath.includes('CLICK.WAV') || originalPath.includes('CHANGE_MENU_ITEM')) {
-                wavFileName = 'sounds/menu/CLICK.WAV';
-            } else if (originalPath.includes('MENUBED.WAV') || originalPath.includes('MENUMUSIC')) {
-                wavFileName = 'sounds/menu/MENUBED.WAV';
-            } else {
-                 // For other sounds, try to ensure the path is clean.
-                 // Remove leading slash if present
-                 if (wavFileName.startsWith('/')) {
-                     wavFileName = wavFileName.substring(1);
-                 }
-                 // Convert to lowercase if that matches your asset layout
-                 wavFileName = wavFileName.toLowerCase();
+    // Use provided data parameter for all sounds (from CLAW.REZ)
+    return EM_ASM_INT({
+        try {
+            const dataPtr = $0;
+            const dataSize = $1;
+            const volume = $2;
+            const loops = $3;
+            const originalPath = UTF8ToString($4);
+
+            // Create a copy of the audio data from WASM memory
+            const audioData = new Uint8Array(dataSize);
+            audioData.set(HEAPU8.subarray(dataPtr, dataPtr + dataSize));
+            const arrayBuffer = audioData.buffer;
+
+            // Validate WAV file format
+            const header = String.fromCharCode.apply(null, audioData.slice(0, 4));
+            if (header !== 'RIFF') {
+                console.error('[Audio] Invalid WAV header:', header);
+                return false;
             }
 
-            // Use fetch to load the WAV file
-            fetch(wavFileName)
-                .then(function(response) {
-                    if (!response.ok) {
-                        throw new Error('Failed to load WAV file: ' + response.status + ' ' + response.statusText);
-                    }
-                    return response.arrayBuffer();
-                })
-                .then(function(arrayBuffer) {
-                    const audioContext = window.audioContext;
-                    return audioContext.decodeAudioData(arrayBuffer);
-                })
+            const audioContext = window.audioContext;
+            audioContext.decodeAudioData(arrayBuffer.slice(0))
                 .then(function(audioBuffer) {
                     window.soundBuffers = window.soundBuffers || new Map();
                     window.soundBuffers.set(originalPath, audioBuffer);
 
-                    // Play the sound immediately after loading
+                    // Play the sound immediately
                     const source = audioContext.createBufferSource();
                     const gainNode = audioContext.createGain();
-                    
+
                     source.buffer = audioBuffer;
-                    source.loop = (loops === -1); // -1 means infinite loop
-                    
+                    source.loop = (loops === -1);
+
                     // Use music volume for MENUBED.WAV, sound volume for everything else
                     let volumeMultiplier = window.soundVolume;
                     let isMusic = false;
@@ -414,30 +396,24 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                         volumeMultiplier = window.musicVolume;
                         isMusic = true;
                     }
-                    
-                    // Apply volume based on enabled state
+
                     let finalVolume = volume * volumeMultiplier;
                     if (isMusic && !window.musicEnabled) {
-                        finalVolume = 0; // Mute if music is disabled
+                        finalVolume = 0;
                     }
-                    
-                    // Clamp volume to 0.0-1.0 range
+
                     finalVolume = Math.max(0.0, Math.min(1.0, finalVolume));
                     gainNode.gain.value = finalVolume;
-                    
-                    // Store the gain node and source for volume updates if it's music
+
                     if (isMusic) {
                         window.musicGainNode = gainNode;
                         window.musicSource = source;
                         window.musicVolume = volumeMultiplier;
                     }
 
-                    // TRACK THE ACTIVE SOURCE
                     window.activeSources = window.activeSources || new Map();
-                    
                     const isLooping = (loops === -1);
 
-                    // Only stop existing source if it's a loop or music to allow SFX overlap
                     if (isLooping || isMusic) {
                         if (window.activeSources.has(originalPath)) {
                             try {
@@ -446,34 +422,27 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                         }
                         window.activeSources.set(originalPath, source);
                     }
-                    
+
                     source.onended = function() {
                         if (window.activeSources && window.activeSources.get(originalPath) === source) {
                              window.activeSources.delete(originalPath);
                         }
                     };
-                    
+
                     source.connect(gainNode);
                     gainNode.connect(audioContext.destination);
                     source.start();
                 })
                 .catch(function(error) {
-                    console.error('Error playing WAV file:', originalPath, error);
-                    // Fallback to oscillator if WAV loading fails
-                    window.soundBuffers = window.soundBuffers || new Map();
-                    window.soundBuffers.set(originalPath, {
-                        type: 'oscillator',
-                        frequency: 800,
-                        duration: 0.5
-                    });
+                    console.error('[Audio] Failed to decode:', originalPath, error);
                 });
-            
+
             return true;
         } catch (e) {
-            console.error('Error loading sound:', e);
+            console.error('[Audio] Exception:', e);
             return false;
         }
-                    }, originalPath.c_str(), volume * m_soundVolume, loops);
+    }, (const char*)data, size, volume * m_soundVolume, loops, originalPath.c_str());
 #endif
     
     return true;
