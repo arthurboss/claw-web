@@ -83,6 +83,7 @@ void ClawHumanView::VSetControlledActor(uint32 actorId)
     m_pKeyboardHandler = m_pActorController;
     m_pPointerHandler = m_pActorController;
     m_pTouchHandler = m_pActorController;
+    m_pGamepadHandler = m_pActorController;
     g_pApp->RegisterTouchRecognizers(*m_pActorController);
 
     m_pCamera->SetTarget(m_pControlledActor);

@@ -42,7 +42,13 @@ void ActorController::HandleAction(ActionType actionType)
         }
         case ActionType_Change_Ammo_Type:
         {
-            shared_ptr<EventData_Request_Change_Ammo_Type> pEvent(new EventData_Request_Change_Ammo_Type(m_pControlledObject->VGetProperties()->GetActorId()));
+            shared_ptr<EventData_Request_Change_Ammo_Type> pEvent(new EventData_Request_Change_Ammo_Type(m_pControlledObject->VGetProperties()->GetActorId(), AmmoType_Max, false));
+            IEventMgr::Get()->VTriggerEvent(pEvent);
+            break;
+        }
+        case ActionType_Change_Ammo_Type_Prev:
+        {
+            shared_ptr<EventData_Request_Change_Ammo_Type> pEvent(new EventData_Request_Change_Ammo_Type(m_pControlledObject->VGetProperties()->GetActorId(), AmmoType_Max, true));
             IEventMgr::Get()->VTriggerEvent(pEvent);
             break;
         }
@@ -116,6 +122,18 @@ void ActorController::OnUpdate(uint32 msDiff)
         {
             moveY -= m_Speed * (float)msDiff;
         }
+    }
+
+    // Gamepad analog stick movement (combines with keyboard)
+    if (fabs(m_GamepadMoveX) > 0.01f)
+    {
+        moveX += m_GamepadMoveX * m_Speed * (float)msDiff;
+    }
+    // Left stick Y: used for climbing and looking up/down (not jumping - use A button)
+    if (fabs(m_GamepadMoveY) > 0.3f)
+    {
+        // Analog climbing/looking (negative Y = up = climb up/look up, positive Y = down = climb down/duck)
+        climbY += m_GamepadMoveY * 5.0f;
     }
 
     if (fabs(climbY) > FLT_EPSILON)
@@ -399,4 +417,96 @@ bool ActorController::OnPress(int id, const Touch_PressEvent &evt, bool start) {
         }
     }
     return false;
+}
+
+//-----------------------------------------------------------------------------
+// IGamepadHandler implementation
+//-----------------------------------------------------------------------------
+
+bool ActorController::VOnGamepadButtonDown(GamepadButton button, float value)
+{
+    switch (button)
+    {
+        case GamepadButton::A:  // Jump
+            return VOnKeyDown(SDLK_SPACE);
+
+        case GamepadButton::X:  // Attack (sword)
+            HandleAction(ActionType_Attack);
+            return true;
+
+        case GamepadButton::B:  // Fire (pistol/magic/dynamite)
+            HandleAction(ActionType_Fire);
+            return true;
+
+        // Y button disabled (use LB/RB for ammo change)
+        // Start button handled in HumanView for pause menu
+
+        case GamepadButton::DPadUp:
+            return VOnKeyDown(SDLK_UP);
+        case GamepadButton::DPadDown:
+            return VOnKeyDown(SDLK_DOWN);
+        case GamepadButton::DPadLeft:
+            return VOnKeyDown(SDLK_LEFT);
+        case GamepadButton::DPadRight:
+            return VOnKeyDown(SDLK_RIGHT);
+
+        // Triggers disabled - use face buttons instead
+
+        case GamepadButton::LeftBumper:  // Change ammo (previous)
+            HandleAction(ActionType_Change_Ammo_Type_Prev);
+            return true;
+
+        case GamepadButton::RightBumper:  // Change ammo (next)
+            HandleAction(ActionType_Change_Ammo_Type);
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+bool ActorController::VOnGamepadButtonUp(GamepadButton button)
+{
+    switch (button)
+    {
+        case GamepadButton::A:
+            return VOnKeyUp(SDLK_SPACE);
+
+        case GamepadButton::B:
+        {
+            shared_ptr<EventData_Actor_Fire_Ended> pFireEndedEvent(
+                new EventData_Actor_Fire_Ended(m_pControlledObject->VGetProperties()->GetActorId()));
+            IEventMgr::Get()->VTriggerEvent(pFireEndedEvent);
+            return true;
+        }
+
+        case GamepadButton::DPadUp:
+            return VOnKeyUp(SDLK_UP);
+        case GamepadButton::DPadDown:
+            return VOnKeyUp(SDLK_DOWN);
+        case GamepadButton::DPadLeft:
+            return VOnKeyUp(SDLK_LEFT);
+        case GamepadButton::DPadRight:
+            return VOnKeyUp(SDLK_RIGHT);
+
+        default:
+            return false;
+    }
+}
+
+bool ActorController::VOnGamepadAxis(GamepadAxis axis, float value)
+{
+    switch (axis)
+    {
+        case GamepadAxis::LeftStickX:
+            m_GamepadMoveX = value;
+            return true;
+
+        case GamepadAxis::LeftStickY:
+            m_GamepadMoveY = value;
+            return true;
+
+        default:
+            return false;
+    }
 }

@@ -16,6 +16,9 @@
 #include "UserInterface/Touch/TouchEvents.h"
 #include "UserInterface/Touch/TouchRecognizers/AbstractRecognizer.h"
 
+// Forward declaration for gamepad events
+struct AppEvent;
+
 class Actor;
 typedef std::shared_ptr<Actor> StrongActorPtr;
 typedef std::weak_ptr<Actor> WeakActorPtr;
@@ -32,7 +35,8 @@ enum ActionType
 {
     ActionType_Fire,
     ActionType_Attack,
-    ActionType_Change_Ammo_Type
+    ActionType_Change_Ammo_Type,
+    ActionType_Change_Ammo_Type_Prev
 };
 
 enum Direction
@@ -651,6 +655,7 @@ public:
     virtual void VOnAttach(uint32_t viewId, uint32_t actorId) = 0;
 
     virtual bool VOnEvent(SDL_Event& evt) = 0;
+    virtual bool VOnGamepadEvent(const AppEvent& evt) { return false; }
     virtual void VOnUpdate(uint32_t msDiff) = 0;
 };
 
@@ -695,6 +700,18 @@ class ITouchHandler {
 public:
     virtual std::vector<std::shared_ptr<AbstractRecognizer>> VRegisterRecognizers() = 0;
     virtual bool VOnTouch(const Touch_Event &evt) = 0;
+};
+
+// Forward declarations for gamepad types (defined in AppEvent.h)
+enum class GamepadButton : uint8_t;
+enum class GamepadAxis : uint8_t;
+
+class IGamepadHandler
+{
+public:
+    virtual bool VOnGamepadButtonDown(GamepadButton button, float value) = 0;
+    virtual bool VOnGamepadButtonUp(GamepadButton button) = 0;
+    virtual bool VOnGamepadAxis(GamepadAxis axis, float value) = 0;
 };
 
 //-------------------------------------------------------------------------------------------------

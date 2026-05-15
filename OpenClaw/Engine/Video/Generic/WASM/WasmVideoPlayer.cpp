@@ -104,6 +104,11 @@ EM_JS(void, js_StopVideo, (int id), {
     player.keyHandler = null;
   }
 
+  if (player.gamepadPollId) {
+    cancelAnimationFrame(player.gamepadPollId);
+    player.gamepadPollId = null;
+  }
+
   if (player.video.parentNode) {
     player.video.parentNode.removeChild(player.video);
   }
@@ -138,11 +143,17 @@ EM_JS(int, js_GetVideoState, (int id), {
 EM_JS(void, js_PlayVideo, (int id), {
   var player = Module.genericVideoPlayers[id];
   if (player && player.video) {
+    // Remove old handlers
     if (player.keyHandler) {
       document.removeEventListener('keydown', player.keyHandler, true);
       player.keyHandler = null;
     }
+    if (player.gamepadPollId) {
+      cancelAnimationFrame(player.gamepadPollId);
+      player.gamepadPollId = null;
+    }
 
+    // Keyboard skip handler
     player.keyHandler = function(e) {
       if (e.key == 'Escape' || e.key == 'Enter') {
         e.preventDefault();
@@ -150,8 +161,38 @@ EM_JS(void, js_PlayVideo, (int id), {
         js_StopVideo(id);
       }
     };
-
     document.addEventListener('keydown', player.keyHandler, true);
+
+    // Gamepad skip handler - poll for Start (9) or A (0) button
+    var lastButtonStates = {};
+    function pollGamepadForSkip() {
+      if (player.ended) return;
+
+      var gamepads = navigator.getGamepads();
+      for (var i = 0; i < 4; i++) {
+        var gp = gamepads[i];
+        if (gp && gp.connected) {
+          // Check A button (0) and Start button (9)
+          var skipButtons = [0, 9];
+          for (var j = 0; j < skipButtons.length; j++) {
+            var btn = skipButtons[j];
+            if (gp.buttons[btn]) {
+              var pressed = gp.buttons[btn].pressed;
+              var key = i + '_' + btn;
+              var wasPressed = lastButtonStates[key] || false;
+              if (pressed && !wasPressed) {
+                console.log('[Video] Gamepad button ' + btn + ' pressed - skipping video');
+                js_StopVideo(id);
+                return;
+              }
+              lastButtonStates[key] = pressed;
+            }
+          }
+        }
+      }
+      player.gamepadPollId = requestAnimationFrame(pollGamepadForSkip);
+    }
+    player.gamepadPollId = requestAnimationFrame(pollGamepadForSkip);
 
     // Attach video to gameContainer so it's included in fullscreen context
     var gameContainer = document.getElementById('gameContainer');

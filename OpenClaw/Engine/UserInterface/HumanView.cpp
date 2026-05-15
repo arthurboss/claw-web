@@ -199,6 +199,184 @@ bool HumanView::VOnEvent(SDL_Event& evt)
     return false;
 }
 
+bool HumanView::VOnGamepadEvent(const AppEvent& evt)
+{
+    switch (evt.type) {
+        case AppEventType::GamepadButtonDown:
+        {
+            GameState gameState = g_pApp->GetGameLogic()->GetGameState();
+            bool ingameMenuVisible = m_pIngameMenu && m_pIngameMenu->VIsVisible();
+
+
+            // Handle Start button for pause menu (like ESC key)
+            if (evt.gamepadButton.button == GamepadButton::Start &&
+                gameState == GameState_IngameRunning &&
+                m_pIngameMenu &&
+                !m_pIngameMenu->VIsVisible())
+            {
+                m_pIngameMenu->VSetVisible(true);
+                return true;
+            }
+
+            // Handle gamepad input for menus (main menu or ingame menu visible)
+            bool inMenu = (gameState == GameState_Menu || ingameMenuVisible);
+
+            if (inMenu)
+            {
+                // Convert gamepad buttons to SDL keyboard events for menu navigation
+                SDL_Event sdlEvt = {0};
+                sdlEvt.type = SDL_KEYDOWN;
+                sdlEvt.key.repeat = 0;
+
+                bool handled = false;
+                switch (evt.gamepadButton.button)
+                {
+                    case GamepadButton::A:
+                        sdlEvt.key.keysym.sym = SDLK_RETURN;
+                        sdlEvt.key.keysym.scancode = SDL_SCANCODE_RETURN;
+                        handled = true;
+                        break;
+                    case GamepadButton::B:
+                        sdlEvt.key.keysym.sym = SDLK_ESCAPE;
+                        sdlEvt.key.keysym.scancode = SDL_SCANCODE_ESCAPE;
+                        handled = true;
+                        break;
+                    case GamepadButton::DPadUp:
+                        sdlEvt.key.keysym.sym = SDLK_UP;
+                        sdlEvt.key.keysym.scancode = SDL_SCANCODE_UP;
+                        handled = true;
+                        break;
+                    case GamepadButton::DPadDown:
+                        sdlEvt.key.keysym.sym = SDLK_DOWN;
+                        sdlEvt.key.keysym.scancode = SDL_SCANCODE_DOWN;
+                        handled = true;
+                        break;
+                    case GamepadButton::DPadLeft:
+                        sdlEvt.key.keysym.sym = SDLK_LEFT;
+                        sdlEvt.key.keysym.scancode = SDL_SCANCODE_LEFT;
+                        handled = true;
+                        break;
+                    case GamepadButton::DPadRight:
+                        sdlEvt.key.keysym.sym = SDLK_RIGHT;
+                        sdlEvt.key.keysym.scancode = SDL_SCANCODE_RIGHT;
+                        handled = true;
+                        break;
+                    case GamepadButton::Start:
+                        sdlEvt.key.keysym.sym = SDLK_RETURN;
+                        sdlEvt.key.keysym.scancode = SDL_SCANCODE_RETURN;
+                        handled = true;
+                        break;
+                    // Block these buttons in menus (no menu function, prevent game actions)
+                    case GamepadButton::X:
+                    case GamepadButton::Y:
+                    case GamepadButton::LeftBumper:
+                    case GamepadButton::RightBumper:
+                    case GamepadButton::LeftTrigger:
+                    case GamepadButton::RightTrigger:
+                        return true;  // Consume the event, do nothing
+                    default:
+                        break;
+                }
+
+                if (handled)
+                {
+                    // Send to visible menu
+                    if (m_pIngameMenu && m_pIngameMenu->VIsVisible())
+                    {
+                        return m_pIngameMenu->VOnEvent(sdlEvt);
+                    }
+                    // For main menu, let it fall through to screen elements
+                    for (auto& pScreenElement : m_ScreenElements)
+                    {
+                        if (pScreenElement->VIsVisible() && pScreenElement->VOnEvent(sdlEvt))
+                        {
+                            return true;
+                        }
+                    }
+                    return true;
+                }
+            }
+
+            // Forward to gamepad handler for in-game controls (only if menu not visible)
+            if (!ingameMenuVisible && m_pGamepadHandler) {
+                return m_pGamepadHandler->VOnGamepadButtonDown(
+                    evt.gamepadButton.button, evt.gamepadButton.value);
+            }
+            return false;
+        }
+
+        case AppEventType::GamepadButtonUp:
+        {
+            bool ingameMenuVisible = m_pIngameMenu && m_pIngameMenu->VIsVisible();
+            if (!ingameMenuVisible && m_pGamepadHandler) {
+                return m_pGamepadHandler->VOnGamepadButtonUp(evt.gamepadButton.button);
+            }
+            return false;
+        }
+
+        case AppEventType::GamepadAxis:
+        {
+            // Handle analog stick for menu navigation
+            GameState gameState = g_pApp->GetGameLogic()->GetGameState();
+            bool ingameMenuVisible = m_pIngameMenu && m_pIngameMenu->VIsVisible();
+            bool inMenu = (gameState == GameState_Menu || ingameMenuVisible);
+
+            if (inMenu && evt.gamepadAxis.axis == GamepadAxis::LeftStickY)
+            {
+                static float lastAxisValue = 0.0f;
+                float value = evt.gamepadAxis.value;
+
+                // Trigger menu navigation when crossing threshold
+                const float threshold = 0.5f;
+                bool wasOver = fabs(lastAxisValue) >= threshold;
+                bool nowOver = fabs(value) >= threshold;
+
+                if (nowOver && !wasOver)
+                {
+                    SDL_Event sdlEvt = {0};
+                    sdlEvt.type = SDL_KEYDOWN;
+                    sdlEvt.key.repeat = 0;
+
+                    if (value < -threshold) {
+                        sdlEvt.key.keysym.sym = SDLK_UP;
+                        sdlEvt.key.keysym.scancode = SDL_SCANCODE_UP;
+                    } else {
+                        sdlEvt.key.keysym.sym = SDLK_DOWN;
+                        sdlEvt.key.keysym.scancode = SDL_SCANCODE_DOWN;
+                    }
+
+                    if (m_pIngameMenu && m_pIngameMenu->VIsVisible())
+                    {
+                        m_pIngameMenu->VOnEvent(sdlEvt);
+                    }
+                    else
+                    {
+                        for (auto& pScreenElement : m_ScreenElements)
+                        {
+                            if (pScreenElement->VIsVisible() && pScreenElement->VOnEvent(sdlEvt))
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+                lastAxisValue = value;
+                return true;
+            }
+
+            // Forward to gamepad handler for in-game controls (only if menu not visible)
+            if (!ingameMenuVisible && m_pGamepadHandler) {
+                return m_pGamepadHandler->VOnGamepadAxis(
+                    evt.gamepadAxis.axis, evt.gamepadAxis.value);
+            }
+            return false;
+        }
+
+        default:
+            return false;
+    }
+}
+
 void HumanView::VOnLostDevice()
 {
 

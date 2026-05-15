@@ -9,6 +9,7 @@
 #include "GameHUD.h"
 
 #include "UserInterface.h"
+#include "../Platform/Events/AppEvent.h"
 
 typedef std::list<shared_ptr<IScreenElement>> ScreenElementList;
 typedef std::list<shared_ptr<IGameView>> GameViewList;
@@ -30,6 +31,7 @@ public:
     virtual void VOnAttach(uint32 viewId, uint32 actorId) { m_ViewId = viewId; m_ActorId = actorId; }
 
     virtual bool VOnEvent(SDL_Event& evt);
+    virtual bool VOnGamepadEvent(const AppEvent& evt);
     virtual void VOnUpdate(uint32 msDiff);
 
     // Virtual methods to control layering of interface elements
@@ -101,6 +103,7 @@ protected:
     shared_ptr<IKeyboardHandler> m_pKeyboardHandler;
     shared_ptr<IPointerHandler> m_pPointerHandler;
     shared_ptr<ITouchHandler> m_pTouchHandler;
+    shared_ptr<IGamepadHandler> m_pGamepadHandler;
 
     ScreenElementList m_ScreenElements;
 
