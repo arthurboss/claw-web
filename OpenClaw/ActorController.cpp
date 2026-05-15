@@ -42,7 +42,13 @@ void ActorController::HandleAction(ActionType actionType)
         }
         case ActionType_Change_Ammo_Type:
         {
-            shared_ptr<EventData_Request_Change_Ammo_Type> pEvent(new EventData_Request_Change_Ammo_Type(m_pControlledObject->VGetProperties()->GetActorId()));
+            shared_ptr<EventData_Request_Change_Ammo_Type> pEvent(new EventData_Request_Change_Ammo_Type(m_pControlledObject->VGetProperties()->GetActorId(), AmmoType_Max, false));
+            IEventMgr::Get()->VTriggerEvent(pEvent);
+            break;
+        }
+        case ActionType_Change_Ammo_Type_Prev:
+        {
+            shared_ptr<EventData_Request_Change_Ammo_Type> pEvent(new EventData_Request_Change_Ammo_Type(m_pControlledObject->VGetProperties()->GetActorId(), AmmoType_Max, true));
             IEventMgr::Get()->VTriggerEvent(pEvent);
             break;
         }
@@ -123,15 +129,10 @@ void ActorController::OnUpdate(uint32 msDiff)
     {
         moveX += m_GamepadMoveX * m_Speed * (float)msDiff;
     }
-    // Left stick Y: negative = up (jump), positive = down (climb)
-    if (m_GamepadMoveY < -0.5f)
-    {
-        // Push stick up to jump
-        moveY -= m_Speed * (float)msDiff;
-    }
+    // Left stick Y: used for climbing and looking up/down (not jumping - use A button)
     if (fabs(m_GamepadMoveY) > 0.3f)
     {
-        // Analog climbing (positive Y = down = climb down)
+        // Analog climbing/looking (negative Y = up = climb up/look up, positive Y = down = climb down/duck)
         climbY += m_GamepadMoveY * 5.0f;
     }
 
@@ -437,21 +438,8 @@ bool ActorController::VOnGamepadButtonDown(GamepadButton button, float value)
             HandleAction(ActionType_Fire);
             return true;
 
-        case GamepadButton::Y:  // Change ammo type
-            HandleAction(ActionType_Change_Ammo_Type);
-            return true;
-
-        case GamepadButton::Start:  // Pause menu
-        {
-            SDL_Event event{0};
-            event.type = SDL_KEYDOWN;
-            event.key.keysym.sym = SDLK_ESCAPE;
-            event.key.keysym.scancode = SDL_SCANCODE_ESCAPE;
-            SDL_PushEvent(&event);
-            event.type = SDL_KEYUP;
-            SDL_PushEvent(&event);
-            return true;
-        }
+        // Y button disabled (use LB/RB for ammo change)
+        // Start button handled in HumanView for pause menu
 
         case GamepadButton::DPadUp:
             return VOnKeyDown(SDLK_UP);
@@ -462,18 +450,13 @@ bool ActorController::VOnGamepadButtonDown(GamepadButton button, float value)
         case GamepadButton::DPadRight:
             return VOnKeyDown(SDLK_RIGHT);
 
-        case GamepadButton::RightTrigger:  // Alternative fire (analog trigger)
-            if (value > 0.5f)
-            {
-                HandleAction(ActionType_Fire);
-            }
+        // Triggers disabled - use face buttons instead
+
+        case GamepadButton::LeftBumper:  // Change ammo (previous)
+            HandleAction(ActionType_Change_Ammo_Type_Prev);
             return true;
 
-        case GamepadButton::LeftBumper:  // Alternative attack
-            HandleAction(ActionType_Attack);
-            return true;
-
-        case GamepadButton::RightBumper:  // Alternative change ammo
+        case GamepadButton::RightBumper:  // Change ammo (next)
             HandleAction(ActionType_Change_Ammo_Type);
             return true;
 
@@ -490,7 +473,6 @@ bool ActorController::VOnGamepadButtonUp(GamepadButton button)
             return VOnKeyUp(SDLK_SPACE);
 
         case GamepadButton::B:
-        case GamepadButton::RightTrigger:
         {
             shared_ptr<EventData_Actor_Fire_Ended> pFireEndedEvent(
                 new EventData_Actor_Fire_Ended(m_pControlledObject->VGetProperties()->GetActorId()));

@@ -4,6 +4,8 @@
 
 #include "../../Events/AppEvent.h"
 #include "../../Events/AppEventQueue.h"
+#include "../../../GameApp/BaseGameApp.h"
+#include "../../../GameApp/BaseGameLogic.h"
 
 #include <SDL2/SDL_scancode.h>
 #include <cmath>
@@ -232,6 +234,27 @@ EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value) {
   evt.gamepadAxis.axis = static_cast<GamepadAxis>(axis);
   evt.gamepadAxis.value = value;
   g_jsGamepadEventQueue->Push(evt);
+}
+
+// Returns game state for JS to determine input mode:
+// 0 = unknown/invalid, 1 = menu, 2 = in-game running, 3 = in-game paused
+EMSCRIPTEN_KEEPALIVE int GetJSGameState() {
+  if (!g_pApp || !g_pApp->GetGameLogic()) return 0;
+
+  GameState state = g_pApp->GetGameLogic()->GetGameState();
+  switch (state) {
+    case GameState_Menu:
+    case GameState_LoadingMenu:
+      return 1; // Menu
+    case GameState_IngameRunning:
+      return 2; // In-game running
+    case GameState_IngamePaused:
+      return 3; // In-game paused (quick menu open)
+    case GameState_Cutscene:
+      return 4; // Cutscene
+    default:
+      return 0; // Loading or other
+  }
 }
 
 } // extern "C"

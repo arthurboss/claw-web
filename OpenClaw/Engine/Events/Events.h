@@ -1690,10 +1690,11 @@ class EventData_Request_Change_Ammo_Type : public BaseEventData
 public:
     static const EventType sk_EventType;
 
-    EventData_Request_Change_Ammo_Type(uint32 actorId, uint32 ammoType = AmmoType_Max)
+    EventData_Request_Change_Ammo_Type(uint32 actorId, uint32 ammoType = AmmoType_Max, bool reverse = false)
     {
         m_ActorId = actorId;
         m_AmmoType = ammoType;
+        m_Reverse = reverse;
     }
 
     virtual const EventType& VGetEventType(void) const
@@ -1703,17 +1704,17 @@ public:
 
     virtual IEventDataPtr VCopy() const
     {
-        return IEventDataPtr(new EventData_Request_Change_Ammo_Type(m_ActorId, m_AmmoType));
+        return IEventDataPtr(new EventData_Request_Change_Ammo_Type(m_ActorId, m_AmmoType, m_Reverse));
     }
 
     virtual void VSerialize(std::ostringstream& out) const
     {
-        out << m_ActorId << m_AmmoType;
+        out << m_ActorId << m_AmmoType << m_Reverse;
     }
 
     virtual void VDeserialize(std::istringstream& in)
     {
-        in >> m_ActorId >> m_AmmoType;
+        in >> m_ActorId >> m_AmmoType >> m_Reverse;
     }
 
     uint32 GetAmmoType(void) const
@@ -1726,6 +1727,11 @@ public:
         return m_ActorId;
     }
 
+    bool IsReverse(void) const
+    {
+        return m_Reverse;
+    }
+
     virtual const char* GetName(void) const
     {
         return "EventData_Request_Change_Ammo_Type";
@@ -1734,6 +1740,7 @@ public:
 private:
     uint32 m_AmmoType;
     uint32 m_ActorId;
+    bool m_Reverse;
 };
 
 //---------------------------------------------------------------------------------------------------------------------

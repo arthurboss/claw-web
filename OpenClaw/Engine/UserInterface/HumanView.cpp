@@ -207,6 +207,15 @@ bool HumanView::VOnGamepadEvent(const AppEvent& evt)
 
     switch (evt.type) {
         case AppEventType::GamepadButtonDown:
+            // Handle Start button for pause menu (like ESC key)
+            if (evt.gamepadButton.button == GamepadButton::Start &&
+                g_pApp->GetGameLogic()->GetGameState() == GameState_IngameRunning &&
+                m_pIngameMenu &&
+                !m_pIngameMenu->VIsVisible())
+            {
+                m_pIngameMenu->VSetVisible(true);
+                return true;
+            }
             return m_pGamepadHandler->VOnGamepadButtonDown(
                 evt.gamepadButton.button, evt.gamepadButton.value);
 

@@ -255,7 +255,18 @@ void ClawGameLogic::RequestChangeAmmoTypeDelegate(IEventDataPtr pEventData)
         return;
     }
 
-    AmmoType newAmmoType = AmmoType((pAmmoComponent->GetActiveAmmoType() + 1) % AmmoType_Max);
+    AmmoType currentAmmo = pAmmoComponent->GetActiveAmmoType();
+    AmmoType newAmmoType;
+    if (pCastEventData->IsReverse())
+    {
+        // Cycle backwards
+        newAmmoType = AmmoType((currentAmmo + AmmoType_Max - 1) % AmmoType_Max);
+    }
+    else
+    {
+        // Cycle forwards
+        newAmmoType = AmmoType((currentAmmo + 1) % AmmoType_Max);
+    }
     pAmmoComponent->SetActiveAmmo(newAmmoType);
 
     shared_ptr<EventData_Updated_Ammo_Type> pEvent(new EventData_Updated_Ammo_Type(pCastEventData->GetActorId(), newAmmoType));

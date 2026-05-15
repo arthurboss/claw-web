@@ -78,6 +78,43 @@ OpenClaw uses a lazy loading architecture optimized for WASM and modern browsers
   - Level assets load when entering level
   - Faster startup, lower bandwidth usage
 
+## Controls
+
+### Keyboard Controls
+
+| Action | Default Keys | Alternate Keys |
+|--------|--------------|----------------|
+| Move Left | Arrow Left | A |
+| Move Right | Arrow Right | D |
+| Jump | Space | W |
+| Look Up / Climb Up | Arrow Up | W |
+| Duck / Climb Down | Arrow Down | S |
+| Attack (Sword) | Left Ctrl | - |
+| Fire (Ranged) | Left Alt | - |
+| Change Weapon | Left Shift | E |
+| Pause Menu | Escape | - |
+
+### Gamepad Controls (Xbox Layout)
+
+| Button | Action |
+|--------|--------|
+| A | Jump |
+| B | Fire (ranged weapon) |
+| X | Attack (sword) |
+| Y | *unused* |
+| LB | Previous weapon |
+| RB | Next weapon |
+| LT / RT | *unused* |
+| Start | Pause menu |
+| D-pad | Move / Look up/down |
+| Left Stick | Move / Look up/down |
+
+**Notes:**
+
+- Gamepad is automatically detected when connected
+- Works with Xbox, PlayStation, and most standard controllers
+- Button labels shown are for Xbox; PlayStation equivalents: Cross=A, Circle=B, Square=X, Triangle=Y, L1=LB, R1=RB
+
 ## Legal Notice
 
 ### OpenClaw Code
