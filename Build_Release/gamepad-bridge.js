@@ -2,7 +2,16 @@
  * Gamepad Bridge for OpenClaw WASM
  *
  * Polls the browser's native Gamepad API and sends events to C++ via ccall.
- * Also handles video skipping via gamepad buttons (Start/A).
+ * Also handles video skipping and menu navigation via simulated keyboard events.
+ *
+ * Button mapping (Xbox controller):
+ * - A (0): Select / Enter
+ * - B (1): Back / Escape
+ * - D-pad Up (12): Navigate up
+ * - D-pad Down (13): Navigate down
+ * - D-pad Left (14): Navigate left
+ * - D-pad Right (15): Navigate right
+ * - Start (9): Start / Enter
  */
 
 // State tracking
@@ -10,10 +19,70 @@ const gamepadStates = [{}, {}, {}, {}];
 let pollingActive = false;
 let debugMode = true; // Enable debug logging
 
+// Map gamepad buttons to keyboard keys for menu navigation
+const BUTTON_TO_KEY = {
+    0: 'Enter',      // A button -> Enter (select)
+    1: 'Escape',     // B button -> Escape (back)
+    9: 'Enter',      // Start -> Enter
+    12: 'ArrowUp',   // D-pad up
+    13: 'ArrowDown', // D-pad down
+    14: 'ArrowLeft', // D-pad left
+    15: 'ArrowRight' // D-pad right
+};
+
 function log(msg) {
     if (debugMode) {
         console.log('[Gamepad] ' + msg);
     }
+}
+
+/**
+ * Simulate a keyboard event for menu navigation
+ */
+function simulateKeyPress(key) {
+    const canvas = document.getElementById('canvas');
+    const target = canvas || document;
+
+    // Create and dispatch keydown event
+    const keydownEvent = new KeyboardEvent('keydown', {
+        key: key,
+        code: key === 'Enter' ? 'Enter' :
+              key === 'Escape' ? 'Escape' :
+              key === 'ArrowUp' ? 'ArrowUp' :
+              key === 'ArrowDown' ? 'ArrowDown' :
+              key === 'ArrowLeft' ? 'ArrowLeft' :
+              key === 'ArrowRight' ? 'ArrowRight' : key,
+        keyCode: key === 'Enter' ? 13 :
+                 key === 'Escape' ? 27 :
+                 key === 'ArrowUp' ? 38 :
+                 key === 'ArrowDown' ? 40 :
+                 key === 'ArrowLeft' ? 37 :
+                 key === 'ArrowRight' ? 39 : 0,
+        which: key === 'Enter' ? 13 :
+               key === 'Escape' ? 27 :
+               key === 'ArrowUp' ? 38 :
+               key === 'ArrowDown' ? 40 :
+               key === 'ArrowLeft' ? 37 :
+               key === 'ArrowRight' ? 39 : 0,
+        bubbles: true,
+        cancelable: true
+    });
+
+    target.dispatchEvent(keydownEvent);
+    log('Simulated key: ' + key);
+
+    // Also dispatch keyup after a short delay
+    setTimeout(() => {
+        const keyupEvent = new KeyboardEvent('keyup', {
+            key: key,
+            code: keydownEvent.code,
+            keyCode: keydownEvent.keyCode,
+            which: keydownEvent.which,
+            bubbles: true,
+            cancelable: true
+        });
+        target.dispatchEvent(keyupEvent);
+    }, 50);
 }
 
 /**
@@ -68,7 +137,7 @@ function pollGamepads() {
         if (!isConnected) continue;
 
         // Process buttons
-        const numButtons = Math.min(gp.buttons.length, 17);
+        const numButtons = Math.min(gp.buttons.length, 18);
         for (let b = 0; b < numButtons; b++) {
             const pressed = gp.buttons[b].pressed;
             const value = gp.buttons[b].value;
@@ -82,12 +151,20 @@ function pollGamepads() {
                     log('Button ' + b + ' released');
                 }
 
-                // Handle video skip: Start (9) or A (0) button
-                if (pressed && (b === 0 || b === 9)) {
-                    skipVideoIfPlaying();
+                // On button press, handle actions
+                if (pressed) {
+                    // Handle video skip: Start (9) or A (0) button
+                    if (b === 0 || b === 9) {
+                        skipVideoIfPlaying();
+                    }
+
+                    // Simulate keyboard for menu navigation
+                    if (BUTTON_TO_KEY[b]) {
+                        simulateKeyPress(BUTTON_TO_KEY[b]);
+                    }
                 }
 
-                // Send to C++
+                // Also send to C++ for in-game controls (when available)
                 if (typeof Module !== 'undefined' && Module.ccall) {
                     try {
                         if (pressed) {
@@ -98,7 +175,7 @@ function pollGamepads() {
                                 ['number', 'number'], [i, b]);
                         }
                     } catch (e) {
-                        log('C++ call failed: ' + e);
+                        // C++ not ready yet, that's OK - keyboard simulation handles menu
                     }
                 }
 
@@ -107,14 +184,29 @@ function pollGamepads() {
         }
 
         // Process axes (with deadzone)
+        // Axis 0 = Left stick X, Axis 1 = Left stick Y
         const numAxes = Math.min(gp.axes.length, 4);
         for (let a = 0; a < numAxes; a++) {
             let value = gp.axes[a];
             // Apply deadzone
-            if (Math.abs(value) < 0.15) value = 0;
+            if (Math.abs(value) < 0.5) value = 0; // Higher threshold for menu navigation
+            else value = value > 0 ? 1 : -1; // Normalize to -1, 0, or 1
 
             const prevValue = prev.axes[a] || 0;
 
+            // Detect axis "press" (crossing threshold)
+            if (value !== 0 && prevValue === 0) {
+                // Left stick navigation
+                if (a === 0) { // X axis
+                    if (value < 0) simulateKeyPress('ArrowLeft');
+                    else simulateKeyPress('ArrowRight');
+                } else if (a === 1) { // Y axis
+                    if (value < 0) simulateKeyPress('ArrowUp');
+                    else simulateKeyPress('ArrowDown');
+                }
+            }
+
+            // Send to C++ for in-game controls
             if (Math.abs(value - prevValue) > 0.01) {
                 if (typeof Module !== 'undefined' && Module.ccall) {
                     try {
@@ -124,8 +216,8 @@ function pollGamepads() {
                         // Don't spam logs for axis events
                     }
                 }
-                prev.axes[a] = value;
             }
+            prev.axes[a] = value;
         }
     }
 
