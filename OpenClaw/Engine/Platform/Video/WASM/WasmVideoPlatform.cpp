@@ -11,6 +11,9 @@
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 
+// Global pointer for JavaScript callbacks to access the event queue
+static AppEventQueue* g_jsGamepadEventQueue = nullptr;
+
 namespace {
 
 int32_t MapDomCodeToSDLScancode(const char *code) {
@@ -171,6 +174,70 @@ EM_BOOL OnResize(int /*eventType*/, const EmscriptenUiEvent * /*e*/,
 
 } // namespace
 
+// ============================================================================
+// JavaScript Gamepad Bridge Callbacks
+// These functions are called from gamepad-bridge.js via Module.ccall()
+// ============================================================================
+
+extern "C" {
+
+EMSCRIPTEN_KEEPALIVE void OnJSGamepadConnected(int index) {
+  if (!g_jsGamepadEventQueue) return;
+
+  EM_ASM({
+    console.log('[Gamepad C++] Controller ' + $0 + ' connected');
+  }, index);
+
+  g_jsGamepadEventQueue->Push(AppEvent::MakeGamepadConnected(index));
+}
+
+EMSCRIPTEN_KEEPALIVE void OnJSGamepadDisconnected(int index) {
+  if (!g_jsGamepadEventQueue) return;
+
+  EM_ASM({
+    console.log('[Gamepad C++] Controller ' + $0 + ' disconnected');
+  }, index);
+
+  g_jsGamepadEventQueue->Push(AppEvent::MakeGamepadDisconnected(index));
+}
+
+EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonDown(int index, int button, float value) {
+  if (!g_jsGamepadEventQueue) return;
+
+  AppEvent evt;
+  evt.type = AppEventType::GamepadButtonDown;
+  evt.gamepadButton.gamepadIndex = index;
+  evt.gamepadButton.button = static_cast<GamepadButton>(button);
+  evt.gamepadButton.value = value;
+  g_jsGamepadEventQueue->Push(evt);
+}
+
+EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonUp(int index, int button) {
+  if (!g_jsGamepadEventQueue) return;
+
+  AppEvent evt;
+  evt.type = AppEventType::GamepadButtonUp;
+  evt.gamepadButton.gamepadIndex = index;
+  evt.gamepadButton.button = static_cast<GamepadButton>(button);
+  evt.gamepadButton.value = 0.0f;
+  g_jsGamepadEventQueue->Push(evt);
+}
+
+EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value) {
+  if (!g_jsGamepadEventQueue) return;
+
+  AppEvent evt;
+  evt.type = AppEventType::GamepadAxis;
+  evt.gamepadAxis.gamepadIndex = index;
+  evt.gamepadAxis.axis = static_cast<GamepadAxis>(axis);
+  evt.gamepadAxis.value = value;
+  g_jsGamepadEventQueue->Push(evt);
+}
+
+} // extern "C"
+
+// ============================================================================
+
 WasmVideoPlatform::WasmVideoPlatform()
     : m_queue(nullptr), m_installedCallbacks(false) {}
 
@@ -221,10 +288,18 @@ void WasmVideoPlatform::Shutdown() {
   m_installedCallbacks = false;
 }
 
-void WasmVideoPlatform::SetEventQueue(AppEventQueue *queue) { m_queue = queue; }
+void WasmVideoPlatform::SetEventQueue(AppEventQueue *queue) {
+  m_queue = queue;
+  // Also set global pointer for JavaScript gamepad bridge callbacks
+  g_jsGamepadEventQueue = queue;
+}
 
 void WasmVideoPlatform::PumpEvents() {
-  // No-op; events are pushed via browser callbacks.
+  // Gamepad events now come from JavaScript bridge (gamepad-bridge.js)
+  // via the exported OnJSGamepad* functions, so no C++ polling needed here.
+  //
+  // The JavaScript bridge polls navigator.getGamepads() on each animation
+  // frame and calls Module.ccall() to push events to the C++ event queue.
 }
 
 double WasmVideoPlatform::NowSeconds() const {

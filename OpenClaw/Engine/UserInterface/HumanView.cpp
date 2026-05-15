@@ -199,6 +199,29 @@ bool HumanView::VOnEvent(SDL_Event& evt)
     return false;
 }
 
+bool HumanView::VOnGamepadEvent(const AppEvent& evt)
+{
+    if (!m_pGamepadHandler) {
+        return false;
+    }
+
+    switch (evt.type) {
+        case AppEventType::GamepadButtonDown:
+            return m_pGamepadHandler->VOnGamepadButtonDown(
+                evt.gamepadButton.button, evt.gamepadButton.value);
+
+        case AppEventType::GamepadButtonUp:
+            return m_pGamepadHandler->VOnGamepadButtonUp(evt.gamepadButton.button);
+
+        case AppEventType::GamepadAxis:
+            return m_pGamepadHandler->VOnGamepadAxis(
+                evt.gamepadAxis.axis, evt.gamepadAxis.value);
+
+        default:
+            return false;
+    }
+}
+
 void HumanView::VOnLostDevice()
 {
 

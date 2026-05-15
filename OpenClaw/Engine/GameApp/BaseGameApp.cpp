@@ -137,6 +137,29 @@ void BaseGameApp::OnAppEvent(const AppEvent &event) {
     break;
   }
 
+  // Gamepad events - route directly to game views (no SDL conversion needed)
+  case AppEventType::GamepadConnected:
+    LOG("Gamepad " + std::to_string(event.gamepadConnection.gamepadIndex) + " connected");
+    break;
+
+  case AppEventType::GamepadDisconnected:
+    LOG("Gamepad " + std::to_string(event.gamepadConnection.gamepadIndex) + " disconnected");
+    break;
+
+  case AppEventType::GamepadButtonDown:
+  case AppEventType::GamepadButtonUp:
+  case AppEventType::GamepadAxis: {
+    if (m_pGame) {
+      for (auto iter = m_pGame->m_GameViews.rbegin();
+           iter != m_pGame->m_GameViews.rend(); ++iter) {
+        if ((*iter)->VOnGamepadEvent(event)) {
+          break;
+        }
+      }
+    }
+    break;
+  }
+
   default:
     break;
   }
@@ -363,6 +386,16 @@ void BaseGameApp::StepLoop() {
 
 // Handle all input events
 #ifdef __EMSCRIPTEN__
+    // Debug: check if videoPlatform exists
+    static bool debugOnce = true;
+    if (debugOnce) {
+      debugOnce = false;
+      if (m_videoPlatform) {
+        EM_ASM({ console.log('[Debug] m_videoPlatform exists, calling PumpEvents'); });
+      } else {
+        EM_ASM({ console.log('[Debug] m_videoPlatform is NULL!'); });
+      }
+    }
     if (m_videoPlatform) {
       m_videoPlatform->PumpEvents();
     }
