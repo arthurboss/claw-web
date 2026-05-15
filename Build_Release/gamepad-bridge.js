@@ -12,7 +12,7 @@
 
 const gamepadStates = [{}, {}, {}, {}];
 let pollingActive = false;
-let debugMode = true;
+let debugMode = false;
 
 // Game states from C++
 const GAME_STATE = { UNKNOWN: 0, MENU: 1, INGAME: 2, PAUSED: 3, CUTSCENE: 4 };
@@ -56,8 +56,9 @@ function getGameState() {
 
 function isMenuState() {
     const state = getGameState();
-    // Menu, paused, or unknown (before game loads) = use keyboard simulation
-    return state === GAME_STATE.MENU || state === GAME_STATE.PAUSED || state === GAME_STATE.UNKNOWN;
+    // Main menu or unknown (before game loads) = use keyboard simulation
+    // Paused state (quick menu) sends to C++ for proper handling
+    return state === GAME_STATE.MENU || state === GAME_STATE.UNKNOWN;
 }
 
 function simulateKeyPress(key) {
