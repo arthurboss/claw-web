@@ -1052,7 +1052,10 @@ Point ClawPhysics::VGetVelocity(uint32_t actorId)
 //
 void ClawPhysics::SetVelocity(uint32_t actorId, const Point& velocity)
 {
-    assert(false && "SetVelocity: implement me");
+    if (b2Body* pBody = FindBox2DBody(actorId))
+    {
+        pBody->SetLinearVelocity(b2Vec2(velocity.x, velocity.y));
+    }
 }
 
 //-----------------------------------------------------------------------------
