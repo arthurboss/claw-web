@@ -20,8 +20,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="manifest" href="site.webmanifest" />
 
-    <!-- Change default viewport width here according to canvas width -->
-    <meta name="viewport" content="width=660" />
+    <!-- Change default viewport width here according to canvas width (854 for 16:9) -->
+    <meta name="viewport" content="width=874" />
 
     <!-- Preload critical ES modules for faster loading -->
     <link rel="modulepreload" href="game-init.js" />
@@ -85,7 +85,7 @@
       .canvas-wrapper {
         position: relative;
         display: flex;
-        aspect-ratio: 4 / 3;
+        aspect-ratio: 854 / 480; /* 16:9 widescreen */
         height: 100%;
         max-height: fit-content;
         align-items: center;
@@ -461,7 +461,7 @@
         <div id="canvasContainer">
           <canvas
             id="canvas"
-            width="640"
+            width="854"
             height="480"
             oncontextmenu="event.preventDefault()"
             tabindex="-1"
@@ -760,7 +760,7 @@
       // Emscripten structure
       var Module = {
         // Prevent Emscripten from manipulating canvas dimensions
-        // Canvas is fixed at 640x480 and scaled via CSS only
+        // Canvas is fixed at 854x480 (16:9 widescreen) and scaled via CSS only
         preRun: [
           function () {
             // Mount CLAW.REZ to virtual filesystem before game starts
@@ -771,8 +771,8 @@
               }
             }
 
-            // Lock canvas to 640x480 (no dynamic resizing)
-            Module.canvas.widthNative = 640;
+            // Lock canvas to 854x480 (no dynamic resizing)
+            Module.canvas.widthNative = 854;
             Module.canvas.heightNative = 480;
 
             loadingElement.remove();
@@ -852,8 +852,8 @@
         r.parentNode.insertBefore(script, r);
       }
 
-      // Canvas is fixed at 640x480 and scaled via CSS
-      CheatCodeManager.winsize = "640 480";
+      // Canvas is fixed at 854x480 (16:9 widescreen) and scaled via CSS
+      CheatCodeManager.winsize = "854 480";
       CheatCodeManager.scale = -1;
 
       if (

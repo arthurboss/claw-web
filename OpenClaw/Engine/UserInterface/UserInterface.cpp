@@ -525,7 +525,9 @@ bool ScreenElementMenu::Initialize(TiXmlElement* pElem)
     // This is hack for now
     if (backgroundImagePath == "IngameMenuBackground")
     {
-        m_pBackground = shared_ptr<Image>(new Image(Util::CreateSDLTextureRect(640, 480, COLOR_BLACK, m_pRenderer, 127)));
+        Point windowSize = g_pApp->GetWindowSize();
+        m_pBackground = shared_ptr<Image>(new Image(Util::CreateSDLTextureRect(
+            (int)windowSize.x, (int)windowSize.y, COLOR_BLACK, m_pRenderer, 127)));
     }
     else
     {

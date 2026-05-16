@@ -649,8 +649,8 @@ bool BaseGameApp::LoadGameOptions(const char *inConfigFile) {
   }
 
 #ifdef __EMSCRIPTEN__
-  // Canvas is fixed at 640x480 and scaled via CSS
-  m_GameOptions.windowWidth = 640;
+  // 16:9 widescreen: 854x480 (same height as original, 33% wider)
+  m_GameOptions.windowWidth = 854;
   m_GameOptions.windowHeight = 480;
   m_GameOptions.scale = 1.0;
 #endif
