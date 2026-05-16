@@ -2,7 +2,7 @@
 
 ## For Players
 
-- [Setup Guide](player/SETUP.md) - How to get the game running
+- [Gamepad Support](player/GAMEPAD.md) - Controller setup and vibration feedback
 - [Troubleshooting](player/TROUBLESHOOTING.md) - Common issues and solutions
 
 ## For Developers

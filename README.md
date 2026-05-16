@@ -8,83 +8,94 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 |-----------|------------------|
 | ![Game Menu](docs/screenshots/game-menu.png) | ![Level 1 Gameplay](docs/screenshots/gameplay-level1.png) |
 
-## 🎮 Quick Start
+## Quick Start
 
 ### Requirements
 
-You'll need **CLAW.REZ** from the original Captain Claw (1997) game.
+- **Browser:** Chrome 105+ / Firefox 121+ / Safari 16.4+ / Edge 105+
+- **Storage:** ~120MB free space in browser
+- **CLAW.REZ:** Original game assets from Captain Claw (1997) — you must own the game
 
-- The game will ask you to upload this file on first run
-- It's saved in your browser - you only upload once
-- **Legal:** You must own the original game to use its assets
+### Running the Game
 
-**Optional:** Video cutscenes from the original game are not included. The game works perfectly without them, but you can add them to `Build_Release/videos/` if you want cutscenes between levels.
+1. **Open Terminal:**
+   - **Mac:** Press `Cmd + Space`, type "Terminal", press Enter
+   - **Windows:** Press `Win + R`, type "wsl", press Enter (requires WSL installed)
+   - **Linux:** Press `Ctrl + Alt + T`
 
-### How to Play
-
-1. **Start a local server by running the following in your computer's Terminal application** (pick one):
+2. **Navigate to the game folder:**
 
    ```bash
-   # Recommended: HTTP/3 server (faster)
-   ./scripts/start_http3_server.sh
-
-   # Alternative: Python server
-   cd Build_Release
-   python3 -m http.server 8080
+   cd path/to/OpenClaw
    ```
 
-2. **Open in browser:**
-   - HTTP/3: <https://localhost:8080/openclaw.html>
-   - Python: <http://localhost:8080/openclaw.html>
+   Replace `path/to/OpenClaw` with the actual location where you downloaded the game.
 
-3. **First time only:** Upload your CLAW.REZ file when prompted
+3. **Start the game server** (pick one):
 
-4. **Play!** The game loads in 2-3 seconds
+   ```bash
+   # Option A: HTTP/3 server (faster loading)
+   ./scripts/start_http3_server.sh
 
-### Browser Requirements
+   # Option B: Python server (simpler, works everywhere)
+   cd Build_Release && python3 -m http.server 8080
+   ```
 
-- Chrome 105+ / Firefox 121+ / Safari 16.4+ / Edge 105+
-- ~120MB free storage (for compressed game files and game states in IndexedDB)
+4. **Open in your web browser:**
+   - If using HTTP/3: `https://localhost:8080/openclaw.html`
+   - If using Python: `http://localhost:8080/openclaw.html`
 
-## 💡 Features
+5. **First time only:** Upload your CLAW.REZ file when prompted
 
-- **Fast Loading:** Only 48MB download, levels load as you play
+6. **Play!** The game loads in 2-3 seconds
+
+## Controls
+
+### Keyboard
+
+| Action | Keys |
+|--------|------|
+| Move | Arrow keys or WASD |
+| Jump | Space |
+| Attack (Sword) | Left Ctrl |
+| Fire (Ranged) | Left Alt |
+| Change Weapon | Left Shift or E |
+| Pause | Escape |
+
+### Gamepad
+
+Xbox, PlayStation, and most standard controllers supported. See [Gamepad Support](docs/player/GAMEPAD.md) for button mapping and vibration feedback.
+
+## Features
+
+- **Fast Loading:** 48MB download, levels load as you play
 - **One-Time Setup:** Upload CLAW.REZ once, play forever
-- **Full Game:** All 14 levels, original graphics and audio
-- **Modern Browsers:** Hardware-accelerated WebGL rendering
-- **No Installation:** Runs entirely in your browser
+- **Full Game:** All 14 levels with original graphics and audio
+- **Gamepad Support:** Controller input with vibration feedback
+- **Save System:** Progress saved in browser storage
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
-Having issues? See [Troubleshooting](docs/player/TROUBLESHOOTING.md) for:
+Having issues? See [Troubleshooting Guide](docs/player/TROUBLESHOOTING.md).
 
-- How to clear cached files and re-upload CLAW.REZ
-- Common error messages and solutions
-- Browser-specific problems
-
-## 📋 Documentation
-
-- **[Setup Guide](docs/player/SETUP.md)** - Detailed setup instructions
-- **[Troubleshooting](docs/player/TROUBLESHOOTING.md)** - Common issues and fixes
-
-### For Developers
+## For Developers
 
 See [docs/developer/](docs/developer/) for technical documentation:
 
 - [Building](docs/developer/BUILDING.md) - Compiling from source
 - [Architecture](docs/developer/ARCHITECTURE.md) - Lazy-loading and resource management
 
-## 📝 License
+## License
 
 GNU GPL v3 - See LICENSE file
 
 Original game assets (CLAW.REZ) remain copyright Monolith Productions.
 
-## 🙏 Credits
+## Credits
 
 - **Original Game:** Monolith Productions (1997)
 - **OpenClaw Engine:** [pjasicek](https://github.com/pjasicek/OpenClaw)
-- **WASM port fix and modernisation:** Arthur Boss
+- **WASM Port:** Arthur Boss
 
 ---
 

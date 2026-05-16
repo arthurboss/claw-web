@@ -531,7 +531,7 @@ See `docs/` directory for detailed information:
 
 **For Players (`docs/player/`):**
 
-- **SETUP.md** - Detailed setup instructions
+- **GAMEPAD.md** - Controller setup and vibration feedback
 - **TROUBLESHOOTING.md** - Common issues and solutions
 
 **For Developers (`docs/developer/`):**
