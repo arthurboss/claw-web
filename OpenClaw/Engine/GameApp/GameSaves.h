@@ -3,12 +3,10 @@
 
 #include "../SharedDefines.h"
 #include "BaseGameApp.h"
+#include <sstream>
 
-#ifdef __EMSCRIPTEN__
-#define IS_SAVE_SUPPORTED false
-#else
+// Save is now supported on all platforms including Emscripten (via IndexedDB)
 #define IS_SAVE_SUPPORTED true
-#endif
 
 // This can be refactored into classes, but this is not a pressing concern for me right now
 // as it works as intended
@@ -81,7 +79,44 @@ struct CheckpointSave
         assert(checkpointIdx <= 2);
     }
 
-    // 0 - start / new game, 
+    // JSON serialization for IndexedDB storage (Emscripten)
+    std::string ToJson() const
+    {
+        std::ostringstream ss;
+        ss << "{";
+        ss << "\"checkpointIdx\":" << checkpointIdx << ",";
+        ss << "\"score\":" << score << ",";
+        ss << "\"health\":" << health << ",";
+        ss << "\"lives\":" << lives << ",";
+        ss << "\"bulletCount\":" << bulletCount << ",";
+        ss << "\"magicCount\":" << magicCount << ",";
+        ss << "\"dynamiteCount\":" << dynamiteCount;
+        ss << "}";
+        return ss.str();
+    }
+
+    void LoadFromJson(const std::string& json)
+    {
+        // Simple JSON parsing - extract values between quotes/colons
+        auto getValue = [&json](const std::string& key) -> uint32 {
+            size_t pos = json.find("\"" + key + "\":");
+            if (pos == std::string::npos) return 0;
+            pos += key.length() + 3; // skip "key":
+            size_t end = json.find_first_of(",}", pos);
+            if (end == std::string::npos) return 0;
+            return std::stoul(json.substr(pos, end - pos));
+        };
+
+        checkpointIdx = getValue("checkpointIdx");
+        score = getValue("score");
+        health = getValue("health");
+        lives = getValue("lives");
+        bulletCount = getValue("bulletCount");
+        magicCount = getValue("magicCount");
+        dynamiteCount = getValue("dynamiteCount");
+    }
+
+    // 0 - start / new game,
     // 1 - first checkpoint
     // 2 - second checkpoint
     uint32 checkpointIdx; 
@@ -186,6 +221,66 @@ struct LevelSave
         }
 
         return &(findIt->second);
+    }
+
+    // JSON serialization for IndexedDB storage (Emscripten)
+    std::string ToJson() const
+    {
+        std::ostringstream ss;
+        ss << "{";
+        ss << "\"levelNumber\":" << levelNumber << ",";
+        ss << "\"levelName\":\"" << levelName << "\",";
+        ss << "\"checkpoints\":[";
+        bool first = true;
+        for (const auto& cpPair : checkpointMap)
+        {
+            if (!first) ss << ",";
+            first = false;
+            ss << cpPair.second.ToJson();
+        }
+        ss << "]}";
+        return ss.str();
+    }
+
+    void LoadFromJson(const std::string& json)
+    {
+        // Extract levelNumber
+        size_t pos = json.find("\"levelNumber\":");
+        if (pos != std::string::npos) {
+            pos += 14;
+            size_t end = json.find_first_of(",}", pos);
+            levelNumber = std::stoul(json.substr(pos, end - pos));
+        }
+
+        // Extract levelName
+        pos = json.find("\"levelName\":\"");
+        if (pos != std::string::npos) {
+            pos += 13;
+            size_t end = json.find("\"", pos);
+            levelName = json.substr(pos, end - pos);
+        }
+
+        // Extract checkpoints array
+        pos = json.find("\"checkpoints\":[");
+        if (pos != std::string::npos) {
+            pos += 15;
+            size_t arrayEnd = json.find("]", pos);
+            std::string checkpointsStr = json.substr(pos, arrayEnd - pos);
+
+            // Parse each checkpoint object
+            size_t cpStart = 0;
+            while ((cpStart = checkpointsStr.find("{", cpStart)) != std::string::npos) {
+                size_t cpEnd = checkpointsStr.find("}", cpStart);
+                if (cpEnd == std::string::npos) break;
+
+                std::string cpJson = checkpointsStr.substr(cpStart, cpEnd - cpStart + 1);
+                CheckpointSave cp;
+                cp.LoadFromJson(cpJson);
+                checkpointMap[cp.checkpointIdx] = cp;
+
+                cpStart = cpEnd + 1;
+            }
+        }
     }
 
     uint32 levelNumber;
@@ -360,6 +455,79 @@ public:
     bool IsSaveSupported()
     {
         return IS_SAVE_SUPPORTED;
+    }
+
+    // JSON serialization for IndexedDB storage (Emscripten)
+    std::string ToJson() const
+    {
+        std::ostringstream ss;
+        ss << "{\"version\":1,\"levels\":[";
+        bool first = true;
+        for (const auto& levelPair : m_LevelSaveMap)
+        {
+            if (!first) ss << ",";
+            first = false;
+            ss << levelPair.second.ToJson();
+        }
+        ss << "]}";
+        return ss.str();
+    }
+
+    bool InitializeFromJson(const std::string& json)
+    {
+        if (json.empty()) {
+            return false;
+        }
+
+        m_LevelSaveMap.clear();
+
+        // Find levels array
+        size_t pos = json.find("\"levels\":[");
+        if (pos == std::string::npos) {
+            LOG_ERROR("Invalid save JSON: no levels array");
+            return false;
+        }
+
+        pos += 10; // skip "levels":[
+        size_t arrayEnd = json.rfind("]");
+        if (arrayEnd == std::string::npos || arrayEnd <= pos) {
+            LOG_ERROR("Invalid save JSON: malformed levels array");
+            return false;
+        }
+
+        std::string levelsStr = json.substr(pos, arrayEnd - pos);
+
+        // Parse each level object (they're nested, so we need to track braces)
+        int braceCount = 0;
+        size_t levelStart = std::string::npos;
+
+        for (size_t i = 0; i < levelsStr.size(); i++) {
+            if (levelsStr[i] == '{') {
+                if (braceCount == 0) {
+                    levelStart = i;
+                }
+                braceCount++;
+            } else if (levelsStr[i] == '}') {
+                braceCount--;
+                if (braceCount == 0 && levelStart != std::string::npos) {
+                    std::string levelJson = levelsStr.substr(levelStart, i - levelStart + 1);
+                    LevelSave levelSave;
+                    levelSave.LoadFromJson(levelJson);
+                    if (levelSave.levelNumber > 0 && levelSave.levelNumber <= LEVELS_COUNT) {
+                        m_LevelSaveMap[levelSave.levelNumber] = levelSave;
+                    }
+                    levelStart = std::string::npos;
+                }
+            }
+        }
+
+        if (m_LevelSaveMap.empty()) {
+            LOG_ERROR("No valid levels found in save JSON");
+            return false;
+        }
+
+        LOG("Loaded " + ToStr(m_LevelSaveMap.size()) + " levels from IndexedDB save");
+        return true;
     }
 
 private:

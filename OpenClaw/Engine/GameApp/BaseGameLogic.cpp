@@ -26,6 +26,9 @@
 #include "BaseGameLogic.h"
 #include "GameSaves.h"
 #include "HapticFeedback.h"
+#ifdef __EMSCRIPTEN__
+#include "SaveBridge.h"
+#endif
 
 #include "../Physics/ClawPhysics.h"
 
@@ -85,11 +88,47 @@ bool BaseGameLogic::Initialize()
 {
     m_pActorFactory = VCreateActorFactory();
 
-    // TODO: Add saves to Emscripten indexed DB
     if (!m_pGameSaveMgr->IsSaveSupported()) {
         return m_pGameSaveMgr->Initialize(nullptr);
     }
 
+#ifdef __EMSCRIPTEN__
+    // Load saves from IndexedDB (via localStorage backup for sync access)
+    std::string jsonData = SaveBridge::LoadFromIndexedDB();
+    if (!jsonData.empty()) {
+        LOG("Loading saves from IndexedDB...");
+        if (m_pGameSaveMgr->InitializeFromJson(jsonData)) {
+            LOG("Successfully loaded saves from IndexedDB");
+            return true;
+        } else {
+            LOG_WARNING("Failed to parse IndexedDB save data, starting fresh");
+        }
+    } else {
+        LOG("No save data found in IndexedDB, starting fresh game");
+    }
+
+    // No save data found - initialize with just level 1
+    LevelSave level1Save;
+    level1Save.levelNumber = 1;
+    level1Save.levelName = "La Roca";
+    CheckpointSave startCheckpoint;
+    startCheckpoint.checkpointIdx = 0;
+    startCheckpoint.score = 0;
+    startCheckpoint.health = 100;
+    startCheckpoint.lives = 6;
+    startCheckpoint.bulletCount = 10;
+    startCheckpoint.magicCount = 5;
+    startCheckpoint.dynamiteCount = 3;
+    level1Save.checkpointMap[0] = startCheckpoint;
+    m_pGameSaveMgr->AddLevelEntry(1, "La Roca");
+    m_pGameSaveMgr->AddCheckpointSave(1, startCheckpoint);
+
+    // Save initial state to IndexedDB
+    SaveBridge::SaveToIndexedDB(m_pGameSaveMgr->ToJson());
+
+    return true;
+#else
+    // Native platform: load from XML file
     std::string savesFilePath = g_pApp->GetGameConfig()->userDirectory + g_pApp->GetGameConfig()->savesFile;
 
     TiXmlDocument gameSaves(savesFilePath.c_str());
@@ -107,6 +146,7 @@ bool BaseGameLogic::Initialize()
     }
 
     return true;
+#endif
 }
 
 std::string BaseGameLogic::GetActorXml(uint32 actorId)
@@ -582,15 +622,40 @@ bool BaseGameLogic::VLoadScoreScreen(const char* xmlScoreScreenResource)
     // Level 11 is the last implemented level
     if (nextLevelNumber <= 11)
     {
+        // Add level entry if it doesn't exist
+        if (!m_pGameSaveMgr->HasLevelSave(nextLevelNumber)) {
+            std::string levelName;
+            switch (nextLevelNumber) {
+                case 1: levelName = "La Roca"; break;
+                case 2: levelName = "Battlements"; break;
+                case 3: levelName = "Thief's Forest"; break;
+                case 4: levelName = "Dark Woods"; break;
+                case 5: levelName = "Town"; break;
+                case 6: levelName = "Puerto De Lobo"; break;
+                case 7: levelName = "Docks"; break;
+                case 8: levelName = "Shipyards"; break;
+                case 9: levelName = "Pirate's Cove"; break;
+                case 10: levelName = "Cliffs"; break;
+                case 11: levelName = "Caverns"; break;
+                default: levelName = "Unknown"; break;
+            }
+            m_pGameSaveMgr->AddLevelEntry(nextLevelNumber, levelName);
+        }
         m_pGameSaveMgr->AddCheckpointSave(nextLevelNumber, nextLevelCheckpoint);
 
         // If not in testing mode
         if (m_pGameSaveMgr->IsSaveSupported() && !g_pApp->GetGlobalOptions()->loadAllLevelSaves)
         {
+#ifdef __EMSCRIPTEN__
+            // Save to IndexedDB
+            SaveBridge::SaveToIndexedDB(m_pGameSaveMgr->ToJson());
+            LOG("Level completion saved to IndexedDB");
+#else
             TiXmlDocument saveGamesDoc;
             saveGamesDoc.LinkEndChild(m_pGameSaveMgr->ToXml());
             std::string savesFilePath = g_pApp->GetGameConfig()->userDirectory + g_pApp->GetGameConfig()->savesFile;
             saveGamesDoc.SaveFile(savesFilePath.c_str());
+#endif
         }
     }
 
@@ -1412,6 +1477,77 @@ void BaseGameLogic::VResetLevel()
     VChangeState(GameState_LoadingLevel);
 }
 
+void BaseGameLogic::CheckpointReachedDelegate(IEventDataPtr pEventData)
+{
+    shared_ptr<EventData_Checkpoint_Reached> pCastEventData =
+        static_pointer_cast<EventData_Checkpoint_Reached>(pEventData);
+
+    if (!pCastEventData) return;
+
+    // Update current spawn position
+    m_CurrentSpawnPosition = pCastEventData->GetSpawnPoint();
+
+    // Only save if this is a save checkpoint (not just a respawn point)
+    if (!pCastEventData->IsSaveCheckpoint()) {
+        return;
+    }
+
+    if (!m_pCurrentLevel) {
+        LOG_WARNING("CheckpointReachedDelegate: No current level");
+        return;
+    }
+
+    uint32 levelNumber = m_pCurrentLevel->GetLevelNumber();
+    uint32 checkpointNumber = pCastEventData->GetSaveCheckpointNumber();
+
+    LOG("Checkpoint " + ToStr(checkpointNumber) + " reached on level " + ToStr(levelNumber));
+
+    // Get player stats for the save
+    StrongActorPtr pClawActor = GetClawActor();
+    if (!pClawActor) {
+        LOG_WARNING("CheckpointReachedDelegate: No Claw actor found");
+        return;
+    }
+
+    auto pHealthComponent = MakeStrongPtr(pClawActor->GetComponent<HealthComponent>(HealthComponent::g_Name));
+    auto pScoreComponent = MakeStrongPtr(pClawActor->GetComponent<ScoreComponent>(ScoreComponent::g_Name));
+    auto pLifeComponent = MakeStrongPtr(pClawActor->GetComponent<LifeComponent>(LifeComponent::g_Name));
+    auto pAmmoComponent = MakeStrongPtr(pClawActor->GetComponent<AmmoComponent>(AmmoComponent::g_Name));
+
+    if (!pHealthComponent || !pScoreComponent || !pLifeComponent || !pAmmoComponent) {
+        LOG_WARNING("CheckpointReachedDelegate: Missing player components");
+        return;
+    }
+
+    // Create checkpoint save with current player state
+    CheckpointSave checkpointSave;
+    checkpointSave.checkpointIdx = checkpointNumber;
+    checkpointSave.score = pScoreComponent->GetScore();
+    checkpointSave.health = pHealthComponent->GetHealth();
+    checkpointSave.lives = pLifeComponent->GetLives();
+    checkpointSave.bulletCount = pAmmoComponent->GetRemainingAmmo(AmmoType_Pistol);
+    checkpointSave.magicCount = pAmmoComponent->GetRemainingAmmo(AmmoType_Magic);
+    checkpointSave.dynamiteCount = pAmmoComponent->GetRemainingAmmo(AmmoType_Dynamite);
+
+    // Add the checkpoint save
+    m_pGameSaveMgr->AddCheckpointSave(levelNumber, checkpointSave);
+
+    // Persist to storage
+    if (m_pGameSaveMgr->IsSaveSupported() && !g_pApp->GetGlobalOptions()->loadAllLevelSaves)
+    {
+#ifdef __EMSCRIPTEN__
+        SaveBridge::SaveToIndexedDB(m_pGameSaveMgr->ToJson());
+        LOG("Checkpoint saved to IndexedDB");
+#else
+        TiXmlDocument saveGamesDoc;
+        saveGamesDoc.LinkEndChild(m_pGameSaveMgr->ToXml());
+        std::string savesFilePath = g_pApp->GetGameConfig()->userDirectory + g_pApp->GetGameConfig()->savesFile;
+        saveGamesDoc.SaveFile(savesFilePath.c_str());
+        LOG("Checkpoint saved to file");
+#endif
+    }
+}
+
 //=====================================================================================================================
 // Private
 //=====================================================================================================================
@@ -1428,6 +1564,7 @@ void BaseGameLogic::RegisterAllDelegates()
     IEventMgr::Get()->VAddListener(MakeDelegate(this, &BaseGameLogic::BossFightStartedDelegate), EventData_Boss_Fight_Started::sk_EventType);
     IEventMgr::Get()->VAddListener(MakeDelegate(this, &BaseGameLogic::IngameMenuEndLifeDelegate), EventData_IngameMenu_End_Life::sk_EventType);
     IEventMgr::Get()->VAddListener(MakeDelegate(this, &BaseGameLogic::WorldFinishedLoadingDelegate), EventData_World_Finished_Loading::sk_EventType);
+    IEventMgr::Get()->VAddListener(MakeDelegate(this, &BaseGameLogic::CheckpointReachedDelegate), EventData_Checkpoint_Reached::sk_EventType);
 }
 
 void BaseGameLogic::RemoveAllDelegates()
@@ -1442,6 +1579,7 @@ void BaseGameLogic::RemoveAllDelegates()
     IEventMgr::Get()->VRemoveListener(MakeDelegate(this, &BaseGameLogic::BossFightStartedDelegate), EventData_Boss_Fight_Started::sk_EventType);
     IEventMgr::Get()->VRemoveListener(MakeDelegate(this, &BaseGameLogic::IngameMenuEndLifeDelegate), EventData_IngameMenu_End_Life::sk_EventType);
     IEventMgr::Get()->VRemoveListener(MakeDelegate(this, &BaseGameLogic::WorldFinishedLoadingDelegate), EventData_World_Finished_Loading::sk_EventType);
+    IEventMgr::Get()->VRemoveListener(MakeDelegate(this, &BaseGameLogic::CheckpointReachedDelegate), EventData_Checkpoint_Reached::sk_EventType);
 }
 
 void BaseGameLogic::ExecuteStartupCommands(const std::string& startupCommandsFile)
