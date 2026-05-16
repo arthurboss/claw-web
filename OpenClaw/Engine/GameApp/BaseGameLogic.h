@@ -111,6 +111,7 @@ protected:
     void BossFightStartedDelegate(IEventDataPtr pEventData);
     void IngameMenuEndLifeDelegate(IEventDataPtr pEventData);
     void WorldFinishedLoadingDelegate(IEventDataPtr pEventData);
+    void CheckpointReachedDelegate(IEventDataPtr pEventData);
 
     uint32 m_Lifetime;
     ProcessMgr* m_pProcessMgr;
