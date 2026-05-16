@@ -257,6 +257,31 @@ EMSCRIPTEN_KEEPALIVE int GetJSGameState() {
   }
 }
 
+// Called from JavaScript when entering/exiting fullscreen to adjust game resolution
+// Width is calculated based on screen aspect ratio, height is always 480
+EMSCRIPTEN_KEEPALIVE void OnJSResolutionChange(int width, int height) {
+  if (!g_pApp) return;
+
+  EM_ASM({
+    console.log('[Resolution] Changing to ' + $0 + 'x' + $1);
+  }, width, height);
+
+  // Update the game's internal resolution
+  g_pApp->SetWindowSize(width, height, 1.0);
+}
+
+// Returns current game width for JS to query
+EMSCRIPTEN_KEEPALIVE int GetGameWidth() {
+  if (!g_pApp) return 640;
+  return (int)g_pApp->GetWindowSize().x;
+}
+
+// Returns current game height for JS to query
+EMSCRIPTEN_KEEPALIVE int GetGameHeight() {
+  if (!g_pApp) return 480;
+  return (int)g_pApp->GetWindowSize().y;
+}
+
 } // extern "C"
 
 // ============================================================================

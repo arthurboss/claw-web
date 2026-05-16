@@ -367,6 +367,7 @@ static IEventDataPtr XmlElemToGeneratedEvent(TiXmlElement* pElem)
 }
 
 Point g_MenuScale = Point(1.0, 1.0);
+Point g_MenuOffset = Point(0.0, 0.0);  // Horizontal offset for centering menus in widescreen
 
 //-----------------------------------------------------------------------------
 //
@@ -432,8 +433,58 @@ void ScreenElementMenu::VOnRender(uint32 msDiff)
     assert(m_pBackground != nullptr);
     assert(m_pBackground->GetTexture() != NULL);
 
-    SDL_Rect backgroundRect = GetScreenRect();
-    SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), &backgroundRect, NULL);
+    // Recalculate menu scale and offset each frame (resolution can change dynamically)
+    Point windowSize = g_pApp->GetWindowSize();
+    const double MENU_DESIGN_WIDTH = 640.0;
+    const double MENU_DESIGN_HEIGHT = 480.0;
+
+    // Scale uniformly based on height (menu items are designed for 640x480)
+    // Ensure valid window size before calculating (avoid division by zero or bad early values)
+    if (windowSize.y > 0 && windowSize.x > 0)
+    {
+        double uniformScale = windowSize.y / MENU_DESIGN_HEIGHT;
+        g_MenuScale.Set(uniformScale, uniformScale);
+        g_MenuOffset.Set((windowSize.x - MENU_DESIGN_WIDTH * uniformScale) / 2.0, 0.0);
+    }
+
+    // Only clear screen for main menu (not ingame menu which shows game behind it)
+    if (m_MenuType != MenuType_IngameMenu)
+    {
+        SDL_SetRenderDrawColor(m_pRenderer, 0, 0, 0, 255);
+        SDL_RenderClear(m_pRenderer);
+
+        // Check if background is widescreen (wider than standard 640px)
+        int bgWidth = m_pBackground->GetWidth();
+        int bgHeight = m_pBackground->GetHeight();
+        bool isWidescreenBackground = (bgWidth > 700); // Widescreen if wider than ~4:3
+
+        SDL_Rect destRect;
+        if (isWidescreenBackground)
+        {
+            // Widescreen background: scale to fill height, center horizontally
+            double bgScale = windowSize.y / (double)bgHeight;
+            int scaledWidth = (int)(bgWidth * bgScale);
+            int scaledHeight = (int)(bgHeight * bgScale);
+            destRect.x = (int)((windowSize.x - scaledWidth) / 2.0);
+            destRect.y = 0;
+            destRect.w = scaledWidth;
+            destRect.h = scaledHeight;
+        }
+        else
+        {
+            // Standard 4:3 background: center within window
+            destRect.x = (int)g_MenuOffset.x;
+            destRect.y = 0;
+            destRect.w = (int)(bgWidth * g_MenuScale.x);
+            destRect.h = (int)(bgHeight * g_MenuScale.y);
+        }
+        SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), NULL, &destRect);
+    }
+    else
+    {
+        // Ingame menu: render semi-transparent background covering full screen
+        SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), NULL, NULL);
+    }
 
     assert(m_pActiveMenuPage);
     m_pActiveMenuPage->VOnRender(msDiff);
@@ -525,13 +576,16 @@ bool ScreenElementMenu::Initialize(TiXmlElement* pElem)
     // This is hack for now
     if (backgroundImagePath == "IngameMenuBackground")
     {
-        m_pBackground = shared_ptr<Image>(new Image(Util::CreateSDLTextureRect(640, 480, COLOR_BLACK, m_pRenderer, 127)));
+        Point windowSize = g_pApp->GetWindowSize();
+        m_pBackground = shared_ptr<Image>(new Image(Util::CreateSDLTextureRect(
+            (int)windowSize.x, (int)windowSize.y, COLOR_BLACK, m_pRenderer, 127)));
     }
     else
     {
         m_pBackground = PcxResourceLoader::LoadAndReturnImage(backgroundImagePath.c_str());
     }
     assert(m_pBackground != nullptr);
+    LOG("Menu background loaded: " + backgroundImagePath + " (" + ToStr(m_pBackground->GetWidth()) + "x" + ToStr(m_pBackground->GetHeight()) + ")");
 
     //
     // ---------- Background Music ----------
@@ -576,10 +630,15 @@ bool ScreenElementMenu::Initialize(TiXmlElement* pElem)
     m_pActiveMenuPage = m_MenuPageMap[m_DefaultMenuPage];
     assert(m_pActiveMenuPage != nullptr);
 
-    // Lets just assume that the background will take the whole screen
-    // From that we can calculate current scale (can't use predefined scale here)
+    // Calculate menu scale and offset for centering
+    // Menu items are designed for 640x480, scale uniformly based on height
     Point windowSize = g_pApp->GetWindowSize();
-    g_MenuScale.Set(windowSize.x / m_pBackground->GetWidth(), windowSize.y / m_pBackground->GetHeight());
+    const double MENU_DESIGN_WIDTH = 640.0;
+    const double MENU_DESIGN_HEIGHT = 480.0;
+
+    double uniformScale = windowSize.y / MENU_DESIGN_HEIGHT;
+    g_MenuScale.Set(uniformScale, uniformScale);
+    g_MenuOffset.Set((windowSize.x - MENU_DESIGN_WIDTH * uniformScale) / 2.0, 0.0);
 
     return true;
 }
@@ -689,8 +748,14 @@ void ScreenElementMenuPage::VOnRender(uint32 msDiff)
     {
         assert(m_pBackground->GetTexture() != NULL);
 
+        // Render page background centered like main menu background
         SDL_Rect backgroundRect = GetScreenRect();
-        SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), &backgroundRect, NULL);
+        SDL_Rect destRect;
+        destRect.x = (int)g_MenuOffset.x;
+        destRect.y = (int)g_MenuOffset.y;
+        destRect.w = (int)(m_pBackground->GetWidth() * g_MenuScale.x);
+        destRect.h = (int)(m_pBackground->GetHeight() * g_MenuScale.y);
+        SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), &backgroundRect, &destRect);
     }
 
     for (shared_ptr<ScreenElementMenuItem> pMenuItem : m_MenuItems)
@@ -776,8 +841,8 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
         if (evt.button.button == SDL_BUTTON_LEFT)
         {
             SDL_Rect clickRect;
-            clickRect.x = (int)(evt.button.x / g_MenuScale.x);
-            clickRect.y = (int)(evt.button.y / g_MenuScale.y);
+            clickRect.x = (int)((evt.button.x - g_MenuOffset.x) / g_MenuScale.x);
+            clickRect.y = (int)((evt.button.y - g_MenuOffset.y) / g_MenuScale.y);
             clickRect.w = 1;
             clickRect.h = 1;
 
@@ -1121,8 +1186,8 @@ void ScreenElementMenuItem::VOnRender(uint32 msDiff)
     }
 
     SDL_Rect renderRect;
-    renderRect.x = (int)((m_Position.x + pCurrImage->GetOffsetX()) * g_MenuScale.x);
-    renderRect.y = (int)(m_Position.y * g_MenuScale.y);
+    renderRect.x = (int)(g_MenuOffset.x + (m_Position.x + pCurrImage->GetOffsetX()) * g_MenuScale.x);
+    renderRect.y = (int)(g_MenuOffset.y + m_Position.y * g_MenuScale.y);
     renderRect.w = (int)(pCurrImage->GetWidth() * g_MenuScale.x);
     renderRect.h = (int)(pCurrImage->GetHeight() * g_MenuScale.y);
 

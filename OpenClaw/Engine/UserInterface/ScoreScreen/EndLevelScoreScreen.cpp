@@ -18,6 +18,7 @@
 //=================================================================================================
 
 static Point g_ScreenScale(1.0, 1.0);
+static Point g_ScreenOffset(0.0, 0.0);  // Horizontal offset for centering in widescreen
 
 uint8_t g_ScoreScreenPalette[] =
 {
@@ -369,11 +370,44 @@ void ScreenElementScoreScreen::VOnRender(uint32 msDiff)
 {
     assert(m_pBackground != nullptr);
 
-    SDL_Rect backgroundRect = GetScreenRect();
-    SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), &backgroundRect, NULL);
-    //LOG("Rendered. Image width: " + ToStr(m_pBackground->GetWidth()));
+    // Recalculate scale and offset each frame (resolution can change dynamically in fullscreen)
+    Point windowSize = g_pApp->GetWindowSize();
+    const double DESIGN_WIDTH = 640.0;
+    const double DESIGN_HEIGHT = 480.0;
+
+    // Use uniform scaling based on height to avoid stretching
+    double uniformScale = windowSize.y / DESIGN_HEIGHT;
+    g_ScreenScale.Set(uniformScale, uniformScale);
+    g_ScreenOffset.Set((windowSize.x - DESIGN_WIDTH * uniformScale) / 2.0, 0.0);
+    g_pApp->SetScale(g_ScreenScale);
+
+    // Clear the entire screen with black (for widescreen letterboxing)
+    SDL_SetRenderDrawColor(m_pRenderer, 0, 0, 0, 255);
+    SDL_RenderClear(m_pRenderer);
+
+    // Render background centered at 4:3
+    SDL_Rect backgroundSrc = { 0, 0, m_pBackground->GetWidth(), m_pBackground->GetHeight() };
+    SDL_Rect backgroundDst = {
+        (int)g_ScreenOffset.x,
+        0,
+        (int)(DESIGN_WIDTH * uniformScale),
+        (int)(DESIGN_HEIGHT * uniformScale)
+    };
+    SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), &backgroundSrc, &backgroundDst);
+
+    // Set viewport to center the 4:3 content area for scene rendering
+    SDL_Rect viewport = {
+        (int)g_ScreenOffset.x,
+        0,
+        (int)(DESIGN_WIDTH * uniformScale),
+        (int)(DESIGN_HEIGHT * uniformScale)
+    };
+    SDL_RenderSetViewport(m_pRenderer, &viewport);
 
     Scene::OnRender();
+
+    // Reset viewport to full window
+    SDL_RenderSetViewport(m_pRenderer, NULL);
 }
 
 bool ScreenElementScoreScreen::VOnEvent(SDL_Event& evt)
@@ -714,12 +748,8 @@ bool ScreenElementScoreScreen::Initialize(TiXmlElement* pScoreScreenRootElem)
     StrongProcessPtr pSpawnFinishedIntroProcess(new FireEventProcess(pFinishedIntroEvent, true));
     QueueDelayedProcess(pSpawnFinishedIntroProcess, clawFinishDialogTime);
 
-    // Lets just assume that the background will take the whole screen
-    // From that we can calculate current scale (can't use predefined scale here)
+    // Store original scale to restore later (scale is now calculated dynamically in VOnRender)
     m_OriginalScale = g_pApp->GetScale();
-    Point windowSize = g_pApp->GetWindowSize();
-    g_ScreenScale.Set(windowSize.x / m_pBackground->GetWidth(), windowSize.y / m_pBackground->GetHeight());
-    g_pApp->SetScale(g_ScreenScale);
 
     // Load score rows
     for (TiXmlElement* pScoreRowElem = pScoreScreenRootElem->FirstChildElement("ScoreRow");

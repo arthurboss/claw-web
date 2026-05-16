@@ -197,16 +197,60 @@ void RenderLoadingScreen(shared_ptr<Image> pBackground, SDL_Rect& renderRect, Po
     }
 
     SDL_Renderer* pRenderer = g_pApp->GetRenderer();
+
+    // Clear screen with black (for widescreen letterboxing)
+    SDL_SetRenderDrawColor(pRenderer, 0, 0, 0, 255);
     SDL_RenderClear(pRenderer);
 
-    SDL_RenderCopy(pRenderer, pBackground->GetTexture(), &renderRect, NULL);
+    Point windowSize = g_pApp->GetWindowSize();
+    const double DESIGN_HEIGHT = 480.0;
+    double uniformScale = windowSize.y / DESIGN_HEIGHT;
 
-    // Progress bar
-    int progressFullLength = renderRect.w / 2;
+    // Check if background is widescreen (wider than standard 640px)
+    int bgWidth = pBackground->GetWidth();
+    int bgHeight = pBackground->GetHeight();
+    bool isWidescreenBackground = (bgWidth > 700);
+
+    SDL_Rect backgroundDst;
+    int contentOffsetX;
+
+    if (isWidescreenBackground)
+    {
+        // Widescreen background: scale to fill height, center horizontally
+        double bgScale = windowSize.y / (double)bgHeight;
+        int scaledWidth = (int)(bgWidth * bgScale);
+        int scaledHeight = (int)(bgHeight * bgScale);
+        backgroundDst.x = (int)((windowSize.x - scaledWidth) / 2.0);
+        backgroundDst.y = 0;
+        backgroundDst.w = scaledWidth;
+        backgroundDst.h = scaledHeight;
+        // Center content in the middle of the screen
+        contentOffsetX = (int)(windowSize.x / 2.0 - 640.0 * uniformScale / 2.0);
+    }
+    else
+    {
+        // Standard 4:3 background: center in widescreen
+        const double DESIGN_WIDTH = 640.0;
+        contentOffsetX = (int)((windowSize.x - DESIGN_WIDTH * uniformScale) / 2.0);
+        backgroundDst.x = contentOffsetX;
+        backgroundDst.y = 0;
+        backgroundDst.w = (int)(DESIGN_WIDTH * uniformScale);
+        backgroundDst.h = (int)(DESIGN_HEIGHT * uniformScale);
+    }
+
+    // Render background
+    SDL_Rect backgroundSrc = { 0, 0, bgWidth, bgHeight };
+    SDL_RenderCopy(pRenderer, pBackground->GetTexture(), &backgroundSrc, &backgroundDst);
+
+    // Progress bar (centered within the 4:3 content area)
+    int progressFullLength = (int)(640.0 * uniformScale / 2);
     int progressCurrLength = (int)((progressFullLength * progress) / 100.0f);
-    int progressHeight = (int)(3 * scale.x); // Reduced from 30 to 3 (10% of original)
-    SDL_Rect totalProgressBarRect = { renderRect.w / 4, (int)(renderRect.h * 0.75), progressFullLength, progressHeight };
-    SDL_Rect remainingProgressBarRect = { renderRect.w / 4, (int)(renderRect.h * 0.75), progressCurrLength, progressHeight };
+    int progressHeight = (int)(3 * uniformScale);
+    int progressX = contentOffsetX + (int)(640.0 * uniformScale / 4);
+    int progressY = (int)(DESIGN_HEIGHT * uniformScale * 0.75);
+
+    SDL_Rect totalProgressBarRect = { progressX, progressY, progressFullLength, progressHeight };
+    SDL_Rect remainingProgressBarRect = { progressX, progressY, progressCurrLength, progressHeight };
 
     SDL_Texture* pTotalProgressBar = Util::CreateSDLTextureRect(
         progressFullLength, progressHeight, COLOR_BLACK, pRenderer);

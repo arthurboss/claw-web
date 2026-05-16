@@ -1,6 +1,7 @@
 <Configuration>
   <Display>
-    <Size width="1280" height="960" />
+    <!-- 16:9 widescreen (854x480 base, scaled 1.5x) -->
+    <Size width="1281" height="720" />
     <Scale>1</Scale>
     <UseVerticalSync>false</UseVerticalSync>
     <IsFullscreen>false</IsFullscreen>

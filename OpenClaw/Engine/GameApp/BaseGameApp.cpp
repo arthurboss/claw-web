@@ -649,7 +649,8 @@ bool BaseGameApp::LoadGameOptions(const char *inConfigFile) {
   }
 
 #ifdef __EMSCRIPTEN__
-  // Canvas is fixed at 640x480 and scaled via CSS
+  // Default to 4:3 (640x480) in windowed mode
+  // Resolution changes dynamically when entering fullscreen based on screen aspect ratio
   m_GameOptions.windowWidth = 640;
   m_GameOptions.windowHeight = 480;
   m_GameOptions.scale = 1.0;
@@ -960,6 +961,23 @@ bool BaseGameApp::InitializeDisplay(GameOptions &gameOptions) {
 
   m_WindowSize.Set(gameOptions.windowWidth, gameOptions.windowHeight);
 
+#ifdef __EMSCRIPTEN__
+  // Get actual canvas dimensions from JavaScript (may differ from config defaults)
+  // This ensures menus render correctly from the first frame
+  int canvasWidth = EM_ASM_INT({
+    var canvas = document.getElementById('canvas');
+    return canvas ? canvas.width : 640;
+  });
+  int canvasHeight = EM_ASM_INT({
+    var canvas = document.getElementById('canvas');
+    return canvas ? canvas.height : 480;
+  });
+  if (canvasWidth > 0 && canvasHeight > 0) {
+    m_WindowSize.Set(canvasWidth, canvasHeight);
+    LOG("Using canvas dimensions: " + ToStr(canvasWidth) + "x" + ToStr(canvasHeight));
+  }
+#endif
+
   uint32 rendererFlags = SDL_RENDERER_ACCELERATED;
   if (gameOptions.useVerticalSync) {
     rendererFlags |= SDL_RENDERER_PRESENTVSYNC;
@@ -1065,8 +1083,9 @@ bool BaseGameApp::InitializeResources(GameOptions &gameOptions) {
   pCustomCache->RegisterLoader(PngResourceLoader::Create());
 
   m_pResourceMgr = new ResourceMgrImpl();
-  m_pResourceMgr->VAddResourceCache(m_pResourceCache);
+  // Custom cache first so ASSETS.ZIP can override CLAW.REZ assets
   m_pResourceMgr->VAddResourceCache(pCustomCache);
+  m_pResourceMgr->VAddResourceCache(m_pResourceCache);
 
   LOG("Resource cache successfully initialized");
 
