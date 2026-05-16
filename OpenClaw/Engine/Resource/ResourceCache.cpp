@@ -154,9 +154,11 @@ int ResourceZipArchive::VGetRawResourceSize(Resource* r)
     int resourceNum = m_pZipFile->Find(path);
     if (resourceNum == -1)
     {
+        LOG("ZIP lookup MISS: " + path);
         return -1;
     }
 
+    LOG("ZIP lookup HIT: " + path + " (size: " + ToStr(m_pZipFile->GetFileLen(resourceNum)) + ")");
     return m_pZipFile->GetFileLen(resourceNum);
 }
 

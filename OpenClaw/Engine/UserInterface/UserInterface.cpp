@@ -434,13 +434,18 @@ void ScreenElementMenu::VOnRender(uint32 msDiff)
     assert(m_pBackground->GetTexture() != NULL);
 
     // Recalculate menu scale and offset each frame (resolution can change dynamically)
-    // Menus are designed for 640x480, so we scale uniformly based on height
     Point windowSize = g_pApp->GetWindowSize();
     const double MENU_DESIGN_WIDTH = 640.0;
     const double MENU_DESIGN_HEIGHT = 480.0;
-    double uniformScale = windowSize.y / MENU_DESIGN_HEIGHT;
-    g_MenuScale.Set(uniformScale, uniformScale);
-    g_MenuOffset.Set((windowSize.x - MENU_DESIGN_WIDTH * uniformScale) / 2.0, 0.0);
+
+    // Scale uniformly based on height (menu items are designed for 640x480)
+    // Ensure valid window size before calculating (avoid division by zero or bad early values)
+    if (windowSize.y > 0 && windowSize.x > 0)
+    {
+        double uniformScale = windowSize.y / MENU_DESIGN_HEIGHT;
+        g_MenuScale.Set(uniformScale, uniformScale);
+        g_MenuOffset.Set((windowSize.x - MENU_DESIGN_WIDTH * uniformScale) / 2.0, 0.0);
+    }
 
     // Only clear screen for main menu (not ingame menu which shows game behind it)
     if (m_MenuType != MenuType_IngameMenu)
@@ -448,14 +453,32 @@ void ScreenElementMenu::VOnRender(uint32 msDiff)
         SDL_SetRenderDrawColor(m_pRenderer, 0, 0, 0, 255);
         SDL_RenderClear(m_pRenderer);
 
-        // Render background centered and scaled uniformly
-        SDL_Rect backgroundRect = GetScreenRect();
+        // Check if background is widescreen (wider than standard 640px)
+        int bgWidth = m_pBackground->GetWidth();
+        int bgHeight = m_pBackground->GetHeight();
+        bool isWidescreenBackground = (bgWidth > 700); // Widescreen if wider than ~4:3
+
         SDL_Rect destRect;
-        destRect.x = (int)g_MenuOffset.x;
-        destRect.y = (int)g_MenuOffset.y;
-        destRect.w = (int)(m_pBackground->GetWidth() * g_MenuScale.x);
-        destRect.h = (int)(m_pBackground->GetHeight() * g_MenuScale.y);
-        SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), &backgroundRect, &destRect);
+        if (isWidescreenBackground)
+        {
+            // Widescreen background: scale to fill height, center horizontally
+            double bgScale = windowSize.y / (double)bgHeight;
+            int scaledWidth = (int)(bgWidth * bgScale);
+            int scaledHeight = (int)(bgHeight * bgScale);
+            destRect.x = (int)((windowSize.x - scaledWidth) / 2.0);
+            destRect.y = 0;
+            destRect.w = scaledWidth;
+            destRect.h = scaledHeight;
+        }
+        else
+        {
+            // Standard 4:3 background: center within window
+            destRect.x = (int)g_MenuOffset.x;
+            destRect.y = 0;
+            destRect.w = (int)(bgWidth * g_MenuScale.x);
+            destRect.h = (int)(bgHeight * g_MenuScale.y);
+        }
+        SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), NULL, &destRect);
     }
     else
     {
@@ -562,6 +585,7 @@ bool ScreenElementMenu::Initialize(TiXmlElement* pElem)
         m_pBackground = PcxResourceLoader::LoadAndReturnImage(backgroundImagePath.c_str());
     }
     assert(m_pBackground != nullptr);
+    LOG("Menu background loaded: " + backgroundImagePath + " (" + ToStr(m_pBackground->GetWidth()) + "x" + ToStr(m_pBackground->GetHeight()) + ")");
 
     //
     // ---------- Background Music ----------
@@ -607,18 +631,14 @@ bool ScreenElementMenu::Initialize(TiXmlElement* pElem)
     assert(m_pActiveMenuPage != nullptr);
 
     // Calculate menu scale and offset for centering
-    // Use uniform scaling based on height to avoid stretching menu items horizontally
+    // Menu items are designed for 640x480, scale uniformly based on height
     Point windowSize = g_pApp->GetWindowSize();
-    double bgWidth = m_pBackground->GetWidth();
-    double bgHeight = m_pBackground->GetHeight();
+    const double MENU_DESIGN_WIDTH = 640.0;
+    const double MENU_DESIGN_HEIGHT = 480.0;
 
-    // Scale uniformly based on height (menus are designed for 640x480)
-    double uniformScale = windowSize.y / bgHeight;
+    double uniformScale = windowSize.y / MENU_DESIGN_HEIGHT;
     g_MenuScale.Set(uniformScale, uniformScale);
-
-    // Calculate horizontal offset to center the menu content
-    double scaledMenuWidth = bgWidth * uniformScale;
-    g_MenuOffset.Set((windowSize.x - scaledMenuWidth) / 2.0, 0.0);
+    g_MenuOffset.Set((windowSize.x - MENU_DESIGN_WIDTH * uniformScale) / 2.0, 0.0);
 
     return true;
 }

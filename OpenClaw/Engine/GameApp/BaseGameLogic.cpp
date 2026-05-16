@@ -202,28 +202,51 @@ void RenderLoadingScreen(shared_ptr<Image> pBackground, SDL_Rect& renderRect, Po
     SDL_SetRenderDrawColor(pRenderer, 0, 0, 0, 255);
     SDL_RenderClear(pRenderer);
 
-    // Calculate centered position for 4:3 content in widescreen
     Point windowSize = g_pApp->GetWindowSize();
-    const double DESIGN_WIDTH = 640.0;
     const double DESIGN_HEIGHT = 480.0;
     double uniformScale = windowSize.y / DESIGN_HEIGHT;
-    int offsetX = (int)((windowSize.x - DESIGN_WIDTH * uniformScale) / 2.0);
 
-    // Render background centered
-    SDL_Rect backgroundSrc = { 0, 0, pBackground->GetWidth(), pBackground->GetHeight() };
-    SDL_Rect backgroundDst = {
-        offsetX,
-        0,
-        (int)(DESIGN_WIDTH * uniformScale),
-        (int)(DESIGN_HEIGHT * uniformScale)
-    };
+    // Check if background is widescreen (wider than standard 640px)
+    int bgWidth = pBackground->GetWidth();
+    int bgHeight = pBackground->GetHeight();
+    bool isWidescreenBackground = (bgWidth > 700);
+
+    SDL_Rect backgroundDst;
+    int contentOffsetX;
+
+    if (isWidescreenBackground)
+    {
+        // Widescreen background: scale to fill height, center horizontally
+        double bgScale = windowSize.y / (double)bgHeight;
+        int scaledWidth = (int)(bgWidth * bgScale);
+        int scaledHeight = (int)(bgHeight * bgScale);
+        backgroundDst.x = (int)((windowSize.x - scaledWidth) / 2.0);
+        backgroundDst.y = 0;
+        backgroundDst.w = scaledWidth;
+        backgroundDst.h = scaledHeight;
+        // Center content in the middle of the screen
+        contentOffsetX = (int)(windowSize.x / 2.0 - 640.0 * uniformScale / 2.0);
+    }
+    else
+    {
+        // Standard 4:3 background: center in widescreen
+        const double DESIGN_WIDTH = 640.0;
+        contentOffsetX = (int)((windowSize.x - DESIGN_WIDTH * uniformScale) / 2.0);
+        backgroundDst.x = contentOffsetX;
+        backgroundDst.y = 0;
+        backgroundDst.w = (int)(DESIGN_WIDTH * uniformScale);
+        backgroundDst.h = (int)(DESIGN_HEIGHT * uniformScale);
+    }
+
+    // Render background
+    SDL_Rect backgroundSrc = { 0, 0, bgWidth, bgHeight };
     SDL_RenderCopy(pRenderer, pBackground->GetTexture(), &backgroundSrc, &backgroundDst);
 
-    // Progress bar (centered within the 4:3 area)
-    int progressFullLength = (int)(DESIGN_WIDTH * uniformScale / 2);
+    // Progress bar (centered within the 4:3 content area)
+    int progressFullLength = (int)(640.0 * uniformScale / 2);
     int progressCurrLength = (int)((progressFullLength * progress) / 100.0f);
     int progressHeight = (int)(3 * uniformScale);
-    int progressX = offsetX + (int)(DESIGN_WIDTH * uniformScale / 4);
+    int progressX = contentOffsetX + (int)(640.0 * uniformScale / 4);
     int progressY = (int)(DESIGN_HEIGHT * uniformScale * 0.75);
 
     SDL_Rect totalProgressBarRect = { progressX, progressY, progressFullLength, progressHeight };

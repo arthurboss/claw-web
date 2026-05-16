@@ -85,9 +85,8 @@
       .canvas-wrapper {
         position: relative;
         display: flex;
-        aspect-ratio: var(--game-aspect-ratio, 4 / 3); /* Dynamic aspect ratio */
+        width: 100%;
         height: 100%;
-        max-height: fit-content;
         align-items: center;
         justify-content: center;
         background-color: #000;
@@ -111,12 +110,15 @@
         height: 100%;
         max-width: 100%;
         max-height: 100%;
+        justify-content: center;
+        align-items: center;
       }
 
       canvas {
         display: block;
         width: 100%;
-        height: 100%;
+        min-aspect-ratio: 4 / 3;
+        aspect-ratio: var(--game-aspect-ratio, 4 / 3);
         image-rendering: pixelated;
         outline: none;
       }
@@ -725,18 +727,27 @@
       // Base height is always 480px, width varies by aspect ratio
       var GameResolution = {
         BASE_HEIGHT: 480,
-        MIN_WIDTH: 640,   // 4:3 minimum
-        MAX_WIDTH: 1280,  // ~2.67:1 maximum (32:9 would be too extreme)
+        MIN_WIDTH: 640,   // 4:3 minimum (640/480 = 1.333)
+        MAX_WIDTH: 1664,  // 32:9 maximum (matches widescreen assets)
+        MIN_ASPECT_RATIO: 4/3,  // Never narrower than 4:3
 
-        // Calculate game width based on screen aspect ratio
-        calculateWidth: function(screenWidth, screenHeight) {
-          var aspectRatio = screenWidth / screenHeight;
-          var width = Math.round(this.BASE_HEIGHT * aspectRatio);
+        // Calculate game width based on aspect ratio
+        calculateWidth: function(width, height) {
+          var aspectRatio = Math.max(width / height, this.MIN_ASPECT_RATIO);
+          var gameWidth = Math.round(this.BASE_HEIGHT * aspectRatio);
           // Clamp to reasonable bounds
-          return Math.max(this.MIN_WIDTH, Math.min(this.MAX_WIDTH, width));
+          return Math.max(this.MIN_WIDTH, Math.min(this.MAX_WIDTH, gameWidth));
         },
 
-        // Get current screen dimensions
+        // Get current window dimensions (for windowed mode)
+        getWindowSize: function() {
+          return {
+            width: window.innerWidth,
+            height: window.innerHeight
+          };
+        },
+
+        // Get screen dimensions (for fullscreen mode)
         getScreenSize: function() {
           return {
             width: window.screen.width,
@@ -747,15 +758,12 @@
         // Apply resolution change
         apply: function(width, height) {
           var canvas = document.getElementById("canvas");
-          var wrapper = document.querySelector(".canvas-wrapper");
 
           if (canvas) {
             canvas.width = width;
             canvas.height = height;
-          }
-
-          if (wrapper) {
-            wrapper.style.setProperty("--game-aspect-ratio", width + " / " + height);
+            // Update CSS aspect ratio to match game resolution
+            canvas.style.setProperty('--game-aspect-ratio', width + ' / ' + height);
           }
 
           // Notify C++ of resolution change if game is running
@@ -781,36 +789,40 @@
         }
       }
 
-      // Handle fullscreen change - adjust resolution based on screen aspect ratio
-      function onFullscreenChange() {
+      // Handle fullscreen/resize - adjust resolution based on current dimensions
+      function updateGameResolution() {
         var btn = document.getElementById("fullscreenBtn");
+        var size;
 
         if (document.fullscreenElement) {
-          // Entering fullscreen - calculate widescreen resolution
-          var screen = GameResolution.getScreenSize();
-          var newWidth = GameResolution.calculateWidth(screen.width, screen.height);
-          GameResolution.apply(newWidth, GameResolution.BASE_HEIGHT);
-
+          // Fullscreen - use screen dimensions
+          size = GameResolution.getScreenSize();
           if (btn) {
             btn.textContent = "✕";
             btn.title = "Exit Fullscreen (ESC)";
           }
         } else {
-          // Exiting fullscreen - revert to 4:3
-          GameResolution.apply(640, 480);
-
+          // Windowed - use window dimensions
+          size = GameResolution.getWindowSize();
           if (btn) {
             btn.textContent = "⛶";
             btn.title = "Enter Fullscreen";
           }
         }
+
+        var newWidth = GameResolution.calculateWidth(size.width, size.height);
+        GameResolution.apply(newWidth, GameResolution.BASE_HEIGHT);
       }
 
-      // Listen for fullscreen changes
-      document.addEventListener("fullscreenchange", onFullscreenChange);
+      // Alias for backward compatibility
+      var onFullscreenChange = updateGameResolution;
 
-      // Initialize button state on load
-      onFullscreenChange();
+      // Listen for fullscreen changes
+      document.addEventListener("fullscreenchange", updateGameResolution);
+      window.addEventListener("resize", updateGameResolution);
+
+      // Initialize resolution on load
+      updateGameResolution();
     </script>
     <script type="text/javascript">
       var loadingElement = document.getElementById("loading");
@@ -849,6 +861,10 @@
               Browser.setWindowedCanvasSize = function() {};
               Browser.updateCanvasDimensions = function() {};
             }
+
+            // Apply correct resolution now that C++ is ready
+            // This ensures menu items use proper scale from the start
+            updateGameResolution();
           },
         ],
         canvas: (function () {

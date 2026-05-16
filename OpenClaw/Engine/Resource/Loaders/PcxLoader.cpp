@@ -28,8 +28,8 @@ shared_ptr<Image> PcxResourceLoader::LoadAndReturnImage(const char* resourceStri
 {
     Resource resource(resourceString);
 
-    shared_ptr<ResourceHandle> handle = g_pApp->GetResourceCache()->GetHandle(&resource);
-    //shared_ptr<ResourceHandle> handle = g_pApp->GetResourceMgr()->VGetHandle(&resource);
+    // Use ResourceMgr to allow ASSETS.ZIP to override CLAW.REZ assets
+    shared_ptr<ResourceHandle> handle = g_pApp->GetResourceMgr()->VGetHandle(&resource);
     assert(handle != nullptr);
 
     shared_ptr<PcxResourceExtraData> extraData = std::static_pointer_cast<PcxResourceExtraData>(handle->GetExtraData());
