@@ -6,6 +6,7 @@
 #include "../../../Events/Events.h"
 
 #include "../../../GameApp/BaseGameApp.h"
+#include "../../../GameApp/HapticFeedback.h"
 
 const char* HealthComponent::g_Name = "HealthComponent";
 
@@ -76,9 +77,15 @@ void HealthComponent::AddHealth(int32 health, DamageType damageType, Point impac
         m_CurrentHealth = m_MaxHealth;
     }
 
-    if (oldHealth != m_CurrentHealth || 
+    if (oldHealth != m_CurrentHealth ||
         damageType == DamageType_SirenProjectile) // TODO: hacky solution and needs to be fixed somehow: Siren Projectile has 0 damage
     {
+        // Haptic feedback when player deals damage to enemies (not when player takes damage)
+        if (!m_IsController && health < 0)
+        {
+            HapticFeedback::Trigger(HapticPreset::Damage);
+        }
+
         BroadcastHealthChanged(oldHealth, m_CurrentHealth, damageType, impactPoint, sourceActorId);
     }
 }

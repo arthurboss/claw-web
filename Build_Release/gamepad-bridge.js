@@ -13,6 +13,20 @@
 const gamepadStates = [{}, {}, {}, {}];
 let pollingActive = false;
 let debugMode = false;
+let hapticEnabled = true;
+
+// Haptic feedback presets (duration in ms, weakMagnitude/strongMagnitude 0-1)
+const HAPTIC_PRESETS = {
+    light:      { duration: 50,  weak: 0.3, strong: 0.0 },
+    medium:     { duration: 100, weak: 0.5, strong: 0.3 },
+    heavy:      { duration: 150, weak: 0.7, strong: 0.6 },
+    damage:     { duration: 200, weak: 0.4, strong: 0.8 },
+    death:      { duration: 1000, weak: 1.0, strong: 1.0 },
+    explosion:  { duration: 300, weak: 0.8, strong: 1.0 },
+    pickup:     { duration: 40,  weak: 0.2, strong: 0.0 },
+    attack:     { duration: 60,  weak: 0.2, strong: 0.4 },
+    jump:       { duration: 40,  weak: 0.2, strong: 0.0 },
+};
 
 // Game states from C++
 const GAME_STATE = { UNKNOWN: 0, MENU: 1, INGAME: 2, PAUSED: 3, CUTSCENE: 4 };
@@ -36,6 +50,61 @@ const KEY_CODES = {
 function log(msg) {
     if (debugMode) console.log('[Gamepad] ' + msg);
 }
+
+// Haptic feedback functions
+function triggerHaptic(gamepadIndex, preset) {
+    if (!hapticEnabled) return false;
+
+    const gamepads = navigator.getGamepads();
+    const gp = gamepads[gamepadIndex];
+    if (!gp || !gp.connected) return false;
+
+    const config = HAPTIC_PRESETS[preset];
+    if (!config) {
+        log('Unknown haptic preset: ' + preset);
+        return false;
+    }
+
+    return triggerHapticCustom(gamepadIndex, config.duration, config.weak, config.strong);
+}
+
+function triggerHapticCustom(gamepadIndex, durationMs, weakMagnitude, strongMagnitude) {
+    if (!hapticEnabled) return false;
+
+    const gamepads = navigator.getGamepads();
+    const gp = gamepads[gamepadIndex];
+    if (!gp || !gp.connected) return false;
+
+    // Try vibrationActuator (standard Gamepad API)
+    if (gp.vibrationActuator) {
+        gp.vibrationActuator.playEffect('dual-rumble', {
+            startDelay: 0,
+            duration: durationMs,
+            weakMagnitude: Math.min(1, Math.max(0, weakMagnitude)),
+            strongMagnitude: Math.min(1, Math.max(0, strongMagnitude))
+        }).catch(e => log('Vibration error: ' + e));
+        return true;
+    }
+
+    // Try hapticActuators (older API, some browsers)
+    if (gp.hapticActuators && gp.hapticActuators.length > 0) {
+        const intensity = Math.max(weakMagnitude, strongMagnitude);
+        gp.hapticActuators[0].pulse(intensity, durationMs).catch(e => log('Haptic error: ' + e));
+        return true;
+    }
+
+    return false;
+}
+
+function setHapticEnabled(enabled) {
+    hapticEnabled = enabled;
+    log('Haptic feedback ' + (enabled ? 'enabled' : 'disabled'));
+}
+
+// Expose haptic functions for C++ calls
+window.triggerHaptic = triggerHaptic;
+window.triggerHapticCustom = triggerHapticCustom;
+window.setHapticEnabled = setHapticEnabled;
 
 // Check if C++ WASM functions are available (they use underscore prefix)
 function isCppReady() {
@@ -125,6 +194,9 @@ function pollGamepads() {
                     // Menu mode: simulate keyboard on press only
                     if (pressed && MENU_BUTTON_TO_KEY[b]) {
                         simulateKeyPress(MENU_BUTTON_TO_KEY[b]);
+                        // A, B, Start = select/back = medium haptic; D-pad = navigation = light haptic
+                        const isSelectOrBack = (b === 0 || b === 1 || b === 9);
+                        triggerHaptic(i, isSelectOrBack ? 'medium' : 'light');
                     }
                 } else if (cppReady) {
                     // In-game mode: send to C++
@@ -157,6 +229,7 @@ function pollGamepads() {
                 if (nowOver && !wasOver) {
                     if (a === 0) simulateKeyPress(value < 0 ? 'ArrowLeft' : 'ArrowRight');
                     else if (a === 1) simulateKeyPress(value < 0 ? 'ArrowUp' : 'ArrowDown');
+                    triggerHaptic(i, 'light');
                 }
             } else if (cppReady) {
                 // In-game: send continuous axis values to C++
@@ -206,6 +279,7 @@ window.stopGamepadPolling = stopGamepadPolling;
 window.gamepadDebug = function() {
     console.log('=== Gamepad Debug ===');
     console.log('Polling active:', pollingActive);
+    console.log('Haptic enabled:', hapticEnabled);
     console.log('Module exists:', typeof Module !== 'undefined');
     if (typeof Module !== 'undefined') {
         console.log('Module._OnJSGamepadButtonDown:', typeof Module._OnJSGamepadButtonDown);
@@ -219,9 +293,18 @@ window.gamepadDebug = function() {
     const gamepads = navigator.getGamepads();
     for (let i = 0; i < 4; i++) {
         if (gamepads[i]) {
-            console.log('Gamepad ' + i + ':', gamepads[i].id, '- connected:', gamepads[i].connected);
+            const gp = gamepads[i];
+            console.log('Gamepad ' + i + ':', gp.id, '- connected:', gp.connected);
+            console.log('  Vibration support:', gp.vibrationActuator ? 'yes (vibrationActuator)' :
+                (gp.hapticActuators?.length ? 'yes (hapticActuators)' : 'no'));
         }
     }
+};
+
+// Test haptic feedback manually
+window.testHaptic = function(preset = 'medium') {
+    console.log('Testing haptic preset:', preset);
+    return triggerHaptic(0, preset);
 };
 
 // Auto-start

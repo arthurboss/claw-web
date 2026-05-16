@@ -854,7 +854,7 @@ void PhysicsComponent::OnBeginFootContact()
 {
     if (m_NumFootContacts == 0)
     {
-        if (m_pControllableComponent && (m_HeightInAir > 2 /*|| !m_OverlappingKinematicBodiesList.empty()*/))
+        if (m_pControllableComponent && (m_HeightInAir > 0 /*|| !m_OverlappingKinematicBodiesList.empty()*/))
         {
             m_pControllableComponent->VOnLandOnGround(m_FallHeight);
         }

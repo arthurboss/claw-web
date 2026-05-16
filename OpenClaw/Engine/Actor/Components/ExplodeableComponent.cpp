@@ -1,6 +1,7 @@
 #include "ExplodeableComponent.h"
 #include "../../GameApp/BaseGameApp.h"
 #include "../../GameApp/BaseGameLogic.h"
+#include "../../GameApp/HapticFeedback.h"
 #include "PositionComponent.h"
 
 #include "../../Events/EventMgr.h"
@@ -70,14 +71,17 @@ void ExplodeableComponent::VOnHealthBelowZero(DamageType damageType, int sourceA
     shared_ptr<PositionComponent> pPositionComponent = m_pOwner->GetPositionComponent();
     assert(pPositionComponent);
 
+    // Haptic feedback for explosion
+    HapticFeedback::Trigger(HapticPreset::Explosion);
+
     ActorTemplates::CreateAreaDamage(
-        pPositionComponent->GetPosition(), 
-        m_ExplosionSize, 
-        m_Damage, 
-        CollisionFlag_Explosion, 
-        "Circle", 
-        DamageType_Explosion, 
-        Direction_None, 
+        pPositionComponent->GetPosition(),
+        m_ExplosionSize,
+        m_Damage,
+        CollisionFlag_Explosion,
+        "Circle",
+        DamageType_Explosion,
+        Direction_None,
         m_pOwner->GetGUID(),
         Point(0, 40));
 }

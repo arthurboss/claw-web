@@ -4,6 +4,7 @@
 #include "Engine/Events/Events.h"
 #include "ClawEvents.h"
 #include "Engine/GameApp/BaseGameApp.h"
+#include "Engine/GameApp/HapticFeedback.h"
 #include "Engine/UserInterface/Touch/TouchRecognizers/TapRecognizer.h"
 #include "Engine/UserInterface/Touch/TouchRecognizers/JoystickRecognizer.h"
 #include "Engine/UserInterface/Touch/TouchRecognizers/SwipeRecognizer.h"
@@ -431,10 +432,12 @@ bool ActorController::VOnGamepadButtonDown(GamepadButton button, float value)
             return VOnKeyDown(SDLK_SPACE);
 
         case GamepadButton::X:  // Attack (sword)
+            HapticFeedback::Trigger(HapticPreset::Attack);
             HandleAction(ActionType_Attack);
             return true;
 
         case GamepadButton::B:  // Fire (pistol/magic/dynamite)
+            HapticFeedback::Trigger(HapticPreset::Attack);
             HandleAction(ActionType_Fire);
             return true;
 
