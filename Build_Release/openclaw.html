@@ -20,8 +20,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="manifest" href="site.webmanifest" />
 
-    <!-- Change default viewport width here according to canvas width (854 for 16:9) -->
-    <meta name="viewport" content="width=874" />
+    <!-- Change default viewport width here according to canvas width (1120 for 21:9) -->
+    <meta name="viewport" content="width=1140" />
 
     <!-- Preload critical ES modules for faster loading -->
     <link rel="modulepreload" href="game-init.js" />
@@ -85,7 +85,7 @@
       .canvas-wrapper {
         position: relative;
         display: flex;
-        aspect-ratio: 854 / 480; /* 16:9 widescreen */
+        aspect-ratio: 1120 / 480; /* 21:9 ultrawide */
         height: 100%;
         max-height: fit-content;
         align-items: center;
@@ -461,7 +461,7 @@
         <div id="canvasContainer">
           <canvas
             id="canvas"
-            width="854"
+            width="1120"
             height="480"
             oncontextmenu="event.preventDefault()"
             tabindex="-1"
@@ -760,7 +760,7 @@
       // Emscripten structure
       var Module = {
         // Prevent Emscripten from manipulating canvas dimensions
-        // Canvas is fixed at 854x480 (16:9 widescreen) and scaled via CSS only
+        // Canvas is fixed at 1120x480 (21:9 ultrawide) and scaled via CSS only
         preRun: [
           function () {
             // Mount CLAW.REZ to virtual filesystem before game starts
@@ -771,8 +771,8 @@
               }
             }
 
-            // Lock canvas to 854x480 (no dynamic resizing)
-            Module.canvas.widthNative = 854;
+            // Lock canvas to 1120x480 (no dynamic resizing)
+            Module.canvas.widthNative = 1120;
             Module.canvas.heightNative = 480;
 
             loadingElement.remove();
@@ -852,8 +852,8 @@
         r.parentNode.insertBefore(script, r);
       }
 
-      // Canvas is fixed at 854x480 (16:9 widescreen) and scaled via CSS
-      CheatCodeManager.winsize = "854 480";
+      // Canvas is fixed at 1120x480 (21:9 ultrawide) and scaled via CSS
+      CheatCodeManager.winsize = "1120 480";
       CheatCodeManager.scale = -1;
 
       if (

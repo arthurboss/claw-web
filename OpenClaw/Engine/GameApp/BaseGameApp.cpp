@@ -649,8 +649,8 @@ bool BaseGameApp::LoadGameOptions(const char *inConfigFile) {
   }
 
 #ifdef __EMSCRIPTEN__
-  // 16:9 widescreen: 854x480 (same height as original, 33% wider)
-  m_GameOptions.windowWidth = 854;
+  // 21:9 ultrawide: 1120x480 (same height as original, 75% wider)
+  m_GameOptions.windowWidth = 1120;
   m_GameOptions.windowHeight = 480;
   m_GameOptions.scale = 1.0;
 #endif
