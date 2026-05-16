@@ -17,6 +17,10 @@ extern "C" {
   EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value);
   // Returns: 0=unknown, 1=menu, 2=in-game, 3=paused, 4=cutscene
   EMSCRIPTEN_KEEPALIVE int GetJSGameState();
+  // Dynamic resolution support for fullscreen mode
+  EMSCRIPTEN_KEEPALIVE void OnJSResolutionChange(int width, int height);
+  EMSCRIPTEN_KEEPALIVE int GetGameWidth();
+  EMSCRIPTEN_KEEPALIVE int GetGameHeight();
 }
 
 class WasmVideoPlatform final : public VideoPlatform {

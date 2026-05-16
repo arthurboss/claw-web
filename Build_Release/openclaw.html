@@ -20,8 +20,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="manifest" href="site.webmanifest" />
 
-    <!-- Change default viewport width here according to canvas width (1120 for 21:9) -->
-    <meta name="viewport" content="width=1140" />
+    <!-- Viewport adapts to canvas width (default 640 for 4:3, changes dynamically in fullscreen) -->
+    <meta name="viewport" content="width=660" />
 
     <!-- Preload critical ES modules for faster loading -->
     <link rel="modulepreload" href="game-init.js" />
@@ -85,7 +85,7 @@
       .canvas-wrapper {
         position: relative;
         display: flex;
-        aspect-ratio: 1120 / 480; /* 21:9 ultrawide */
+        aspect-ratio: var(--game-aspect-ratio, 4 / 3); /* Dynamic aspect ratio */
         height: 100%;
         max-height: fit-content;
         align-items: center;
@@ -107,6 +107,7 @@
       #canvasContainer {
         position: relative;
         display: flex;
+        width: 100%;
         height: 100%;
         max-width: 100%;
         max-height: 100%;
@@ -461,7 +462,7 @@
         <div id="canvasContainer">
           <canvas
             id="canvas"
-            width="1120"
+            width="640"
             height="480"
             oncontextmenu="event.preventDefault()"
             tabindex="-1"
@@ -720,6 +721,52 @@
         }
       }
 
+      // Dynamic resolution system
+      // Base height is always 480px, width varies by aspect ratio
+      var GameResolution = {
+        BASE_HEIGHT: 480,
+        MIN_WIDTH: 640,   // 4:3 minimum
+        MAX_WIDTH: 1280,  // ~2.67:1 maximum (32:9 would be too extreme)
+
+        // Calculate game width based on screen aspect ratio
+        calculateWidth: function(screenWidth, screenHeight) {
+          var aspectRatio = screenWidth / screenHeight;
+          var width = Math.round(this.BASE_HEIGHT * aspectRatio);
+          // Clamp to reasonable bounds
+          return Math.max(this.MIN_WIDTH, Math.min(this.MAX_WIDTH, width));
+        },
+
+        // Get current screen dimensions
+        getScreenSize: function() {
+          return {
+            width: window.screen.width,
+            height: window.screen.height
+          };
+        },
+
+        // Apply resolution change
+        apply: function(width, height) {
+          var canvas = document.getElementById("canvas");
+          var wrapper = document.querySelector(".canvas-wrapper");
+
+          if (canvas) {
+            canvas.width = width;
+            canvas.height = height;
+          }
+
+          if (wrapper) {
+            wrapper.style.setProperty("--game-aspect-ratio", width + " / " + height);
+          }
+
+          // Notify C++ of resolution change if game is running
+          if (typeof Module !== "undefined" && Module._OnJSResolutionChange) {
+            Module._OnJSResolutionChange(width, height);
+          }
+
+          console.log("[Resolution] Applied: " + width + "x" + height);
+        }
+      };
+
       // Smart fullscreen function - always fullscreens the game container
       function toggleFullscreen() {
         var gameContainer = document.getElementById("gameContainer");
@@ -734,33 +781,44 @@
         }
       }
 
-      // Update fullscreen button icon based on state
-      function updateFullscreenButton() {
+      // Handle fullscreen change - adjust resolution based on screen aspect ratio
+      function onFullscreenChange() {
         var btn = document.getElementById("fullscreenBtn");
-        if (btn) {
-          if (document.fullscreenElement) {
-            btn.textContent = "✕"; // Exit icon when in fullscreen
+
+        if (document.fullscreenElement) {
+          // Entering fullscreen - calculate widescreen resolution
+          var screen = GameResolution.getScreenSize();
+          var newWidth = GameResolution.calculateWidth(screen.width, screen.height);
+          GameResolution.apply(newWidth, GameResolution.BASE_HEIGHT);
+
+          if (btn) {
+            btn.textContent = "✕";
             btn.title = "Exit Fullscreen (ESC)";
-          } else {
-            btn.textContent = "⛶"; // Fullscreen icon when windowed
+          }
+        } else {
+          // Exiting fullscreen - revert to 4:3
+          GameResolution.apply(640, 480);
+
+          if (btn) {
+            btn.textContent = "⛶";
             btn.title = "Enter Fullscreen";
           }
         }
       }
 
-      // Listen for fullscreen changes to update button
-      document.addEventListener("fullscreenchange", updateFullscreenButton);
+      // Listen for fullscreen changes
+      document.addEventListener("fullscreenchange", onFullscreenChange);
 
       // Initialize button state on load
-      updateFullscreenButton();
+      onFullscreenChange();
     </script>
     <script type="text/javascript">
       var loadingElement = document.getElementById("loading");
 
       // Emscripten structure
       var Module = {
-        // Prevent Emscripten from manipulating canvas dimensions
-        // Canvas is fixed at 1120x480 (21:9 ultrawide) and scaled via CSS only
+        // Canvas dimensions are dynamic based on fullscreen state
+        // Default: 640x480 (4:3), Fullscreen: calculated from screen aspect ratio
         preRun: [
           function () {
             // Mount CLAW.REZ to virtual filesystem before game starts
@@ -771,9 +829,10 @@
               }
             }
 
-            // Lock canvas to 1120x480 (no dynamic resizing)
-            Module.canvas.widthNative = 1120;
-            Module.canvas.heightNative = 480;
+            // Set initial canvas dimensions (may be overridden by fullscreen)
+            var canvas = Module.canvas;
+            Module.canvas.widthNative = canvas.width;
+            Module.canvas.heightNative = canvas.height;
 
             loadingElement.remove();
             loadingElement = null;
@@ -852,8 +911,8 @@
         r.parentNode.insertBefore(script, r);
       }
 
-      // Canvas is fixed at 1120x480 (21:9 ultrawide) and scaled via CSS
-      CheatCodeManager.winsize = "1120 480";
+      // Canvas dimensions are dynamic (default 640x480, changes in fullscreen)
+      CheatCodeManager.winsize = "640 480";
       CheatCodeManager.scale = -1;
 
       if (
