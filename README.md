@@ -44,7 +44,7 @@ You'll need **CLAW.REZ** from the original Captain Claw (1997) game.
 ### Browser Requirements
 
 - Chrome 105+ / Firefox 121+ / Safari 16.4+ / Edge 105+
-- ~100MB free storage (for compressed game files in IndexedDB)
+- ~120MB free storage (for compressed game files and game states in IndexedDB)
 
 ## 💡 Features
 
@@ -54,50 +54,25 @@ You'll need **CLAW.REZ** from the original Captain Claw (1997) game.
 - **Modern Browsers:** Hardware-accelerated WebGL rendering
 - **No Installation:** Runs entirely in your browser
 
-## 🛠️ For Developers
-
-### Building from Source
-
-See [BUILDING.md](docs/BUILDING.md) for:
-
-- How to compile the WASM build
-- Prerequisites and build tools
-- Development workflow
-- When to rebuild vs refresh
-
-### Architecture
-
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for:
-
-- Lazy loading system design
-- Resource management strategy
-- Performance optimizations
-- Code structure
-
-### Contributing
-
-Pull requests welcome for:
-
-- Browser compatibility improvements
-- Performance optimizations
-- Bug fixes
-- Documentation
-
 ## 🐛 Troubleshooting
 
-Having issues? See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for:
+Having issues? See [Troubleshooting](docs/player/TROUBLESHOOTING.md) for:
 
 - How to clear cached files and re-upload CLAW.REZ
 - Common error messages and solutions
 - Browser-specific problems
-- Performance tips
 
 ## 📋 Documentation
 
-- **[SETUP.md](docs/SETUP.md)** - Detailed setup instructions
-- **[BUILDING.md](docs/BUILDING.md)** - Build from source guide
-- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Technical architecture
-- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues and fixes
+- **[Setup Guide](docs/player/SETUP.md)** - Detailed setup instructions
+- **[Troubleshooting](docs/player/TROUBLESHOOTING.md)** - Common issues and fixes
+
+### For Developers
+
+See [docs/developer/](docs/developer/) for technical documentation:
+
+- [Building](docs/developer/BUILDING.md) - Compiling from source
+- [Architecture](docs/developer/ARCHITECTURE.md) - Lazy-loading and resource management
 
 ## 📝 License
 

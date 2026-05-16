@@ -97,3 +97,6 @@ Release/
 
 # Local Claude Code settings
 CLAUDE.local.md
+
+# Developer-only documentation (not for players)
+docs/HTTP3_MIGRATION.md

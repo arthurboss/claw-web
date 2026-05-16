@@ -405,7 +405,6 @@ This project does not have automated tests. Verify changes by:
 - `OpenClaw/Engine/Resource/Loaders/XmlLoader.cpp` - Automatic gzip decompression
 - `scripts/compress_metadata.sh` - Compress XMLs before build
 - `scripts/decompress_metadata.sh` - Decompress XMLs for editing
-- See `docs/METADATA_COMPRESSION.md` for details
 
 **Compression results:**
 
@@ -530,11 +529,19 @@ In-game console (press ~ key):
 
 See `docs/` directory for detailed information:
 
-- **SETUP.md** - Detailed setup instructions for players
-- **BUILDING.md** - Complete build guide for developers
-- **ARCHITECTURE.md** - Technical architecture and lazy-loading design
+**For Players (`docs/player/`):**
+
+- **SETUP.md** - Detailed setup instructions
 - **TROUBLESHOOTING.md** - Common issues and solutions
-- **HTTP3_MIGRATION.md** - HTTP/3 server setup and benefits
+
+**For Developers (`docs/developer/`):**
+
+- **BUILDING.md** - Complete build guide
+- **ARCHITECTURE.md** - Technical architecture and lazy-loading design
+- **SAVE_SYSTEM.md** - IndexedDB save implementation
+- **HAPTIC_FEEDBACK.md** - Gamepad vibration system
+- **SCREEN_RENDERING.md** - UI and screen code locations
+- **GENERIC_GRAPHICS.md** - Cross-platform graphics module
 
 ## References
 
