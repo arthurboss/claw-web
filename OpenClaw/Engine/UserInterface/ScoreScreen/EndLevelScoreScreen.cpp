@@ -395,7 +395,19 @@ void ScreenElementScoreScreen::VOnRender(uint32 msDiff)
     };
     SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), &backgroundSrc, &backgroundDst);
 
+    // Set viewport to center the 4:3 content area for scene rendering
+    SDL_Rect viewport = {
+        (int)g_ScreenOffset.x,
+        0,
+        (int)(DESIGN_WIDTH * uniformScale),
+        (int)(DESIGN_HEIGHT * uniformScale)
+    };
+    SDL_RenderSetViewport(m_pRenderer, &viewport);
+
     Scene::OnRender();
+
+    // Reset viewport to full window
+    SDL_RenderSetViewport(m_pRenderer, NULL);
 }
 
 bool ScreenElementScoreScreen::VOnEvent(SDL_Event& evt)
