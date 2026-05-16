@@ -429,7 +429,6 @@ bool ActorController::VOnGamepadButtonDown(GamepadButton button, float value)
     switch (button)
     {
         case GamepadButton::A:  // Jump
-            HapticFeedback::Trigger(HapticPreset::Jump);
             return VOnKeyDown(SDLK_SPACE);
 
         case GamepadButton::X:  // Attack (sword)

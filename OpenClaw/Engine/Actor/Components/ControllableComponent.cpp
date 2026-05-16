@@ -14,6 +14,7 @@
 
 #include "../../GameApp/BaseGameApp.h"
 #include "../../GameApp/BaseGameLogic.h"
+#include "../../GameApp/HapticFeedback.h"
 #include "../../UserInterface/HumanView.h"
 #include "../../Scene/SceneNodes.h"
 
@@ -399,6 +400,7 @@ void ClawControllableComponent::VOnLandOnGround(float fromHeight)
     if (fromHeight > g_pApp->GetGlobalOptions()->clawMinFallHeight)
     {
         m_pClawAnimationComponent->SetAnimation("land");
+        HapticFeedback::Trigger(HapticPreset::Medium);
     }
     else
     {
@@ -408,6 +410,8 @@ void ClawControllableComponent::VOnLandOnGround(float fromHeight)
         soundInfo.soundVolume = 150;
         IEventMgr::Get()->VTriggerEvent(IEventDataPtr(
             new EventData_Request_Play_Sound(soundInfo)));
+
+        HapticFeedback::Trigger(HapticPreset::Light);
     }
 
     m_State = ClawState_Standing;

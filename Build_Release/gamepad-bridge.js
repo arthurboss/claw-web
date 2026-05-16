@@ -23,7 +23,7 @@ const HAPTIC_PRESETS = {
     damage:     { duration: 200, weak: 0.4, strong: 0.8 },
     death:      { duration: 500, weak: 1.0, strong: 1.0 },
     explosion:  { duration: 300, weak: 0.8, strong: 1.0 },
-    pickup:     { duration: 80,  weak: 0.4, strong: 0.0 },
+    pickup:     { duration: 40,  weak: 0.2, strong: 0.0 },
     attack:     { duration: 60,  weak: 0.2, strong: 0.4 },
     jump:       { duration: 40,  weak: 0.2, strong: 0.0 },
 };
@@ -194,7 +194,9 @@ function pollGamepads() {
                     // Menu mode: simulate keyboard on press only
                     if (pressed && MENU_BUTTON_TO_KEY[b]) {
                         simulateKeyPress(MENU_BUTTON_TO_KEY[b]);
-                        triggerHaptic(i, 'light');
+                        // A, B, Start = select/back = medium haptic; D-pad = navigation = light haptic
+                        const isSelectOrBack = (b === 0 || b === 1 || b === 9);
+                        triggerHaptic(i, isSelectOrBack ? 'medium' : 'light');
                     }
                 } else if (cppReady) {
                     // In-game mode: send to C++
