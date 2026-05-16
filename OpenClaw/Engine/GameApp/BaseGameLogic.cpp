@@ -25,6 +25,7 @@
 #include "GameSaves.h"
 #include "BaseGameLogic.h"
 #include "GameSaves.h"
+#include "HapticFeedback.h"
 
 #include "../Physics/ClawPhysics.h"
 
@@ -1243,6 +1244,9 @@ void BaseGameLogic::ItemPickedUpDelegate(IEventDataPtr pEventData)
 
     //LOG("Picked up: " + ActorTemplates::EnumToString_PickupTypeToImageSet(pCastEventData->GetPickupType()));
     m_pCurrentLevel->m_LootedPickupsMap[pCastEventData->GetPickupType()]++;
+
+    // Haptic feedback for pickups
+    HapticFeedback::Trigger(HapticPreset::Pickup);
 }
 
 void BaseGameLogic::FinishedLevelDelegate(IEventDataPtr pEventData)

@@ -1,6 +1,7 @@
 #include "HumanView.h"
 #include "../GameApp/BaseGameApp.h"
 #include "../GameApp/BaseGameLogic.h"
+#include "../GameApp/HapticFeedback.h"
 #include "../Events/EventMgr.h"
 #include "../Events/Events.h"
 #include "../Audio/Audio.h"
@@ -601,6 +602,13 @@ void HumanView::HealthUpdatedDelegate(IEventDataPtr pEventData)
     if (m_pHUD)
     {
         m_pHUD->UpdateHealth(max(0, pCastEventData->GetNewHealth()));
+
+        // Haptic feedback on damage (health decreased, not initial health set)
+        if (!pCastEventData->IsInitialHealth() &&
+            pCastEventData->GetNewHealth() < pCastEventData->GetOldHealth())
+        {
+            HapticFeedback::Trigger(HapticPreset::Damage);
+        }
     }
     else
     {
@@ -1032,6 +1040,9 @@ void HumanView::ClawDiedDelegate(IEventDataPtr pEventData)
 {
     shared_ptr<EventData_Claw_Died> pCastEventData =
         static_pointer_cast<EventData_Claw_Died>(pEventData);
+
+    // Strong haptic feedback on death
+    HapticFeedback::Trigger(HapticPreset::Death);
 
     if (pCastEventData->GetRemainingLives() < 0)
     {
