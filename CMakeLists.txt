@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.1.0)
+cmake_minimum_required(VERSION 4.3.2)
 
 # WASM-only build configuration
 # This fork targets WebAssembly exclusively via Emscripten
@@ -75,3 +75,22 @@ endif (Extern_Config)
 set_target_properties(openclaw PROPERTIES LINK_FLAGS "-s FETCH -s WASM=1 -s BINARYEN_METHOD='native-wasm' -s EXPORTED_FUNCTIONS='[_main,_OnJSGamepadConnected,_OnJSGamepadDisconnected,_OnJSGamepadButtonDown,_OnJSGamepadButtonUp,_OnJSGamepadAxis,_GetJSGameState]' -s EXPORTED_RUNTIME_METHODS='[ccall,cwrap]' -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS='[\"pcx\",\"png\",\"tga\"]' -s USE_SDL_TTF=2 -s USE_SDL_GFX=2 -s USE_SDL_MIXER=2 -s ASYNCIFY=1 -s TOTAL_MEMORY=268435456 -s FULL_ES3=1 -s USE_WEBGL2=1 -s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 ${CONFIG_PRELOAD_FILE} --preload-file ../Build_Release/ASSETS.ZIP@ASSETS.ZIP --preload-file ../Build_Release/console02.tga@console02.tga --preload-file ../Build_Release/clacon.ttf@clacon.ttf")
 
 target_link_libraries(openclaw ${TARGET_LIBS})
+
+# Precompiled headers for faster rebuilds
+# These are the most commonly included headers across the codebase
+target_precompile_headers(openclaw PRIVATE
+    <string>
+    <vector>
+    <memory>
+    <map>
+    <list>
+    <algorithm>
+    <iostream>
+    <sstream>
+    <stdint.h>
+    <assert.h>
+    <SDL2/SDL.h>
+    <tinyxml.h>
+    <Box2D/Box2D.h>
+    <emscripten.h>
+)
