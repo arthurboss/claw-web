@@ -62,6 +62,10 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 | Change Weapon | Left Shift or E |
 | Pause | Escape |
 
+The game captures keyboard input to prevent browser and OS shortcuts (like Ctrl+C, Alt+Tab) from interfering with gameplay. ESC is also captured in fullscreen mode (Chrome/Edge only).
+
+**macOS Note:** Ctrl + Arrow keys trigger Spaces navigation at the system level and cannot be blocked by the browser. To disable: System Settings → Keyboard → Keyboard Shortcuts → Mission Control → uncheck "Move left/right a space".
+
 ### Gamepad
 
 Xbox, PlayStation, and most standard controllers supported. See [Gamepad Support](docs/player/GAMEPAD.md) for button mapping and vibration feedback.
