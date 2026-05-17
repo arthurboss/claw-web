@@ -776,14 +776,28 @@
       };
 
       // Smart fullscreen function - always fullscreens the game container
+      // Uses Keyboard Lock API to capture ESC key in fullscreen (Chrome/Edge)
       function toggleFullscreen() {
         var gameContainer = document.getElementById("gameContainer");
         if (gameContainer) {
           if (!document.fullscreenElement) {
-            gameContainer.requestFullscreen().catch(function (err) {
+            gameContainer.requestFullscreen().then(function() {
+              // Request keyboard lock to capture ESC and system keys
+              if (navigator.keyboard && navigator.keyboard.lock) {
+                navigator.keyboard.lock(['Escape']).then(function() {
+                  console.log('[Keyboard] Locked ESC key in fullscreen');
+                }).catch(function(err) {
+                  console.log('[Keyboard] Could not lock ESC:', err.message);
+                });
+              }
+            }).catch(function (err) {
               console.error("Fullscreen request failed:", err);
             });
           } else {
+            // Unlock keyboard before exiting fullscreen
+            if (navigator.keyboard && navigator.keyboard.unlock) {
+              navigator.keyboard.unlock();
+            }
             document.exitFullscreen();
           }
         }
@@ -807,6 +821,10 @@
           if (btn) {
             btn.textContent = "⛶";
             btn.title = "Enter Fullscreen";
+          }
+          // Release keyboard lock when leaving fullscreen
+          if (navigator.keyboard && navigator.keyboard.unlock) {
+            navigator.keyboard.unlock();
           }
         }
 
@@ -948,6 +966,9 @@
 
     <!-- Main ES Module - loads all dependencies and exposes functions to window -->
     <script type="module" src="game-init.js"></script>
+
+    <!-- Keyboard capture - prevents OS shortcuts from interfering with game -->
+    <script src="keyboard-capture.js"></script>
 
     <!-- Initialize game after modules are loaded -->
     <script>
