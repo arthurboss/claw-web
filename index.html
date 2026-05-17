@@ -880,9 +880,50 @@
               Browser.updateCanvasDimensions = function() {};
             }
 
-            // Apply correct resolution now that C++ is ready
-            // This ensures menu items use proper scale from the start
-            updateGameResolution();
+            // Apply correct resolution once C++ game is fully initialized
+            // The game needs a few frames to fully initialize (g_pApp, HumanView, etc.)
+            function applyInitialResolution(attempts) {
+              if (attempts <= 0) {
+                console.warn('[Resolution] Could not apply initial resolution after retries');
+                return;
+              }
+
+              // Check if the C++ side is ready by testing if the function exists and game is initialized
+              if (typeof Module._OnJSResolutionChange === 'function' &&
+                  typeof Module._GetGameWidth === 'function') {
+                var currentWidth = Module._GetGameWidth();
+                // If game reports default 640, it might not be fully ready yet
+                var size = document.fullscreenElement ?
+                  GameResolution.getScreenSize() : GameResolution.getWindowSize();
+                var expectedWidth = GameResolution.calculateWidth(size.width, size.height);
+
+                if (currentWidth === expectedWidth) {
+                  console.log('[Resolution] Initial resolution already correct');
+                  return;
+                }
+
+                updateGameResolution();
+
+                // Verify it was applied
+                setTimeout(function() {
+                  var newWidth = Module._GetGameWidth();
+                  if (newWidth !== expectedWidth && attempts > 1) {
+                    console.log('[Resolution] Retrying... (' + (attempts - 1) + ' left)');
+                    applyInitialResolution(attempts - 1);
+                  }
+                }, 100);
+              } else {
+                // C++ not ready yet, retry
+                setTimeout(function() {
+                  applyInitialResolution(attempts - 1);
+                }, 100);
+              }
+            }
+
+            // Start trying to apply resolution (up to 20 attempts over 2 seconds)
+            setTimeout(function() {
+              applyInitialResolution(20);
+            }, 100);
           },
         ],
         canvas: (function () {
