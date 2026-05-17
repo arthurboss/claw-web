@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>OpenClaw</title>
+    <meta
+      name="description"
+      content="Reimplementation of Captain Claw (1997) platformer"
+    />
+
+    <meta property="og:title" content="OpenClaw project" />
+    <meta property="og:description" content="OpenClaw open source project" />
+    <!--<meta property="og:image" content="preview.png">-->
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+
+    <!-- Viewport adapts to canvas width (default 640 for 4:3, changes dynamically in fullscreen) -->
+    <meta name="viewport" content="width=660" />
+
+    <!-- Preload critical ES modules for faster loading -->
+    <link rel="modulepreload" href="game-init.js" />
+    <link rel="modulepreload" href="asset-storage.js" />
+    <link rel="modulepreload" href="asset-loader.js" />
+    <link rel="modulepreload" href="resource-loader.js" />
+
+    <!-- Prefetch non-critical modules (low priority) -->
+    <link rel="prefetch" as="script" href="graphics-bridge.js" />
+    <link rel="prefetch" as="script" href="texture-bridge.js" />
+    <link rel="prefetch" as="script" href="gamepad-bridge.js" />
+
+    <style>
+      :root {
+        color-scheme: light dark;
+        --primary-color: #4a90e2;
+        --primary-hover: #357abd;
+        --success-color: #52c41a;
+        --warning-color: #ff9800;
+        --danger-color: #f5222d;
+        --bg-primary: light-dark(#ffffff, #1a1a1a);
+        --bg-secondary: light-dark(#f5f5f5, #2a2a2a);
+        --text-primary: light-dark(#1a1a1a, #e0e0e0);
+        --text-secondary: light-dark(#666666, #999999);
+        --border-color: light-dark(#d0d0d0, #404040);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: #000;
+        color: var(--text-primary);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica",
+          "Arial", sans-serif;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        width: 100vw;
+        height: 100vh;
+        transition:
+          background-color 0.3s,
+          color 0.3s;
+      }
+
+      .game-container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .game-header {
+        display: none; /* Hidden in fullscreen mobile mode */
+      }
+
+      .canvas-wrapper {
+        position: relative;
+        display: flex;
+        width: 100%;
+        height: 100%;
+        align-items: center;
+        justify-content: center;
+        background-color: #000;
+        container-type: size;
+      }
+
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #fff;
+        font-size: 1.2em;
+        text-align: center;
+      }
+
+      #canvasContainer {
+        position: relative;
+        display: flex;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        justify-content: center;
+        align-items: center;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        min-aspect-ratio: 4 / 3;
+        aspect-ratio: var(--game-aspect-ratio, 4 / 3);
+        image-rendering: pixelated;
+        outline: none;
+      }
+
+      canvas:focus {
+        outline: none;
+      }
+
+      .bottom-controls {
+        position: absolute;
+        bottom: 1%;
+        right: 1%;
+        z-index: 1000;
+        display: flex;
+        gap: clamp(5px, 1cqw, 10px);
+        align-items: center;
+        opacity: 0;
+        animation: fadeInControls 0.3s ease-in 3.5s forwards;
+      }
+
+      @keyframes fadeInControls {
+        to {
+          opacity: 1;
+        }
+      }
+
+      .control-btn {
+        width: clamp(24px, 4cqw, 43px);
+        height: clamp(24px, 4cqw, 43px);
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: clamp(0.7em, 1.5cqw, 1.2em);
+        border-radius: 50%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+        transition: all 0.2s;
+        outline: none;
+        color: white;
+      }
+
+      .control-btn:hover {
+        background-color: rgba(0, 0, 0, 0.7);
+        transform: scale(1.1);
+      }
+
+      .control-btn:active {
+        transform: scale(0.95);
+      }
+
+      .control-btn.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+
+      /* FPS overlay - styled to match the in-game golden numbers with drop shadow */
+      #fpsOverlay {
+        position: absolute;
+        bottom: 1%;
+        left: 1%;
+        z-index: 999;
+        font-family: "Georgia", "Times New Roman", serif;
+        font-size: clamp(12px, 2.5cqw, 22px);
+        font-weight: bold;
+        color: rgb(249, 229, 125);
+        /* Drop shadow towards bottom-right */
+        text-shadow:
+          2px 2px 0 #000,
+          2px 2px 0 #000,
+          2px 1px 0px rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+        user-select: none;
+        letter-spacing: clamp(0.5px, 0.3cqw, 2px);
+      }
+
+      /* Initial page load animation */
+      #fpsOverlay.initial-load {
+        opacity: 0;
+        animation: fadeInOnLoad 0.3s ease-in 1s forwards;
+      }
+
+      @keyframes fadeInOnLoad {
+        to {
+          opacity: 1;
+        }
+      }
+
+      #fpsOverlay.hidden {
+        display: none;
+      }
+
+      /* Hide FPS overlay and FPS button when video is playing */
+      body:has(video) #fpsOverlay,
+      body:has(video) #fpsBtn {
+        display: none;
+      }
+
+
+      .divider {
+        height: 1px;
+        background-color: var(--border-color);
+        margin: 15px 0;
+      }
+
+      #console {
+        width: 100%;
+        height: 200px;
+        display: block;
+        background-color: light-dark(#f5f5f5, #0a0a0a);
+        color: var(--text-primary);
+        font-family: "Consolas", "Monaco", "Courier New", monospace;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 10px;
+        font-size: 0.85em;
+        resize: vertical;
+        outline: none;
+      }
+
+      .debug_panel {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      .cheats {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .cheats > div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .cheats label {
+        font-weight: 600;
+        min-width: 120px;
+      }
+
+      .cheats button {
+        background-color: var(--danger-color);
+        font-size: 0.85em;
+        padding: 8px 16px;
+      }
+
+      .cheats button:hover {
+        background-color: #d32029;
+      }
+
+      /* Asset Upload UI */
+      #assetUpload {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.95);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        padding: 20px;
+      }
+
+      #assetUpload h2 {
+        font-size: 2em;
+        margin-bottom: 15px;
+        color: #fff;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        max-width: 600px;
+      }
+
+      #assetUpload p {
+        font-size: 1.1em;
+        margin: 10px 0;
+        max-width: 600px;
+        line-height: 1.6;
+      }
+
+      #assetUpload strong {
+        color: #4db8ff;
+        font-weight: 600;
+      }
+
+      #uploadArea {
+        margin-top: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+      }
+
+      #clawRezFile {
+        padding: 10px;
+        font-size: 1em;
+        border: 2px solid rgba(77, 184, 255, 0.5);
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        cursor: pointer;
+      }
+
+      #uploadArea button {
+        padding: 12px 30px;
+        font-size: 1.1em;
+        font-weight: bold;
+        color: #fff;
+        background-color: #4db8ff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      #uploadArea button:hover {
+        background-color: #66c2ff;
+        transform: scale(1.05);
+      }
+
+      #uploadArea button:active {
+        transform: scale(0.98);
+      }
+
+      #uploadArea button:disabled {
+        background-color: #666;
+        color: #999;
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      #uploadArea button:disabled:hover {
+        background-color: #666;
+        transform: none;
+      }
+
+      #uploadProgress {
+        margin-top: 30px;
+        text-align: center;
+      }
+
+      #uploadProgressBar {
+        width: 400px;
+        height: 30px;
+        border-radius: 5px;
+        overflow: hidden;
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      #uploadProgressBar::-webkit-progress-bar {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+      }
+
+      #uploadProgressBar::-webkit-progress-value {
+        background-color: #4db8ff;
+        border-radius: 5px;
+      }
+
+      #uploadProgressBar::-moz-progress-bar {
+        background-color: #4db8ff;
+        border-radius: 5px;
+      }
+
+      #uploadStatus {
+        display: block;
+        margin-top: 15px;
+        font-size: 1.2em;
+        color: #fff;
+      }
+
+      /* Loading Indicator */
+      #loadingIndicator {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        padding: 15px 20px;
+        border-radius: 8px;
+        z-index: 9999;
+        display: none;
+        min-width: 250px;
+      }
+
+      #loadingText {
+        font-size: 1em;
+        margin-bottom: 10px;
+      }
+
+      #loadingBar {
+        width: 100%;
+        height: 20px;
+        border-radius: 3px;
+      }
+
+      #loadingPercent {
+        display: block;
+        margin-top: 5px;
+        text-align: right;
+        font-size: 0.9em;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Asset Upload UI (shown on first run) -->
+    <section id="assetUpload" style="display: none;">
+      <h2>First Time Setup</h2>
+      <p>OpenClaw requires <strong>CLAW.REZ</strong> from the original Captain Claw (1997) game.</p>
+      <p><strong>Legal Notice:</strong> You must own Captain Claw (1997) to use this file legally.</p>
+      <p>The file will be stored in your browser's local storage and only needs to be uploaded once.</p>
+
+      <div id="uploadArea">
+        <input type="file" id="clawRezFile" accept=".REZ,.rez" onchange="validateClawRezFile()" />
+        <button id="uploadBtn" onclick="uploadClawRez()" disabled>Upload CLAW.REZ</button>
+      </div>
+
+      <div id="uploadProgress" style="display: none;">
+        <progress id="uploadProgressBar" max="100" value="0"></progress>
+        <span id="uploadStatus">Storing assets...</span>
+      </div>
+    </section>
+
+    <!-- Loading Indicator (for level loading) -->
+    <div id="loadingIndicator">
+      <div id="loadingText">Loading...</div>
+      <progress id="loadingBar" max="100" value="0"></progress>
+      <span id="loadingPercent">0%</span>
+    </div>
+
+    <div class="game-container">
+      <div class="canvas-wrapper" id="gameContainer">
+        <span id="loading"></span>
+        <div id="canvasContainer">
+          <canvas
+            id="canvas"
+            width="640"
+            height="480"
+            oncontextmenu="event.preventDefault()"
+            tabindex="-1"
+          ></canvas>
+
+          <!-- FPS overlay - styled to match in-game rendering -->
+          <div id="fpsOverlay" class="initial-load">60 FPS</div>
+
+          <!-- Bottom controls - inside canvasContainer so they're positioned relative to canvas -->
+          <div class="bottom-controls">
+            <button
+              class="control-btn active"
+              id="fpsBtn"
+              onclick="toggleFPS()"
+              title="Toggle FPS Display"
+            >
+              📊
+            </button>
+            <button
+              class="control-btn"
+              id="fullscreenBtn"
+              onclick="toggleFullscreen()"
+              title="Enter Fullscreen"
+            >
+              ⛶
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="debug_panel" style="display: none">
+      <div class="cheats">
+        <div>
+          Cheat codes:
+          <button onclick="CheatCodeManager.infiniteJumps()">
+            Infinite Jumps
+          </button>
+          <button onclick="CheatCodeManager.invincible()">God Mode</button>
+          <button onclick="CheatCodeManager.physicsDebug()">
+            Physics Debug
+          </button>
+          <button onclick="CheatCodeManager.infiniteAmmo()">
+            Infinite Ammo
+          </button>
+        </div>
+        <div>
+          Powerups:
+          <button
+            onclick="
+              CheatCodeManager.write('catnip'.toUpperCase(), Module.canvas)
+            "
+          >
+            Catnip
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write('firesword'.toUpperCase(), Module.canvas)
+            "
+          >
+            Fire Sword
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write('frostsword'.toUpperCase(), Module.canvas)
+            "
+          >
+            Frost Sword
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write(
+                'lightningsword'.toUpperCase(),
+                Module.canvas,
+              )
+            "
+          >
+            Lightning Sword
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write('invisible'.toUpperCase(), Module.canvas)
+            "
+          >
+            Invisible
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write(
+                'invulnerable'.toUpperCase(),
+                Module.canvas,
+              )
+            "
+          >
+            Invulnerable
+          </button>
+        </div>
+      </div>
+      <button onclick="Console.clear()">Clear Console</button>
+      <textarea id="console" rows="12"></textarea>
+    </div>
+
+    <script type="text/javascript">
+      var CheatCodeManager = {
+        jumps: false,
+        god: false,
+        physics: false,
+        ammo: false,
+        winsize: "640 480",
+        scale: -1,
+        pushEvent: function (key, event, target) {
+          return target.dispatchEvent(
+            new KeyboardEvent(event, {
+              keyCode: key,
+              charCode: key,
+              view: window,
+              bubbles: true,
+              cancelable: true,
+            }),
+          );
+        },
+        click: function (key, target) {
+          if (CheatCodeManager.pushEvent(key, "keydown", target)) {
+            CheatCodeManager.pushEvent(key, "keypress", target);
+          }
+          CheatCodeManager.pushEvent(key, "keyup", target);
+        },
+        openOrCloseConsole: function (target) {
+          CheatCodeManager.click(192, target); // "`"
+          CheatCodeManager.click(8, target); // Backspace
+          CheatCodeManager.click(8, target); // Backspace
+        },
+        write: function (cheat, target) {
+          CheatCodeManager.openOrCloseConsole(target);
+          for (var i = 0; i < cheat.length; i++) {
+            //            	console.log("Writing: " + cheat.charCodeAt(i));
+            CheatCodeManager.click(cheat.charCodeAt(i), target);
+          }
+          CheatCodeManager.click(13, target); // "Enter"
+          CheatCodeManager.openOrCloseConsole(target);
+        },
+        infiniteJumps: function () {
+          CheatCodeManager.jumps = !CheatCodeManager.jumps;
+          CheatCodeManager.write(
+            "INFINITEJUMP " + (CheatCodeManager.jumps ? "ON" : "OFF"),
+            Module.canvas,
+          );
+        },
+        invincible: function () {
+          CheatCodeManager.god = !CheatCodeManager.god;
+          CheatCodeManager.write(
+            "INVINCIBLE " + (CheatCodeManager.god ? "ON" : "OFF"),
+            Module.canvas,
+          );
+        },
+        physicsDebug: function () {
+          CheatCodeManager.physics = !CheatCodeManager.physics;
+          CheatCodeManager.write(
+            "PHYSICSDEBUG " + (CheatCodeManager.physics ? "ON" : "OFF"),
+            Module.canvas,
+          );
+        },
+        infiniteAmmo: function () {
+          CheatCodeManager.ammo = !CheatCodeManager.ammo;
+          CheatCodeManager.write(
+            "INFINITEAMMO " + (CheatCodeManager.ammo ? "ON" : "OFF"),
+            Module.canvas,
+          );
+        },
+      };
+    </script>
+    <script type="text/javascript">
+      var Console = {
+        elem: document.getElementById("console"),
+        enabled: false,
+        toggleConsole: function () {
+          Console.enabled = !Console.enabled;
+          Console.elem.parentNode.style.display = Console.enabled
+            ? "block"
+            : "none";
+        },
+        printToConsole: function (text) {
+          if (arguments.length > 1)
+            text = Array.prototype.slice.call(arguments).join(" ");
+          console.log(text);
+          Console.elem.value += text + "\n";
+        },
+        clear: function () {
+          Console.elem.value = "";
+        },
+      };
+    </script>
+    <script type="text/javascript">
+      // Remove initial-load class after animation completes
+      setTimeout(function() {
+        var overlay = document.getElementById("fpsOverlay");
+        if (overlay) {
+          overlay.classList.remove("initial-load");
+        }
+      }, 1300); // 1s delay + 0.3s animation
+
+      // FPS measurement and display
+      var fpsEnabled = true;
+      var fpsFrameCount = 0;
+      var fpsLastTime = performance.now();
+      var fpsCurrentValue = 60;
+
+      // Measure and update FPS
+      function updateFPSCounter() {
+        if (!fpsEnabled) return;
+
+        fpsFrameCount++;
+        var now = performance.now();
+        var elapsed = now - fpsLastTime;
+
+        // Update FPS every second
+        if (elapsed >= 1000) {
+          fpsCurrentValue = Math.round((fpsFrameCount * 1000) / elapsed);
+          fpsFrameCount = 0;
+          fpsLastTime = now;
+
+          // Update overlay
+          var overlay = document.getElementById("fpsOverlay");
+          if (overlay) {
+            overlay.textContent = fpsCurrentValue + " FPS";
+          }
+        }
+
+        // Continue measuring
+        requestAnimationFrame(updateFPSCounter);
+      }
+
+      // Start FPS counter when page loads
+      if (typeof requestAnimationFrame !== "undefined") {
+        requestAnimationFrame(updateFPSCounter);
+      }
+
+      // Toggle FPS display overlay
+      function toggleFPS() {
+        fpsEnabled = !fpsEnabled;
+        var btn = document.getElementById("fpsBtn");
+        var overlay = document.getElementById("fpsOverlay");
+
+        // Update button style and overlay visibility
+        if (fpsEnabled) {
+          btn.classList.add("active");
+          btn.title = "Hide FPS Display";
+          if (overlay) overlay.classList.remove("hidden");
+          // Restart measurement
+          fpsFrameCount = 0;
+          fpsLastTime = performance.now();
+          requestAnimationFrame(updateFPSCounter);
+        } else {
+          btn.classList.remove("active");
+          btn.title = "Show FPS Display";
+          if (overlay) overlay.classList.add("hidden");
+        }
+      }
+
+      // Dynamic resolution system
+      // Base height is always 480px, width varies by aspect ratio
+      var GameResolution = {
+        BASE_HEIGHT: 480,
+        MIN_WIDTH: 640,   // 4:3 minimum (640/480 = 1.333)
+        MAX_WIDTH: 1664,  // 32:9 maximum (matches widescreen assets)
+        MIN_ASPECT_RATIO: 4/3,  // Never narrower than 4:3
+
+        // Calculate game width based on aspect ratio
+        calculateWidth: function(width, height) {
+          var aspectRatio = Math.max(width / height, this.MIN_ASPECT_RATIO);
+          var gameWidth = Math.round(this.BASE_HEIGHT * aspectRatio);
+          // Clamp to reasonable bounds
+          return Math.max(this.MIN_WIDTH, Math.min(this.MAX_WIDTH, gameWidth));
+        },
+
+        // Get current window dimensions (for windowed mode)
+        getWindowSize: function() {
+          return {
+            width: window.innerWidth,
+            height: window.innerHeight
+          };
+        },
+
+        // Get screen dimensions (for fullscreen mode)
+        getScreenSize: function() {
+          return {
+            width: window.screen.width,
+            height: window.screen.height
+          };
+        },
+
+        // Apply resolution change
+        apply: function(width, height) {
+          var canvas = document.getElementById("canvas");
+
+          if (canvas) {
+            canvas.width = width;
+            canvas.height = height;
+            // Update CSS aspect ratio to match game resolution
+            canvas.style.setProperty('--game-aspect-ratio', width + ' / ' + height);
+          }
+
+          // Notify C++ of resolution change if game is running
+          if (typeof Module !== "undefined" && Module._OnJSResolutionChange) {
+            Module._OnJSResolutionChange(width, height);
+          }
+
+          console.log("[Resolution] Applied: " + width + "x" + height);
+        }
+      };
+
+      // Smart fullscreen function - always fullscreens the game container
+      // Uses Keyboard Lock API to capture ESC key in fullscreen (Chrome/Edge)
+      function toggleFullscreen() {
+        var gameContainer = document.getElementById("gameContainer");
+        if (gameContainer) {
+          if (!document.fullscreenElement) {
+            gameContainer.requestFullscreen().then(function() {
+              // Request keyboard lock to capture ESC and system keys
+              if (navigator.keyboard && navigator.keyboard.lock) {
+                navigator.keyboard.lock(['Escape']).then(function() {
+                  console.log('[Keyboard] Locked ESC key in fullscreen');
+                }).catch(function(err) {
+                  console.log('[Keyboard] Could not lock ESC:', err.message);
+                });
+              }
+            }).catch(function (err) {
+              console.error("Fullscreen request failed:", err);
+            });
+          } else {
+            // Unlock keyboard before exiting fullscreen
+            if (navigator.keyboard && navigator.keyboard.unlock) {
+              navigator.keyboard.unlock();
+            }
+            document.exitFullscreen();
+          }
+        }
+      }
+
+      // Handle fullscreen/resize - adjust resolution based on current dimensions
+      function updateGameResolution() {
+        var btn = document.getElementById("fullscreenBtn");
+        var size;
+
+        if (document.fullscreenElement) {
+          // Fullscreen - use screen dimensions
+          size = GameResolution.getScreenSize();
+          if (btn) {
+            btn.textContent = "✕";
+            btn.title = "Exit Fullscreen (ESC)";
+          }
+        } else {
+          // Windowed - use window dimensions
+          size = GameResolution.getWindowSize();
+          if (btn) {
+            btn.textContent = "⛶";
+            btn.title = "Enter Fullscreen";
+          }
+          // Release keyboard lock when leaving fullscreen
+          if (navigator.keyboard && navigator.keyboard.unlock) {
+            navigator.keyboard.unlock();
+          }
+        }
+
+        var newWidth = GameResolution.calculateWidth(size.width, size.height);
+        GameResolution.apply(newWidth, GameResolution.BASE_HEIGHT);
+      }
+
+      // Alias for backward compatibility
+      var onFullscreenChange = updateGameResolution;
+
+      // Listen for fullscreen changes
+      document.addEventListener("fullscreenchange", updateGameResolution);
+      window.addEventListener("resize", updateGameResolution);
+
+      // Initialize resolution on load
+      updateGameResolution();
+    </script>
+    <script type="text/javascript">
+      var loadingElement = document.getElementById("loading");
+
+      // Emscripten structure
+      var Module = {
+        // Canvas dimensions are dynamic based on fullscreen state
+        // Default: 640x480 (4:3), Fullscreen: calculated from screen aspect ratio
+        preRun: [
+          function () {
+            // Mount CLAW.REZ to virtual filesystem before game starts
+            if (window.mountClawRezToFS) {
+              const success = mountClawRezToFS();
+              if (!success) {
+                console.error('Failed to mount CLAW.REZ');
+              }
+            }
+
+            // Set initial canvas dimensions (may be overridden by fullscreen)
+            var canvas = Module.canvas;
+            Module.canvas.widthNative = canvas.width;
+            Module.canvas.heightNative = canvas.height;
+
+            loadingElement.remove();
+            loadingElement = null;
+            Module.canvas.style.display = "block";
+          },
+        ],
+        postRun: [
+          function () {
+            // Disable Emscripten's automatic canvas resizing
+            if (typeof Browser !== 'undefined') {
+              Browser.resizeCanvas = false;
+              // Override resize functions to prevent any canvas manipulation
+              Browser.setFullscreenCanvasSize = function() {};
+              Browser.setWindowedCanvasSize = function() {};
+              Browser.updateCanvasDimensions = function() {};
+            }
+
+            // Apply correct resolution now that C++ is ready
+            // This ensures menu items use proper scale from the start
+            updateGameResolution();
+          },
+        ],
+        canvas: (function () {
+          var canvas = document.getElementById("canvas");
+
+          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+          // application robust, you may want to override this behavior before shipping!
+          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+          canvas.addEventListener(
+            "webglcontextlost",
+            function (e) {
+              alert("WebGL context lost. You will need to reload the page.");
+              e.preventDefault();
+            },
+            false,
+          );
+
+          return canvas;
+        })(),
+
+        dataFileDownloads: {
+          "openclaw.data": {
+            total: 0,
+            loaded: 0,
+          },
+        },
+        setStatus: function (text) {
+          if (loadingElement) {
+            Module.canvas.style.display = "none";
+            var progress =
+              ((Module.dataFileDownloads["openclaw.data"].loaded /
+                Module.dataFileDownloads["openclaw.data"].total) *
+                100) |
+              0;
+            if (progress < 100) {
+              loadingElement.innerHTML =
+                "Game resources are downloading... " + (progress | 0) + "%";
+            } else {
+              loadingElement.innerHTML =
+                "Game resources have been downloaded. Game is loading...";
+            }
+          }
+        },
+
+        // Could be removed. This code for debug build only
+        print: Console.printToConsole,
+        printErr: Console.printToConsole,
+      };
+
+      function loadGame() {
+        var script = document.createElement("script");
+        script.async = !0;
+        script.type = "text/javascript";
+        script.src = "openclaw.js";
+        script.onerror = function (t) {
+          console.error("Script Error");
+          console.error(t);
+        };
+        var r = document.getElementsByTagName("script")[0];
+        r.parentNode.insertBefore(script, r);
+      }
+
+      // Canvas dimensions are dynamic (default 640x480, changes in fullscreen)
+      CheatCodeManager.winsize = "640 480";
+      CheatCodeManager.scale = -1;
+
+      if (
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent,
+        )
+      ) {
+        //document.getElementById('viewport').width = "100%"
+        //        document.getElementById('canvas').width = "640"
+        //        document.getElementById('canvas').height = "480"
+      }
+
+      //    console.log("CW: " + document.getElementById('canvas').width + ", CH: " + document.getElementById('canvas').height);
+
+      // Note: window.initGameWhenReady will be defined by game-init.js module
+    </script>
+
+    <!-- Main ES Module - loads all dependencies and exposes functions to window -->
+    <script type="module" src="game-init.js"></script>
+
+    <!-- Keyboard capture - prevents OS shortcuts from interfering with game -->
+    <script src="keyboard-capture.js"></script>
+
+    <!-- Initialize game after modules are loaded -->
+    <script>
+      // Wait for DOMContentLoaded to ensure game-init.js module has loaded
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          if (typeof window.initResourceLoader === 'function') {
+            window.initResourceLoader(Module);
+          }
+          if (typeof window.initGameWhenReady === 'function') {
+            window.initGameWhenReady();
+          } else {
+            console.error('[Init] initGameWhenReady not found. game-init.js may not have loaded.');
+          }
+        });
+      } else {
+        // DOM already loaded
+        if (typeof window.initResourceLoader === 'function') {
+          window.initResourceLoader(Module);
+        }
+        if (typeof window.initGameWhenReady === 'function') {
+          window.initGameWhenReady();
+        } else {
+          console.error('[Init] initGameWhenReady not found. game-init.js may not have loaded.');
+        }
+      }
+    </script>
+
+    <!-- Graphics Bridges for WASM Module (optional - loaded by game-init.js) -->
+    <script type="module" src="graphics-bridge.js"></script>
+    <script type="module" src="texture-bridge.js"></script>
+
+    <!-- Save Storage Bridge for IndexedDB game saves -->
+    <script type="module" src="save-storage.js"></script>
+
+    <!-- Gamepad Bridge - polls browser Gamepad API and sends events to C++ -->
+    <script src="gamepad-bridge.js"></script>
+
+    <!-- Browser Support Check -->
+    <script>
+      function checkBrowserSupport() {
+        const required = {
+          wasm: typeof WebAssembly !== 'undefined',
+          indexeddb: 'indexedDB' in window,
+          file: 'File' in window && 'Blob' in window,
+        };
+
+        const unsupported = Object.entries(required)
+          .filter(([name, supported]) => !supported)
+          .map(([name]) => name);
+
+        if (unsupported.length > 0) {
+          alert(
+            `Your browser doesn't support: ${unsupported.join(', ')}\n\n` +
+            `Please use a modern browser:\n` +
+            `- Chrome 105+\n` +
+            `- Firefox 121+\n` +
+            `- Safari 16.4+\n` +
+            `- Edge 105+`
+          );
+          return false;
+        }
+        return true;
+      }
+
+      // Check browser support on load
+      if (!checkBrowserSupport()) {
+        document.getElementById('loading').textContent = 'Browser not supported';
+        throw new Error('Browser not supported');
+      }
+    </script>
+  </body>
+</html>

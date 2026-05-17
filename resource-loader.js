@@ -1,0 +1,114 @@
+/**
+ * JavaScript bridge for resource loading progress
+ * Connects C++ ResourceCache to browser UI
+ */
+
+let currentResourceLoadingPhase = 'Initializing';
+let currentResourceName = '';
+let resourceLoadProgress = 0;
+
+/**
+ * Update loading UI with current progress
+ */
+export function updateLoadingUI(phase, resourceName, loaded, total) {
+  currentResourceLoadingPhase = phase;
+  currentResourceName = resourceName;
+
+  if (total > 0) {
+    resourceLoadProgress = (loaded / total) * 100;
+  }
+
+  // Update DOM if loading indicator exists
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  if (loadingIndicator) {
+    loadingIndicator.style.display = 'block';
+  }
+
+  const loadingText = document.getElementById('loadingText');
+  if (loadingText) {
+    if (resourceName) {
+      loadingText.textContent = `${phase}: ${resourceName}`;
+    } else {
+      loadingText.textContent = phase;
+    }
+  }
+
+  const loadingBar = document.getElementById('loadingBar');
+  if (loadingBar) {
+    loadingBar.value = resourceLoadProgress;
+  }
+
+  const loadingPercent = document.getElementById('loadingPercent');
+  if (loadingPercent) {
+    loadingPercent.textContent = `${Math.floor(resourceLoadProgress)}%`;
+  }
+
+  console.log(`[Resource Loading] ${phase}: ${resourceName} (${Math.floor(resourceLoadProgress)}%)`);
+}
+
+/**
+ * Hide loading UI when complete
+ */
+function hideLoadingUI() {
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  if (loadingIndicator) {
+    loadingIndicator.style.display = 'none';
+  }
+
+  console.log('[Resource Loading] Complete');
+}
+
+/**
+ * Show loading UI
+ */
+function showLoadingUI() {
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  if (loadingIndicator) {
+    loadingIndicator.style.display = 'block';
+  }
+}
+
+/**
+ * Initialize resource loader with Module object
+ * Called after Module is defined
+ */
+export function initResourceLoader(Module) {
+  if (!Module) {
+    console.error('[Resource Loader] Module object not provided');
+    return;
+  }
+
+  /**
+   * Called from C++ when resource loading starts
+   */
+  Module.onResourceLoadStart = function(phase) {
+    updateLoadingUI(phase, '', 0, 100);
+  };
+
+  /**
+   * Called from C++ during resource loading
+   */
+  Module.onResourceLoadProgress = function(resourceName, loaded, total) {
+    updateLoadingUI(currentResourceLoadingPhase, resourceName, loaded, total);
+  };
+
+  /**
+   * Called from C++ when resource loading completes
+   */
+  Module.onResourceLoadComplete = function() {
+    hideLoadingUI();
+  };
+
+  console.log('[Resource Loader] Bridge initialized');
+}
+
+/**
+ * Get current loading state (for debugging)
+ */
+export function getLoadingState() {
+  return {
+    phase: currentResourceLoadingPhase,
+    resource: currentResourceName,
+    progress: resourceLoadProgress
+  };
+}
