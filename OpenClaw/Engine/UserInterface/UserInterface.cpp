@@ -24,6 +24,7 @@ std::map<std::string, MenuPage> g_StringToMenuPageEnumMap =
     { "MenuPage_QuitGame",                      MenuPage_QuitGame },
     { "MenuPage_Help_TouchScreen",              MenuPage_Help_TouchScreen },
     { "MenuPage_SinglePlayer_NewGame",          MenuPage_SinglePlayer_NewGame },
+    { "MenuPage_SinglePlayer_NewGame_ResetConfirm", MenuPage_SinglePlayer_NewGame_ResetConfirm },
     { "MenuPage_SinglePlayer_LoadGame",         MenuPage_SinglePlayer_LoadGame },
     { "MenuPage_SinglePlayer_LoadCustomLevel",  MenuPage_SinglePlayer_LoadCustomLevel },
     { "MenuPage_SinglePlayer_UploadScores",     MenuPage_SinglePlayer_UploadScores },
@@ -357,6 +358,10 @@ static IEventDataPtr XmlElemToGeneratedEvent(TiXmlElement* pElem)
     else if (eventType == "EndGame")
     {
         pEventData.reset(new EventData_IngameMenu_End_Game());
+    }
+    else if (eventType == "ResetProgress")
+    {
+        pEventData.reset(new EventData_Reset_Save_Progress());
     }
     else
     {

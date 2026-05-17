@@ -50,6 +50,7 @@ enum MenuPage
     
     // Pages accessible from MenuPage_SinglePlayer
     MenuPage_SinglePlayer_NewGame,
+    MenuPage_SinglePlayer_NewGame_ResetConfirm,
     MenuPage_SinglePlayer_LoadGame,
     MenuPage_SinglePlayer_LoadCustomLevel, // Unused
     MenuPage_SinglePlayer_SaveGame,        // Unused

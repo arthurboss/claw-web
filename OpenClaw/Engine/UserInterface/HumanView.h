@@ -83,6 +83,7 @@ protected:
     void ActorEnteredBossAreaDelegate(IEventDataPtr pEventData);
     void BossFightEndedDelegate(IEventDataPtr pEventData);
     void IngameMenuEndGameDelegate(IEventDataPtr pEventData);
+    void ResetSaveProgressDelegate(IEventDataPtr pEventData);
 
     uint32 m_ViewId;
     uint32 m_ActorId;

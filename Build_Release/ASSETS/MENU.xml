@@ -136,7 +136,7 @@
             <Position x="218" y="210" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
-                <PageName>MenuPage_SinglePlayer_NewGame</PageName>
+                <PageName>MenuPage_SinglePlayer_NewGame_ResetConfirm</PageName>
             </GeneratedEvent>
         </MenuItem>
         <MenuItem>
@@ -189,7 +189,51 @@
             </GeneratedEvent>
         </MenuItem>
     </MenuPage>
-    
+
+    <!-- NEW GAME RESET CONFIRMATION PAGE -->
+    <MenuPage>
+        <PageName>MenuPage_SinglePlayer_NewGame_ResetConfirm</PageName>
+        <KeyboardEvent>
+            <KeyType>Escape</KeyType>
+            <GeneratedEvent>
+                <Type>SwitchPage</Type>
+                <PageName>MenuPage_SinglePlayer</PageName>
+            </GeneratedEvent>
+        </KeyboardEvent>
+        <MenuItem>
+            <Name>RESET_WARNING_TEXT</Name>
+            <Type>Text</Type>
+            <State>Inactive</State>
+            <InactiveImage>/RESET_CONFIRM/reset_text.png</InactiveImage>
+            <Position x="176" y="200" />
+        </MenuItem>
+        <MenuItem>
+            <Name>YES_RESET_BUTTON</Name>
+            <Type>Button</Type>
+            <Hotkey>Y</Hotkey>
+            <State>Active</State>
+            <InactiveImage>/RESET_CONFIRM/yes_inactive.png</InactiveImage>
+            <ActiveImage>/RESET_CONFIRM/yes_active.png</ActiveImage>
+            <Position x="250" y="280" />
+            <GeneratedEvent>
+                <Type>ResetProgress</Type>
+            </GeneratedEvent>
+        </MenuItem>
+        <MenuItem>
+            <Name>NO_RESET_BUTTON</Name>
+            <Type>Button</Type>
+            <Hotkey>N</Hotkey>
+            <State>Inactive</State>
+            <InactiveImage>/RESET_CONFIRM/no_inactive.png</InactiveImage>
+            <ActiveImage>/RESET_CONFIRM/no_active.png</ActiveImage>
+            <Position x="330" y="280" />
+            <GeneratedEvent>
+                <Type>SwitchPage</Type>
+                <PageName>MenuPage_SinglePlayer_NewGame</PageName>
+            </GeneratedEvent>
+        </MenuItem>
+    </MenuPage>
+
     <!-- NEW GAME PAGE -->
     <MenuPage>
         <PageName>MenuPage_SinglePlayer_NewGame</PageName>

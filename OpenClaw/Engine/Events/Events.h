@@ -2352,6 +2352,24 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
+// EventData_Reset_Save_Progress
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Reset_Save_Progress : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Reset_Save_Progress() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Reset_Save_Progress()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Reset_Save_Progress"; }
+};
+
+//---------------------------------------------------------------------------------------------------------------------
 // EventData_Set_Volume
 //---------------------------------------------------------------------------------------------------------------------
 class EventData_Set_Volume : public BaseEventData
