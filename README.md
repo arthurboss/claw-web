@@ -2,7 +2,7 @@
 
 > Play Captain Claw (1997) in your web browser - no installation needed!
 
-https://arthurboss.github.io/WASM-OpenClaw/
+**Play [here](https://arthurboss.github.io/WASM-OpenClaw/)** (requires you to upload the CLAW.REZ file)
 
 Browser-based version of the classic platformer. Based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek.
 
