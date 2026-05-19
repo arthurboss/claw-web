@@ -2,6 +2,8 @@
 
 > Play Captain Claw (1997) in your web browser - no installation needed!
 
+https://arthurboss.github.io/WASM-OpenClaw/
+
 Browser-based version of the classic platformer. Based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek.
 
 | Main Menu | Level 1 Gameplay |
