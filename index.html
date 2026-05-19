@@ -135,6 +135,10 @@
         display: flex;
         gap: clamp(5px, 1cqw, 10px);
         align-items: center;
+      }
+
+      /* Delay button appearance only when intro video is playing */
+      body:has(video) .bottom-controls {
         opacity: 0;
         animation: fadeInControls 0.3s ease-in 3.5s forwards;
       }
