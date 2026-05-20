@@ -98,5 +98,9 @@ Release/
 # Local Claude Code settings
 CLAUDE.local.md
 
+# Caddy web server binary (install separately: https://caddyserver.com/docs/install)
+caddy
+caddy.exe
+
 # Developer-only documentation (not for players)
 docs/HTTP3_MIGRATION.md

@@ -27,7 +27,7 @@ OpenClaw WASM is a browser-based version of Captain Claw (1997), a classic platf
 - Emscripten SDK (in `emsdk/` directory, gitignored)
 - CMake 4.10+
 - Python 3 (for local web server)
-- Caddy server (optional, for HTTP/3 support)
+- Caddy server (optional, for HTTP/3 support — install separately: <https://caddyserver.com/docs/install>)
 
 ### Browser Requirements
 
