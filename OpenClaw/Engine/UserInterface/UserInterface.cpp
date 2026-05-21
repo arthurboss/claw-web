@@ -727,7 +727,10 @@ ScreenElementMenuPage::ScreenElementMenuPage(SDL_Renderer* pRenderer)
     m_NumColumns(1),
     m_ItemsInColumn(0),
     m_CoinFrameIdx(0),
-    m_AnimAccumMs(0)
+    m_AnimAccumMs(0),
+    m_bMouseMode(false),
+    m_LastMouseX(-1),
+    m_LastMouseY(-1)
 {
 
 }
@@ -818,13 +821,15 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
         assert(activeMenuItemIdx >= 0);
     }
 
-    // Cannot be switch-case since I have to check the "repeat" aswell
     if (evt.type == SDL_KEYDOWN)
     {
         if (evt.key.repeat != 0)
         {
             return false;
         }
+
+        // Any keyboard input switches to keyboard mode
+        m_bMouseMode = false;
 
         SDL_Keycode keyCode = SDL_GetScancodeFromKey(evt.key.keysym.sym);
         if (keyCode == SDL_SCANCODE_DOWN)
@@ -851,7 +856,7 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
         {
             // HACK:
             if (keyCode == SDL_SCANCODE_ESCAPE ||
-                keyCode == SDL_SCANCODE_SPACE || 
+                keyCode == SDL_SCANCODE_SPACE ||
                 keyCode == SDL_SCANCODE_RETURN)
             {
                 SoundInfo soundInfo(SOUND_MENU_SELECT_MENU_ITEM);
@@ -879,20 +884,59 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
             }
         }
     }
+    else if (evt.type == SDL_MOUSEMOTION)
+    {
+        // evt.motion.x/y are unreliable in Emscripten SDL2 (DPI/float issues).
+        // SDL_GetMouseState returns correct window-space coordinates.
+        int mouseX, mouseY;
+        SDL_GetMouseState(&mouseX, &mouseY);
+
+        if (mouseX != m_LastMouseX || mouseY != m_LastMouseY)
+        {
+            m_LastMouseX = mouseX;
+            m_LastMouseY = mouseY;
+            m_bMouseMode = true;
+
+            SDL_Rect hoverPoint;
+            hoverPoint.x = (int)((mouseX - g_MenuOffset.x) / g_MenuScale.x);
+            hoverPoint.y = (int)((mouseY - g_MenuOffset.y) / g_MenuScale.y);
+            hoverPoint.w = 1;
+            hoverPoint.h = 1;
+
+            for (int i = 0; i < (int)m_MenuItems.size(); i++)
+            {
+                if (!m_MenuItems[i]->CanBeFocused()) continue;
+                SDL_Rect itemRect = m_MenuItems[i]->GetMenuItemRect();
+                if (SDL_HasIntersection(&hoverPoint, &itemRect))
+                {
+                    if (i != activeMenuItemIdx)
+                    {
+                        FocusMenuItemAtIdx(i, true);
+                    }
+                    return true;
+                }
+            }
+        }
+    }
     else if (evt.type == SDL_MOUSEBUTTONDOWN)
     {
         if (evt.button.button == SDL_BUTTON_LEFT)
         {
-            SDL_Rect clickRect;
-            clickRect.x = (int)((evt.button.x - g_MenuOffset.x) / g_MenuScale.x);
-            clickRect.y = (int)((evt.button.y - g_MenuOffset.y) / g_MenuScale.y);
-            clickRect.w = 1;
-            clickRect.h = 1;
+            m_bMouseMode = true;
+
+            int mouseX, mouseY;
+            SDL_GetMouseState(&mouseX, &mouseY);
+
+            SDL_Rect clickPoint;
+            clickPoint.x = (int)((mouseX - g_MenuOffset.x) / g_MenuScale.x);
+            clickPoint.y = (int)((mouseY - g_MenuOffset.y) / g_MenuScale.y);
+            clickPoint.w = 1;
+            clickPoint.h = 1;
 
             for (shared_ptr<ScreenElementMenuItem> pMenuItem : m_MenuItems)
             {
                 SDL_Rect itemRect = pMenuItem->GetMenuItemRect();
-                if (SDL_HasIntersection(&clickRect, &itemRect))
+                if (SDL_HasIntersection(&clickPoint, &itemRect))
                 {
                     if (pMenuItem->CanBeFocused())
                     {
@@ -1194,6 +1238,25 @@ bool ScreenElementMenuPage::MoveToMenuItemInColumn(int oldIdx, int columnOffset,
     }
 
     return false;
+}
+
+bool ScreenElementMenuPage::FocusMenuItemAtIdx(int idx, bool playSound)
+{
+    if (idx < 0 || idx >= (int)m_MenuItems.size())
+        return false;
+    if (!m_MenuItems[idx]->CanBeFocused())
+        return false;
+
+    DeactivateAllMenuItems();
+    m_MenuItems[idx]->Focus();
+
+    if (playSound)
+    {
+        SoundInfo soundInfo(SOUND_MENU_CHANGE_MENU_ITEM);
+        IEventMgr::Get()->VTriggerEvent(IEventDataPtr(
+            new EventData_Request_Play_Sound(soundInfo)));
+    }
+    return true;
 }
 
 void ScreenElementMenuPage::OnPageLoaded()

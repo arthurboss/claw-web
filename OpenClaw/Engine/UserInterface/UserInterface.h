@@ -199,6 +199,7 @@ private:
     int GetActiveMenuItemIdx();
     bool MoveToMenuItemIdx(int oldIdx, int idxIncrement, bool playSound = true);
     bool MoveToMenuItemInColumn(int oldIdx, int columnOffset, bool playSound = true);
+    bool FocusMenuItemAtIdx(int idx, bool playSound = true);
     shared_ptr<ScreenElementMenuItem> GetActiveMenuItem();
 
     KeyToEventMap m_KeyToEventMap;
@@ -217,6 +218,12 @@ private:
     std::vector<shared_ptr<Image>> m_CoinFrames;   // 9 frames
     int m_CoinFrameIdx;
     uint32 m_AnimAccumMs;
+
+    // Input-mode tracking: true = mouse is driving the highlight, false = keyboard/gamepad
+    bool m_bMouseMode;
+    // Last mouse position used to detect real movement vs SDL noise
+    int m_LastMouseX;
+    int m_LastMouseY;
 };
 
 enum MenuItemType
