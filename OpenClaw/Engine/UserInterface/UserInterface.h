@@ -162,6 +162,16 @@ private:
 
     MenuPageMap m_MenuPageMap;
     shared_ptr<ScreenElementMenuPage> m_pActiveMenuPage;
+
+    // Claw character animation (main menu only, persists across page switches)
+    // Phases: walk in from left → idle → walk out to right after ~10s
+    enum ClawPhase { ClawPhase_WalkIn, ClawPhase_Idle, ClawPhase_WalkOut, ClawPhase_Done };
+    std::vector<shared_ptr<Image>> m_ClawFrames;  // frames 0-9 walk, 10-17 idle
+    int m_ClawFrameIdx;
+    uint32 m_ClawAccumMs;
+    uint32 m_ClawIdleMs;   // time spent in idle phase
+    float m_ClawX;
+    ClawPhase m_ClawPhase;
 };
 
 class ScreenElementMenuItem;
@@ -199,6 +209,7 @@ private:
     int GetActiveMenuItemIdx();
     bool MoveToMenuItemIdx(int oldIdx, int idxIncrement, bool playSound = true);
     bool MoveToMenuItemInColumn(int oldIdx, int columnOffset, bool playSound = true);
+    bool FocusMenuItemAtIdx(int idx, bool playSound = true);
     shared_ptr<ScreenElementMenuItem> GetActiveMenuItem();
 
     KeyToEventMap m_KeyToEventMap;
@@ -212,6 +223,17 @@ private:
     // Column navigation support
     int m_NumColumns;
     int m_ItemsInColumn;
+
+    // Coin animation
+    std::vector<shared_ptr<Image>> m_CoinFrames;   // 9 frames
+    int m_CoinFrameIdx;
+    uint32 m_AnimAccumMs;
+
+    // Input-mode tracking: true = mouse is driving the highlight, false = keyboard/gamepad
+    bool m_bMouseMode;
+    // Last mouse position used to detect real movement vs SDL noise
+    int m_LastMouseX;
+    int m_LastMouseY;
 };
 
 enum MenuItemType

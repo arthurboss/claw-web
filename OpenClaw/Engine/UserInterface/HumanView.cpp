@@ -8,6 +8,8 @@
 #include "../Resource/Loaders/MidiLoader.h"
 #include "../Resource/Loaders/WavLoader.h"
 #include "../Resource/Loaders/XmlLoader.h"
+#include "../Resource/Loaders/PcxLoader.h"
+#include "../Graphics2D/Image.h"
 #include "../Util/PrimeSearch.h"
 #include "ScoreScreen/EndLevelScoreScreen.h"
 
@@ -16,8 +18,11 @@ const uint32 g_InvalidGameViewId = 0xFFFFFFFF;
 HumanView::HumanView(SDL_Renderer* renderer)
     :
     m_bRendering(true),
-    m_bPostponeRenderPresent(false)
+    m_bPostponeRenderPresent(false),
+    m_CursorFrameIdx(0),
+    m_CursorAccumMs(0)
 {
+    SDL_ShowCursor(SDL_DISABLE);
     m_pProcessMgr = new ProcessMgr();
 
     m_ViewId = INVALID_GAME_VIEW_ID;
@@ -102,6 +107,37 @@ void HumanView::VOnRender(uint32 msDiff)
 
         m_pConsole->OnRender(renderer);
 
+        // Lazy-load cursor frames on first render (resource cache is guaranteed ready by then)
+        if (m_CursorFrames.empty())
+        {
+            for (int i = 1; i <= 19; i++)
+            {
+                char path[64];
+                snprintf(path, sizeof(path), "/states/menu/images/cursor/cursor%02d.pcx", i);
+                // PCX palette index 0 = magenta-pink (R=255, G=0, B=132) — use as color key
+                shared_ptr<Image> pFrame = PcxResourceLoader::LoadAndReturnImage(path, true, { 255, 0, 132, 0 });
+                if (pFrame)
+                    m_CursorFrames.push_back(pFrame);
+            }
+        }
+
+        // Draw custom cursor in menus only — GameState_IngamePaused is never set in practice;
+        // the quick menu stays in IngameRunning but sets m_pIngameMenu visible.
+        GameState cursorGameState = g_pApp->GetGameLogic()->GetGameState();
+        bool ingameMenuOpen = m_pIngameMenu && m_pIngameMenu->VIsVisible();
+        bool showCursor = (cursorGameState == GameState_Menu ||
+                           cursorGameState == GameState_LoadingMenu ||
+                           ingameMenuOpen);
+        if (showCursor && !m_CursorFrames.empty())
+        {
+            int mouseX, mouseY;
+            SDL_GetMouseState(&mouseX, &mouseY);
+
+            shared_ptr<Image> pCursor = m_CursorFrames[m_CursorFrameIdx];
+            SDL_Rect destRect = { mouseX, mouseY, pCursor->GetWidth(), pCursor->GetHeight() };
+            SDL_RenderCopy(renderer, pCursor->GetTexture(), NULL, &destRect);
+        }
+
         if (!m_bPostponeRenderPresent)
         {
             SDL_RenderPresent(renderer);
@@ -118,6 +154,17 @@ void HumanView::VOnUpdate(uint32 msDiff)
     for (shared_ptr<IScreenElement> &element : m_ScreenElements)
     {
         element->VOnUpdate(msDiff);
+    }
+
+    if (!m_CursorFrames.empty())
+    {
+        const uint32 CURSOR_FRAME_MS = 100;
+        m_CursorAccumMs += msDiff;
+        if (m_CursorAccumMs >= CURSOR_FRAME_MS)
+        {
+            m_CursorFrameIdx = (m_CursorFrameIdx + m_CursorAccumMs / CURSOR_FRAME_MS) % (int)m_CursorFrames.size();
+            m_CursorAccumMs %= CURSOR_FRAME_MS;
+        }
     }
 }
 

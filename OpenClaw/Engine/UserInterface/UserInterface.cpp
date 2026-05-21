@@ -7,6 +7,7 @@
 #include "../Resource/Loaders/PcxLoader.h"
 #include "../Resource/Loaders/PngLoader.h"
 #include "../Resource/Loaders/PidLoader.h"
+#include "../Resource/Loaders/PalLoader.h"
 #include "../Resource/ResourceMgr.h"
 #include "../Audio/Audio.h"
 
@@ -379,7 +380,12 @@ ScreenElementMenu::ScreenElementMenu(SDL_Renderer* pRenderer)
     :
     m_pRenderer(pRenderer),
     m_bIsVisible(true),
-    m_MenuType(MenuType_None)
+    m_MenuType(MenuType_None),
+    m_ClawFrameIdx(0),
+    m_ClawAccumMs(0),
+    m_ClawIdleMs(0),
+    m_ClawX(0.0f),
+    m_ClawPhase(ClawPhase_WalkIn)
 {
     IEventMgr::Get()->VAddListener(MakeDelegate(
         this, &ScreenElementMenu::SwitchPageDelegate), EventData_Menu_SwitchPage::sk_EventType);
@@ -423,6 +429,66 @@ void ScreenElementMenu::VOnUpdate(uint32 msDiff)
 
     assert(m_pActiveMenuPage);
     m_pActiveMenuPage->VOnUpdate(msDiff);
+
+    // Claw character animation (main menu only)
+    if (m_MenuType == MenuType_MainMenu && !m_ClawFrames.empty() && m_ClawPhase != ClawPhase_Done)
+    {
+        const int   WALK_FRAME_COUNT = 10;
+        const int   IDLE_FRAME_START = 10;
+        const uint32 WALK_FRAME_MS   = 80;
+        const uint32 IDLE_FRAME_MS   = 110;
+        const float CLAW_WALK_SPEED  = 0.35f;   // design-px per ms
+        const float CLAW_FINAL_X     = 30.0f;   // left edge of sprite at rest
+        const uint32 CLAW_IDLE_DELAY = 10000;   // ms before walk-out starts
+
+        m_ClawAccumMs += msDiff;
+
+        if (m_ClawPhase == ClawPhase_WalkIn)
+        {
+            m_ClawX += CLAW_WALK_SPEED * (float)msDiff;
+            if (m_ClawX >= CLAW_FINAL_X)
+            {
+                m_ClawX      = CLAW_FINAL_X;
+                m_ClawPhase  = ClawPhase_Idle;
+                m_ClawFrameIdx = 0;
+                m_ClawAccumMs  = 0;
+                m_ClawIdleMs   = 0;
+            }
+            else if (m_ClawAccumMs >= WALK_FRAME_MS)
+            {
+                m_ClawFrameIdx = (m_ClawFrameIdx + m_ClawAccumMs / WALK_FRAME_MS) % WALK_FRAME_COUNT;
+                m_ClawAccumMs  = m_ClawAccumMs % WALK_FRAME_MS;
+            }
+        }
+        else if (m_ClawPhase == ClawPhase_Idle)
+        {
+            m_ClawIdleMs += msDiff;
+            if (m_ClawAccumMs >= IDLE_FRAME_MS)
+            {
+                int idleCount = (int)m_ClawFrames.size() - IDLE_FRAME_START;
+                if (idleCount > 0)
+                    m_ClawFrameIdx = (m_ClawFrameIdx + m_ClawAccumMs / IDLE_FRAME_MS) % idleCount;
+                m_ClawAccumMs = m_ClawAccumMs % IDLE_FRAME_MS;
+            }
+            if (m_ClawIdleMs >= CLAW_IDLE_DELAY)
+            {
+                m_ClawPhase    = ClawPhase_WalkOut;
+                m_ClawFrameIdx = 0;
+                m_ClawAccumMs  = 0;
+            }
+        }
+        else if (m_ClawPhase == ClawPhase_WalkOut)
+        {
+            m_ClawX += CLAW_WALK_SPEED * (float)msDiff;
+            if (m_ClawAccumMs >= WALK_FRAME_MS)
+            {
+                m_ClawFrameIdx = (m_ClawFrameIdx + m_ClawAccumMs / WALK_FRAME_MS) % WALK_FRAME_COUNT;
+                m_ClawAccumMs  = m_ClawAccumMs % WALK_FRAME_MS;
+            }
+            if (m_ClawX > 640.0f)
+                m_ClawPhase = ClawPhase_Done;
+        }
+    }
 }
 
 void ScreenElementMenu::VOnRender(uint32 msDiff)
@@ -484,6 +550,29 @@ void ScreenElementMenu::VOnRender(uint32 msDiff)
     {
         // Ingame menu: render semi-transparent background covering full screen
         SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), NULL, NULL);
+    }
+
+    // Draw Claw character (main menu only, persists across page switches)
+    if (m_MenuType == MenuType_MainMenu && !m_ClawFrames.empty() && m_ClawPhase != ClawPhase_Done)
+    {
+        const int IDLE_FRAME_START = 10;
+        int frameIdx;
+        if (m_ClawPhase == ClawPhase_Idle)
+            frameIdx = IDLE_FRAME_START + m_ClawFrameIdx;
+        else
+            frameIdx = m_ClawFrameIdx;  // walk frames 0-9
+
+        if (frameIdx >= (int)m_ClawFrames.size())
+            frameIdx = (int)m_ClawFrames.size() - 1;
+
+        shared_ptr<Image> pClaw = m_ClawFrames[frameIdx];
+        const int CLAW_DESIGN_Y = 10;
+        int clawW = (int)(pClaw->GetWidth()  * g_MenuScale.x);
+        int clawH = (int)(pClaw->GetHeight() * g_MenuScale.y);
+        int clawScreenX = (int)(g_MenuOffset.x + m_ClawX * g_MenuScale.x);
+        int clawScreenY = (int)(g_MenuOffset.y + CLAW_DESIGN_Y * g_MenuScale.y);
+        SDL_Rect clawDest = { clawScreenX, clawScreenY, clawW, clawH };
+        SDL_RenderCopy(m_pRenderer, pClaw->GetTexture(), NULL, &clawDest);
     }
 
     assert(m_pActiveMenuPage);
@@ -640,6 +729,41 @@ bool ScreenElementMenu::Initialize(TiXmlElement* pElem)
     g_MenuScale.Set(uniformScale, uniformScale);
     g_MenuOffset.Set((windowSize.x - MENU_DESIGN_WIDTH * uniformScale) / 2.0, 0.0);
 
+    // Load Claw character frames for the main menu walk-in animation
+    if (m_MenuType == MenuType_MainMenu)
+    {
+        WapPal* pPal = nullptr;
+        bool bOwnsPal = false;
+        {
+            Resource pcxRes("/states/menu/screens/menu.pcx");
+            shared_ptr<ResourceHandle> pcxHandle = g_pApp->GetResourceCache()->GetHandle(&pcxRes);
+            if (pcxHandle && pcxHandle->GetSize() > 769 &&
+                (uint8_t)pcxHandle->GetDataBuffer()[pcxHandle->GetSize() - 769] == 0x0C)
+            {
+                char* palStart = pcxHandle->GetDataBuffer() + pcxHandle->GetSize() - 768;
+                pPal = WAP_PalLoadFromData(palStart, 768);
+                bOwnsPal = (pPal != nullptr);
+            }
+        }
+        if (!pPal)
+            pPal = PalResourceLoader::LoadAndReturnPal("/level1/palettes/main.pal");
+
+        for (int i = 1; i <= 18; i++)
+        {
+            char path[64];
+            snprintf(path, sizeof(path), "/states/menu/images/claw/frame%03d.pid", i);
+            shared_ptr<Image> pFrame = PidResourceLoader::LoadAndReturnImage(path, pPal);
+            if (pFrame)
+                m_ClawFrames.push_back(pFrame);
+        }
+        // Start Claw off-screen to the left
+        if (!m_ClawFrames.empty())
+            m_ClawX = -(float)m_ClawFrames[0]->GetWidth();
+
+        if (bOwnsPal)
+            WAP_PalDestroy(pPal);
+    }
+
     return true;
 }
 
@@ -724,7 +848,12 @@ ScreenElementMenuPage::ScreenElementMenuPage(SDL_Renderer* pRenderer)
     m_pBackground(NULL),
     m_pRenderer(pRenderer),
     m_NumColumns(1),
-    m_ItemsInColumn(0)
+    m_ItemsInColumn(0),
+    m_CoinFrameIdx(0),
+    m_AnimAccumMs(0),
+    m_bMouseMode(false),
+    m_LastMouseX(-1),
+    m_LastMouseY(-1)
 {
 
 }
@@ -740,6 +869,23 @@ void ScreenElementMenuPage::VOnUpdate(uint32 msDiff)
     {
         pMenuItem->VOnUpdate(msDiff);
     }
+
+    // Advance coin animation frames
+    m_AnimAccumMs += msDiff;
+
+    const uint32 COIN_FRAME_MS = 80;
+
+    if (!m_CoinFrames.empty() && m_AnimAccumMs >= COIN_FRAME_MS)
+    {
+        m_CoinFrameIdx = (m_CoinFrameIdx + m_AnimAccumMs / COIN_FRAME_MS) % (int)m_CoinFrames.size();
+    }
+
+    // Clamp accumulator to avoid runaway on long frames
+    if (m_AnimAccumMs >= COIN_FRAME_MS)
+    {
+        m_AnimAccumMs = m_AnimAccumMs % COIN_FRAME_MS;
+    }
+
 }
 
 void ScreenElementMenuPage::VOnRender(uint32 msDiff)
@@ -765,6 +911,30 @@ void ScreenElementMenuPage::VOnRender(uint32 msDiff)
             pMenuItem->VOnRender(msDiff);
         }
     }
+
+    // Draw spinning coins flanking the active menu item
+    shared_ptr<ScreenElementMenuItem> pActive = GetActiveMenuItem();
+    if (pActive && pActive->VIsVisible() && !m_CoinFrames.empty())
+    {
+        SDL_Rect itemRect = pActive->GetMenuItemRect();
+
+        int screenX = (int)(g_MenuOffset.x + itemRect.x * g_MenuScale.x);
+        int screenY = (int)(g_MenuOffset.y + itemRect.y * g_MenuScale.y);
+        int screenW = (int)(itemRect.w * g_MenuScale.x);
+        int screenH = (int)(itemRect.h * g_MenuScale.y);
+
+        shared_ptr<Image> pCoin = m_CoinFrames[m_CoinFrameIdx];
+        int coinW = (int)(pCoin->GetWidth() * g_MenuScale.x);
+        int coinH = (int)(pCoin->GetHeight() * g_MenuScale.y);
+        int coinY = screenY + (screenH - coinH) / 2;
+        const int COIN_GAP = 4;
+
+        SDL_Rect leftCoin  = { screenX - coinW - COIN_GAP, coinY, coinW, coinH };
+        SDL_Rect rightCoin = { screenX + screenW + COIN_GAP, coinY, coinW, coinH };
+
+        SDL_RenderCopy(m_pRenderer, pCoin->GetTexture(), NULL, &leftCoin);
+        SDL_RenderCopy(m_pRenderer, pCoin->GetTexture(), NULL, &rightCoin);
+    }
 }
 
 bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
@@ -775,13 +945,15 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
         assert(activeMenuItemIdx >= 0);
     }
 
-    // Cannot be switch-case since I have to check the "repeat" aswell
     if (evt.type == SDL_KEYDOWN)
     {
         if (evt.key.repeat != 0)
         {
             return false;
         }
+
+        // Any keyboard input switches to keyboard mode
+        m_bMouseMode = false;
 
         SDL_Keycode keyCode = SDL_GetScancodeFromKey(evt.key.keysym.sym);
         if (keyCode == SDL_SCANCODE_DOWN)
@@ -808,7 +980,7 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
         {
             // HACK:
             if (keyCode == SDL_SCANCODE_ESCAPE ||
-                keyCode == SDL_SCANCODE_SPACE || 
+                keyCode == SDL_SCANCODE_SPACE ||
                 keyCode == SDL_SCANCODE_RETURN)
             {
                 SoundInfo soundInfo(SOUND_MENU_SELECT_MENU_ITEM);
@@ -836,20 +1008,59 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
             }
         }
     }
+    else if (evt.type == SDL_MOUSEMOTION)
+    {
+        // evt.motion.x/y are unreliable in Emscripten SDL2 (DPI/float issues).
+        // SDL_GetMouseState returns correct window-space coordinates.
+        int mouseX, mouseY;
+        SDL_GetMouseState(&mouseX, &mouseY);
+
+        if (mouseX != m_LastMouseX || mouseY != m_LastMouseY)
+        {
+            m_LastMouseX = mouseX;
+            m_LastMouseY = mouseY;
+            m_bMouseMode = true;
+
+            SDL_Rect hoverPoint;
+            hoverPoint.x = (int)((mouseX - g_MenuOffset.x) / g_MenuScale.x);
+            hoverPoint.y = (int)((mouseY - g_MenuOffset.y) / g_MenuScale.y);
+            hoverPoint.w = 1;
+            hoverPoint.h = 1;
+
+            for (int i = 0; i < (int)m_MenuItems.size(); i++)
+            {
+                if (!m_MenuItems[i]->CanBeFocused()) continue;
+                SDL_Rect itemRect = m_MenuItems[i]->GetMenuItemRect();
+                if (SDL_HasIntersection(&hoverPoint, &itemRect))
+                {
+                    if (i != activeMenuItemIdx)
+                    {
+                        FocusMenuItemAtIdx(i, true);
+                    }
+                    return true;
+                }
+            }
+        }
+    }
     else if (evt.type == SDL_MOUSEBUTTONDOWN)
     {
         if (evt.button.button == SDL_BUTTON_LEFT)
         {
-            SDL_Rect clickRect;
-            clickRect.x = (int)((evt.button.x - g_MenuOffset.x) / g_MenuScale.x);
-            clickRect.y = (int)((evt.button.y - g_MenuOffset.y) / g_MenuScale.y);
-            clickRect.w = 1;
-            clickRect.h = 1;
+            m_bMouseMode = true;
+
+            int mouseX, mouseY;
+            SDL_GetMouseState(&mouseX, &mouseY);
+
+            SDL_Rect clickPoint;
+            clickPoint.x = (int)((mouseX - g_MenuOffset.x) / g_MenuScale.x);
+            clickPoint.y = (int)((mouseY - g_MenuOffset.y) / g_MenuScale.y);
+            clickPoint.w = 1;
+            clickPoint.h = 1;
 
             for (shared_ptr<ScreenElementMenuItem> pMenuItem : m_MenuItems)
             {
                 SDL_Rect itemRect = pMenuItem->GetMenuItemRect();
-                if (SDL_HasIntersection(&clickRect, &itemRect))
+                if (SDL_HasIntersection(&clickPoint, &itemRect))
                 {
                     if (pMenuItem->CanBeFocused())
                     {
@@ -905,6 +1116,42 @@ bool ScreenElementMenuPage::Initialize(TiXmlElement* pElem)
         }
 
         m_MenuItems.push_back(pItem);
+    }
+
+    // Load coin animation frames (/STATES/MENU/IMAGES/COINS/FRAME001.PID .. FRAME009.PID)
+    // The coin PIDs require the palette embedded in MENU.PCX (the menu background image).
+    // Level palettes produce wrong colors — the menu state uses its own distinct palette.
+    WapPal* pMenuPalette = nullptr;
+    {
+        Resource pcxRes("/states/menu/screens/menu.pcx");
+        shared_ptr<ResourceHandle> pcxHandle = g_pApp->GetResourceCache()->GetHandle(&pcxRes);
+        if (pcxHandle && pcxHandle->GetSize() > 769 &&
+            (uint8_t)pcxHandle->GetDataBuffer()[pcxHandle->GetSize() - 769] == 0x0C)
+        {
+            // PCX extended palette: 0x0C marker + 768 bytes of RGB
+            char* palStart = pcxHandle->GetDataBuffer() + pcxHandle->GetSize() - 768;
+            pMenuPalette = WAP_PalLoadFromData(palStart, 768);
+        }
+    }
+    bool bOwnsMenuPalette = (pMenuPalette != nullptr);
+    if (!pMenuPalette)
+    {
+        LOG_WARNING("Could not extract palette from MENU.PCX, falling back to level1 palette");
+        pMenuPalette = PalResourceLoader::LoadAndReturnPal("/level1/palettes/main.pal");
+    }
+    for (int i = 1; i <= 9; i++)
+    {
+        char path[64];
+        snprintf(path, sizeof(path), "/states/menu/images/coins/frame%03d.pid", i);
+        shared_ptr<Image> pFrame = PidResourceLoader::LoadAndReturnImage(path, pMenuPalette);
+        if (pFrame)
+        {
+            m_CoinFrames.push_back(pFrame);
+        }
+    }
+    if (bOwnsMenuPalette)
+    {
+        WAP_PalDestroy(pMenuPalette);
     }
 
     // Load all key events
@@ -1014,7 +1261,6 @@ bool ScreenElementMenuPage::MoveToMenuItemIdx(int oldIdx, int idxIncrement, bool
 
     if (playSound)
     {
-        // Play sound
         SoundInfo soundInfo(SOUND_MENU_CHANGE_MENU_ITEM);
         IEventMgr::Get()->VTriggerEvent(IEventDataPtr(
             new EventData_Request_Play_Sound(soundInfo)));
@@ -1115,6 +1361,25 @@ bool ScreenElementMenuPage::MoveToMenuItemInColumn(int oldIdx, int columnOffset,
     }
 
     return false;
+}
+
+bool ScreenElementMenuPage::FocusMenuItemAtIdx(int idx, bool playSound)
+{
+    if (idx < 0 || idx >= (int)m_MenuItems.size())
+        return false;
+    if (!m_MenuItems[idx]->CanBeFocused())
+        return false;
+
+    DeactivateAllMenuItems();
+    m_MenuItems[idx]->Focus();
+
+    if (playSound)
+    {
+        SoundInfo soundInfo(SOUND_MENU_CHANGE_MENU_ITEM);
+        IEventMgr::Get()->VTriggerEvent(IEventDataPtr(
+            new EventData_Request_Play_Sound(soundInfo)));
+    }
+    return true;
 }
 
 void ScreenElementMenuPage::OnPageLoaded()
