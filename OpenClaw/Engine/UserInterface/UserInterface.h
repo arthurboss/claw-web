@@ -162,6 +162,16 @@ private:
 
     MenuPageMap m_MenuPageMap;
     shared_ptr<ScreenElementMenuPage> m_pActiveMenuPage;
+
+    // Claw character animation (main menu only, persists across page switches)
+    // Phases: walk in from left → idle → walk out to right after ~10s
+    enum ClawPhase { ClawPhase_WalkIn, ClawPhase_Idle, ClawPhase_WalkOut, ClawPhase_Done };
+    std::vector<shared_ptr<Image>> m_ClawFrames;  // frames 0-9 walk, 10-17 idle
+    int m_ClawFrameIdx;
+    uint32 m_ClawAccumMs;
+    uint32 m_ClawIdleMs;   // time spent in idle phase
+    float m_ClawX;
+    ClawPhase m_ClawPhase;
 };
 
 class ScreenElementMenuItem;
@@ -214,7 +224,7 @@ private:
     int m_NumColumns;
     int m_ItemsInColumn;
 
-    // Coin & cursor animation
+    // Coin animation
     std::vector<shared_ptr<Image>> m_CoinFrames;   // 9 frames
     int m_CoinFrameIdx;
     uint32 m_AnimAccumMs;

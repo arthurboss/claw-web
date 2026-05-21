@@ -380,7 +380,12 @@ ScreenElementMenu::ScreenElementMenu(SDL_Renderer* pRenderer)
     :
     m_pRenderer(pRenderer),
     m_bIsVisible(true),
-    m_MenuType(MenuType_None)
+    m_MenuType(MenuType_None),
+    m_ClawFrameIdx(0),
+    m_ClawAccumMs(0),
+    m_ClawIdleMs(0),
+    m_ClawX(0.0f),
+    m_ClawPhase(ClawPhase_WalkIn)
 {
     IEventMgr::Get()->VAddListener(MakeDelegate(
         this, &ScreenElementMenu::SwitchPageDelegate), EventData_Menu_SwitchPage::sk_EventType);
@@ -424,6 +429,66 @@ void ScreenElementMenu::VOnUpdate(uint32 msDiff)
 
     assert(m_pActiveMenuPage);
     m_pActiveMenuPage->VOnUpdate(msDiff);
+
+    // Claw character animation (main menu only)
+    if (m_MenuType == MenuType_MainMenu && !m_ClawFrames.empty() && m_ClawPhase != ClawPhase_Done)
+    {
+        const int   WALK_FRAME_COUNT = 10;
+        const int   IDLE_FRAME_START = 10;
+        const uint32 WALK_FRAME_MS   = 80;
+        const uint32 IDLE_FRAME_MS   = 110;
+        const float CLAW_WALK_SPEED  = 0.35f;   // design-px per ms
+        const float CLAW_FINAL_X     = 30.0f;   // left edge of sprite at rest
+        const uint32 CLAW_IDLE_DELAY = 10000;   // ms before walk-out starts
+
+        m_ClawAccumMs += msDiff;
+
+        if (m_ClawPhase == ClawPhase_WalkIn)
+        {
+            m_ClawX += CLAW_WALK_SPEED * (float)msDiff;
+            if (m_ClawX >= CLAW_FINAL_X)
+            {
+                m_ClawX      = CLAW_FINAL_X;
+                m_ClawPhase  = ClawPhase_Idle;
+                m_ClawFrameIdx = 0;
+                m_ClawAccumMs  = 0;
+                m_ClawIdleMs   = 0;
+            }
+            else if (m_ClawAccumMs >= WALK_FRAME_MS)
+            {
+                m_ClawFrameIdx = (m_ClawFrameIdx + m_ClawAccumMs / WALK_FRAME_MS) % WALK_FRAME_COUNT;
+                m_ClawAccumMs  = m_ClawAccumMs % WALK_FRAME_MS;
+            }
+        }
+        else if (m_ClawPhase == ClawPhase_Idle)
+        {
+            m_ClawIdleMs += msDiff;
+            if (m_ClawAccumMs >= IDLE_FRAME_MS)
+            {
+                int idleCount = (int)m_ClawFrames.size() - IDLE_FRAME_START;
+                if (idleCount > 0)
+                    m_ClawFrameIdx = (m_ClawFrameIdx + m_ClawAccumMs / IDLE_FRAME_MS) % idleCount;
+                m_ClawAccumMs = m_ClawAccumMs % IDLE_FRAME_MS;
+            }
+            if (m_ClawIdleMs >= CLAW_IDLE_DELAY)
+            {
+                m_ClawPhase    = ClawPhase_WalkOut;
+                m_ClawFrameIdx = 0;
+                m_ClawAccumMs  = 0;
+            }
+        }
+        else if (m_ClawPhase == ClawPhase_WalkOut)
+        {
+            m_ClawX += CLAW_WALK_SPEED * (float)msDiff;
+            if (m_ClawAccumMs >= WALK_FRAME_MS)
+            {
+                m_ClawFrameIdx = (m_ClawFrameIdx + m_ClawAccumMs / WALK_FRAME_MS) % WALK_FRAME_COUNT;
+                m_ClawAccumMs  = m_ClawAccumMs % WALK_FRAME_MS;
+            }
+            if (m_ClawX > 640.0f)
+                m_ClawPhase = ClawPhase_Done;
+        }
+    }
 }
 
 void ScreenElementMenu::VOnRender(uint32 msDiff)
@@ -485,6 +550,29 @@ void ScreenElementMenu::VOnRender(uint32 msDiff)
     {
         // Ingame menu: render semi-transparent background covering full screen
         SDL_RenderCopy(m_pRenderer, m_pBackground->GetTexture(), NULL, NULL);
+    }
+
+    // Draw Claw character (main menu only, persists across page switches)
+    if (m_MenuType == MenuType_MainMenu && !m_ClawFrames.empty() && m_ClawPhase != ClawPhase_Done)
+    {
+        const int IDLE_FRAME_START = 10;
+        int frameIdx;
+        if (m_ClawPhase == ClawPhase_Idle)
+            frameIdx = IDLE_FRAME_START + m_ClawFrameIdx;
+        else
+            frameIdx = m_ClawFrameIdx;  // walk frames 0-9
+
+        if (frameIdx >= (int)m_ClawFrames.size())
+            frameIdx = (int)m_ClawFrames.size() - 1;
+
+        shared_ptr<Image> pClaw = m_ClawFrames[frameIdx];
+        const int CLAW_DESIGN_Y = 10;
+        int clawW = (int)(pClaw->GetWidth()  * g_MenuScale.x);
+        int clawH = (int)(pClaw->GetHeight() * g_MenuScale.y);
+        int clawScreenX = (int)(g_MenuOffset.x + m_ClawX * g_MenuScale.x);
+        int clawScreenY = (int)(g_MenuOffset.y + CLAW_DESIGN_Y * g_MenuScale.y);
+        SDL_Rect clawDest = { clawScreenX, clawScreenY, clawW, clawH };
+        SDL_RenderCopy(m_pRenderer, pClaw->GetTexture(), NULL, &clawDest);
     }
 
     assert(m_pActiveMenuPage);
@@ -641,6 +729,41 @@ bool ScreenElementMenu::Initialize(TiXmlElement* pElem)
     g_MenuScale.Set(uniformScale, uniformScale);
     g_MenuOffset.Set((windowSize.x - MENU_DESIGN_WIDTH * uniformScale) / 2.0, 0.0);
 
+    // Load Claw character frames for the main menu walk-in animation
+    if (m_MenuType == MenuType_MainMenu)
+    {
+        WapPal* pPal = nullptr;
+        bool bOwnsPal = false;
+        {
+            Resource pcxRes("/states/menu/screens/menu.pcx");
+            shared_ptr<ResourceHandle> pcxHandle = g_pApp->GetResourceCache()->GetHandle(&pcxRes);
+            if (pcxHandle && pcxHandle->GetSize() > 769 &&
+                (uint8_t)pcxHandle->GetDataBuffer()[pcxHandle->GetSize() - 769] == 0x0C)
+            {
+                char* palStart = pcxHandle->GetDataBuffer() + pcxHandle->GetSize() - 768;
+                pPal = WAP_PalLoadFromData(palStart, 768);
+                bOwnsPal = (pPal != nullptr);
+            }
+        }
+        if (!pPal)
+            pPal = PalResourceLoader::LoadAndReturnPal("/level1/palettes/main.pal");
+
+        for (int i = 1; i <= 18; i++)
+        {
+            char path[64];
+            snprintf(path, sizeof(path), "/states/menu/images/claw/frame%03d.pid", i);
+            shared_ptr<Image> pFrame = PidResourceLoader::LoadAndReturnImage(path, pPal);
+            if (pFrame)
+                m_ClawFrames.push_back(pFrame);
+        }
+        // Start Claw off-screen to the left
+        if (!m_ClawFrames.empty())
+            m_ClawX = -(float)m_ClawFrames[0]->GetWidth();
+
+        if (bOwnsPal)
+            WAP_PalDestroy(pPal);
+    }
+
     return true;
 }
 
@@ -762,6 +885,7 @@ void ScreenElementMenuPage::VOnUpdate(uint32 msDiff)
     {
         m_AnimAccumMs = m_AnimAccumMs % COIN_FRAME_MS;
     }
+
 }
 
 void ScreenElementMenuPage::VOnRender(uint32 msDiff)
@@ -1029,7 +1153,6 @@ bool ScreenElementMenuPage::Initialize(TiXmlElement* pElem)
     {
         WAP_PalDestroy(pMenuPalette);
     }
-
 
     // Load all key events
     for (TiXmlElement* pKeyboardEvent = pElem->FirstChildElement("KeyboardEvent");
