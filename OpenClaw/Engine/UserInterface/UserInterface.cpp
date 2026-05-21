@@ -1389,6 +1389,11 @@ bool ScreenElementMenuPage::FocusMenuItemAtIdx(int idx, bool playSound)
 
 void ScreenElementMenuPage::OnPageLoaded()
 {
+    for (shared_ptr<ScreenElementMenuItem> pItem : m_MenuItems)
+    {
+        pItem->ReEvaluateStateCondition();
+    }
+
     // Focus on first active button
     MoveToMenuItemIdx(m_MenuItems.size() - 1, 1, false);
 }
@@ -1521,10 +1526,14 @@ bool ScreenElementMenuItem::Initialize(TiXmlElement* pElem)
             ParseValueFromXmlElem(&checkpoint, pStateConditionElem->FirstChildElement("Checkpoint"));
             assert(level != -1 && checkpoint != -1);
 
+            m_StateCondition.conditionForState = conditionForStateStr;
+            m_StateCondition.defaultState = menuItemStateStr;
+            m_StateCondition.level = level;
+            m_StateCondition.checkpoint = checkpoint;
+
             if (g_pApp->GetGameLogic()->GetGameSaveMgr()->HasCheckpointSave(level, checkpoint))
             {
-                ParseValueFromXmlElem(&menuItemStateStr, pStateConditionElem->FirstChildElement("ConditionForState"));
-                m_State = StringToMenuItemStateEnum(menuItemStateStr);
+                m_State = StringToMenuItemStateEnum(conditionForStateStr);
             }
         }
     }
@@ -1820,6 +1829,21 @@ void ScreenElementMenuItem::OnStateChanged(MenuItemState newState, MenuItemState
             IEventMgr::Get()->VQueueEvent(pEvent);
         }
     }
+}
+
+void ScreenElementMenuItem::ReEvaluateStateCondition()
+{
+    if (m_StateCondition.level == -1)
+    {
+        return;
+    }
+
+    bool conditionMet = g_pApp->GetGameLogic()->GetGameSaveMgr()->HasCheckpointSave(
+        m_StateCondition.level, m_StateCondition.checkpoint);
+
+    m_State = StringToMenuItemStateEnum(conditionMet
+        ? m_StateCondition.conditionForState
+        : m_StateCondition.defaultState);
 }
 
 SDL_Rect ScreenElementMenuItem::GetMenuItemRect()

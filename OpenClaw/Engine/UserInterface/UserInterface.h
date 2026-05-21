@@ -276,6 +276,14 @@ struct MenuItemImageContainer
 };
 */
 
+struct MenuItemStateCondition
+{
+    std::string conditionForState;
+    std::string defaultState;
+    int level = -1;
+    int checkpoint = -1;
+};
+
 // This is menu item like button, slider, text, etc.
 class ScreenElementMenuItem : public IScreenElement
 {
@@ -313,6 +321,7 @@ public:
     SDL_Rect GetMenuItemRect();
 
     void OnStateChanged(MenuItemState newState, MenuItemState oldState);
+    void ReEvaluateStateCondition();
 
 private:
     std::string m_Name;
@@ -331,6 +340,8 @@ private:
     MenuItemImageMap m_Images;
     //MenuItemImageContainerList m_MenuItemImageContainerList;
     SDL_Renderer* m_pRenderer;
+
+    MenuItemStateCondition m_StateCondition;
 };
 
 #endif

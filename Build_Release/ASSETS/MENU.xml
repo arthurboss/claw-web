@@ -229,7 +229,7 @@
             <Position x="291" y="333" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
-                <PageName>MenuPage_SinglePlayer_NewGame</PageName>
+                <PageName>MenuPage_SinglePlayer</PageName>
             </GeneratedEvent>
         </MenuItem>
     </MenuPage>
