@@ -2,6 +2,8 @@
 
 > Play Captain Claw (1997) in your web browser - no installation needed!
 
+**Play [here](https://arthurboss.github.io/WASM-OpenClaw/)** (requires you to upload the CLAW.REZ file)
+
 Browser-based version of the classic platformer. Based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek.
 
 | Main Menu | Level 1 Gameplay |
@@ -61,6 +63,10 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 | Fire (Ranged) | Left Alt |
 | Change Weapon | Left Shift or E |
 | Pause | Escape |
+
+The game captures keyboard input to prevent browser and OS shortcuts (like Ctrl+C, Alt+Tab) from interfering with gameplay. ESC is also captured in fullscreen mode (Chrome/Edge only).
+
+**macOS Note:** Ctrl + Arrow keys trigger Spaces navigation at the system level and cannot be blocked by the browser. To disable: System Settings → Keyboard → Keyboard Shortcuts → Mission Control → uncheck "Move left/right a space".
 
 ### Gamepad
 

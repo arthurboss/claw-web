@@ -133,7 +133,7 @@ Open: <http://localhost:8080/openclaw.html>
 
 ### Option 2: HTTP/3 Server (Fast)
 
-Requires Caddy server (see `scripts/start_http3_server.sh`):
+Requires Caddy server installed separately ([install guide](https://caddyserver.com/docs/install)). The `caddy` binary is not bundled in the repo — install it and ensure it's on your `PATH`:
 
 ```bash
 ./scripts/start_http3_server.sh

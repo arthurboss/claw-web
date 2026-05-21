@@ -135,6 +135,10 @@
         display: flex;
         gap: clamp(5px, 1cqw, 10px);
         align-items: center;
+      }
+
+      /* Delay button appearance only when intro video is playing */
+      body:has(video) .bottom-controls {
         opacity: 0;
         animation: fadeInControls 0.3s ease-in 3.5s forwards;
       }
@@ -464,11 +468,31 @@
         <div id="canvasContainer">
           <canvas
             id="canvas"
-            width="640"
-            height="480"
             oncontextmenu="event.preventDefault()"
             tabindex="-1"
           ></canvas>
+          <script>
+            // Set canvas dimensions IMMEDIATELY before any game code runs
+            // This ensures the game initializes with correct resolution
+            (function() {
+              var canvas = document.getElementById('canvas');
+              var BASE_HEIGHT = 480;
+              var MIN_WIDTH = 640;
+              var MAX_WIDTH = 1664;
+              var MIN_ASPECT = 4/3;
+
+              var w = window.innerWidth;
+              var h = window.innerHeight;
+              var aspect = Math.max(w / h, MIN_ASPECT);
+              var gameWidth = Math.round(BASE_HEIGHT * aspect);
+              gameWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, gameWidth));
+
+              canvas.width = gameWidth;
+              canvas.height = BASE_HEIGHT;
+              canvas.style.setProperty('--game-aspect-ratio', gameWidth + ' / ' + BASE_HEIGHT);
+              console.log('[Resolution] Initial canvas: ' + gameWidth + 'x' + BASE_HEIGHT);
+            })();
+          </script>
 
           <!-- FPS overlay - styled to match in-game rendering -->
           <div id="fpsOverlay" class="initial-load">60 FPS</div>
@@ -776,14 +800,28 @@
       };
 
       // Smart fullscreen function - always fullscreens the game container
+      // Uses Keyboard Lock API to capture ESC key in fullscreen (Chrome/Edge)
       function toggleFullscreen() {
         var gameContainer = document.getElementById("gameContainer");
         if (gameContainer) {
           if (!document.fullscreenElement) {
-            gameContainer.requestFullscreen().catch(function (err) {
+            gameContainer.requestFullscreen().then(function() {
+              // Request keyboard lock to capture ESC and system keys
+              if (navigator.keyboard && navigator.keyboard.lock) {
+                navigator.keyboard.lock(['Escape']).then(function() {
+                  console.log('[Keyboard] Locked ESC key in fullscreen');
+                }).catch(function(err) {
+                  console.log('[Keyboard] Could not lock ESC:', err.message);
+                });
+              }
+            }).catch(function (err) {
               console.error("Fullscreen request failed:", err);
             });
           } else {
+            // Unlock keyboard before exiting fullscreen
+            if (navigator.keyboard && navigator.keyboard.unlock) {
+              navigator.keyboard.unlock();
+            }
             document.exitFullscreen();
           }
         }
@@ -807,6 +845,10 @@
           if (btn) {
             btn.textContent = "⛶";
             btn.title = "Enter Fullscreen";
+          }
+          // Release keyboard lock when leaving fullscreen
+          if (navigator.keyboard && navigator.keyboard.unlock) {
+            navigator.keyboard.unlock();
           }
         }
 
@@ -862,9 +904,13 @@
               Browser.updateCanvasDimensions = function() {};
             }
 
-            // Apply correct resolution now that C++ is ready
-            // This ensures menu items use proper scale from the start
-            updateGameResolution();
+            // Canvas dimensions were set before game loaded (inline script in HTML)
+            // Sync C++ side with canvas dimensions
+            var canvas = Module.canvas;
+            if (typeof Module._OnJSResolutionChange === 'function') {
+              Module._OnJSResolutionChange(canvas.width, canvas.height);
+              console.log('[Resolution] Synced C++ to canvas: ' + canvas.width + 'x' + canvas.height);
+            }
           },
         ],
         canvas: (function () {
@@ -948,6 +994,9 @@
 
     <!-- Main ES Module - loads all dependencies and exposes functions to window -->
     <script type="module" src="game-init.js"></script>
+
+    <!-- Keyboard capture - prevents OS shortcuts from interfering with game -->
+    <script src="keyboard-capture.js"></script>
 
     <!-- Initialize game after modules are loaded -->
     <script>
