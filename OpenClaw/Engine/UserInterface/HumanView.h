@@ -17,6 +17,7 @@ typedef std::list<shared_ptr<IGameView>> GameViewList;
 class LevelData;
 class Scene;
 class CameraNode;
+class Image;
 class HumanView : public IGameView
 {
 public:
@@ -111,6 +112,10 @@ protected:
     bool m_bPostponeRenderPresent;
 
     std::string m_CurrentLevelMusic;
+
+    std::vector<shared_ptr<Image>> m_CursorFrames;
+    int m_CursorFrameIdx;
+    uint32 m_CursorAccumMs;
 
 private:
     void RegisterAllDelegates();
