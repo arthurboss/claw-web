@@ -212,6 +212,11 @@ private:
     // Column navigation support
     int m_NumColumns;
     int m_ItemsInColumn;
+
+    // Coin & cursor animation
+    std::vector<shared_ptr<Image>> m_CoinFrames;   // 9 frames
+    int m_CoinFrameIdx;
+    uint32 m_AnimAccumMs;
 };
 
 enum MenuItemType

@@ -7,6 +7,7 @@
 #include "../Resource/Loaders/PcxLoader.h"
 #include "../Resource/Loaders/PngLoader.h"
 #include "../Resource/Loaders/PidLoader.h"
+#include "../Resource/Loaders/PalLoader.h"
 #include "../Resource/ResourceMgr.h"
 #include "../Audio/Audio.h"
 
@@ -724,7 +725,9 @@ ScreenElementMenuPage::ScreenElementMenuPage(SDL_Renderer* pRenderer)
     m_pBackground(NULL),
     m_pRenderer(pRenderer),
     m_NumColumns(1),
-    m_ItemsInColumn(0)
+    m_ItemsInColumn(0),
+    m_CoinFrameIdx(0),
+    m_AnimAccumMs(0)
 {
 
 }
@@ -739,6 +742,22 @@ void ScreenElementMenuPage::VOnUpdate(uint32 msDiff)
     for (shared_ptr<ScreenElementMenuItem> pMenuItem : m_MenuItems)
     {
         pMenuItem->VOnUpdate(msDiff);
+    }
+
+    // Advance coin animation frames
+    m_AnimAccumMs += msDiff;
+
+    const uint32 COIN_FRAME_MS = 80;
+
+    if (!m_CoinFrames.empty() && m_AnimAccumMs >= COIN_FRAME_MS)
+    {
+        m_CoinFrameIdx = (m_CoinFrameIdx + m_AnimAccumMs / COIN_FRAME_MS) % (int)m_CoinFrames.size();
+    }
+
+    // Clamp accumulator to avoid runaway on long frames
+    if (m_AnimAccumMs >= COIN_FRAME_MS)
+    {
+        m_AnimAccumMs = m_AnimAccumMs % COIN_FRAME_MS;
     }
 }
 
@@ -764,6 +783,30 @@ void ScreenElementMenuPage::VOnRender(uint32 msDiff)
         {
             pMenuItem->VOnRender(msDiff);
         }
+    }
+
+    // Draw spinning coins flanking the active menu item
+    shared_ptr<ScreenElementMenuItem> pActive = GetActiveMenuItem();
+    if (pActive && pActive->VIsVisible() && !m_CoinFrames.empty())
+    {
+        SDL_Rect itemRect = pActive->GetMenuItemRect();
+
+        int screenX = (int)(g_MenuOffset.x + itemRect.x * g_MenuScale.x);
+        int screenY = (int)(g_MenuOffset.y + itemRect.y * g_MenuScale.y);
+        int screenW = (int)(itemRect.w * g_MenuScale.x);
+        int screenH = (int)(itemRect.h * g_MenuScale.y);
+
+        shared_ptr<Image> pCoin = m_CoinFrames[m_CoinFrameIdx];
+        int coinW = (int)(pCoin->GetWidth() * g_MenuScale.x);
+        int coinH = (int)(pCoin->GetHeight() * g_MenuScale.y);
+        int coinY = screenY + (screenH - coinH) / 2;
+        const int COIN_GAP = 4;
+
+        SDL_Rect leftCoin  = { screenX - coinW - COIN_GAP, coinY, coinW, coinH };
+        SDL_Rect rightCoin = { screenX + screenW + COIN_GAP, coinY, coinW, coinH };
+
+        SDL_RenderCopy(m_pRenderer, pCoin->GetTexture(), NULL, &leftCoin);
+        SDL_RenderCopy(m_pRenderer, pCoin->GetTexture(), NULL, &rightCoin);
     }
 }
 
@@ -907,6 +950,43 @@ bool ScreenElementMenuPage::Initialize(TiXmlElement* pElem)
         m_MenuItems.push_back(pItem);
     }
 
+    // Load coin animation frames (/STATES/MENU/IMAGES/COINS/FRAME001.PID .. FRAME009.PID)
+    // The coin PIDs require the palette embedded in MENU.PCX (the menu background image).
+    // Level palettes produce wrong colors — the menu state uses its own distinct palette.
+    WapPal* pMenuPalette = nullptr;
+    {
+        Resource pcxRes("/states/menu/screens/menu.pcx");
+        shared_ptr<ResourceHandle> pcxHandle = g_pApp->GetResourceCache()->GetHandle(&pcxRes);
+        if (pcxHandle && pcxHandle->GetSize() > 769 &&
+            (uint8_t)pcxHandle->GetDataBuffer()[pcxHandle->GetSize() - 769] == 0x0C)
+        {
+            // PCX extended palette: 0x0C marker + 768 bytes of RGB
+            char* palStart = pcxHandle->GetDataBuffer() + pcxHandle->GetSize() - 768;
+            pMenuPalette = WAP_PalLoadFromData(palStart, 768);
+        }
+    }
+    bool bOwnsMenuPalette = (pMenuPalette != nullptr);
+    if (!pMenuPalette)
+    {
+        LOG_WARNING("Could not extract palette from MENU.PCX, falling back to level1 palette");
+        pMenuPalette = PalResourceLoader::LoadAndReturnPal("/level1/palettes/main.pal");
+    }
+    for (int i = 1; i <= 9; i++)
+    {
+        char path[64];
+        snprintf(path, sizeof(path), "/states/menu/images/coins/frame%03d.pid", i);
+        shared_ptr<Image> pFrame = PidResourceLoader::LoadAndReturnImage(path, pMenuPalette);
+        if (pFrame)
+        {
+            m_CoinFrames.push_back(pFrame);
+        }
+    }
+    if (bOwnsMenuPalette)
+    {
+        WAP_PalDestroy(pMenuPalette);
+    }
+
+
     // Load all key events
     for (TiXmlElement* pKeyboardEvent = pElem->FirstChildElement("KeyboardEvent");
         pKeyboardEvent != NULL;
@@ -1014,7 +1094,6 @@ bool ScreenElementMenuPage::MoveToMenuItemIdx(int oldIdx, int idxIncrement, bool
 
     if (playSound)
     {
-        // Play sound
         SoundInfo soundInfo(SOUND_MENU_CHANGE_MENU_ITEM);
         IEventMgr::Get()->VTriggerEvent(IEventDataPtr(
             new EventData_Request_Play_Sound(soundInfo)));
