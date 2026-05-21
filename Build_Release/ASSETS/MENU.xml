@@ -205,7 +205,7 @@
             <Type>Text</Type>
             <State>Inactive</State>
             <InactiveImage>/RESET_CONFIRM/reset_text.png</InactiveImage>
-            <Position x="176" y="200" />
+            <Position x="50" y="185" />
         </MenuItem>
         <MenuItem>
             <Name>YES_RESET_BUTTON</Name>
@@ -214,7 +214,7 @@
             <State>Active</State>
             <InactiveImage>/RESET_CONFIRM/yes_inactive.png</InactiveImage>
             <ActiveImage>/RESET_CONFIRM/yes_active.png</ActiveImage>
-            <Position x="250" y="280" />
+            <Position x="282" y="255" />
             <GeneratedEvent>
                 <Type>ResetProgress</Type>
             </GeneratedEvent>
@@ -226,7 +226,7 @@
             <State>Inactive</State>
             <InactiveImage>/RESET_CONFIRM/no_inactive.png</InactiveImage>
             <ActiveImage>/RESET_CONFIRM/no_active.png</ActiveImage>
-            <Position x="330" y="280" />
+            <Position x="292" y="305" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_SinglePlayer_NewGame</PageName>
