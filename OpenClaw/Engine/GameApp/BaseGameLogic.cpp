@@ -93,7 +93,7 @@ bool BaseGameLogic::Initialize()
     }
 
 #ifdef __EMSCRIPTEN__
-    // Load saves from IndexedDB (via localStorage backup for sync access)
+    // Load saves from localStorage
     std::string jsonData = SaveBridge::LoadFromIndexedDB();
     if (!jsonData.empty()) {
         LOG("Loading saves from IndexedDB...");
