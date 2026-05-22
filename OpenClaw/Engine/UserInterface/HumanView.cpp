@@ -4,6 +4,9 @@
 #include "../GameApp/GameSaves.h"
 #include "../GameApp/HapticFeedback.h"
 #include "../GameApp/SaveBridge.h"
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 #include "../Events/EventMgr.h"
 #include "../Events/Events.h"
 #include "../Audio/Audio.h"
@@ -554,7 +557,13 @@ void HumanView::RegisterAllDelegates()
     IEventMgr::Get()->VAddListener(MakeDelegate(
         this, &HumanView::ResetSaveProgressDelegate), EventData_Reset_Save_Progress::sk_EventType);
     IEventMgr::Get()->VAddListener(MakeDelegate(
+        this, &HumanView::ExportSaveDataDelegate), EventData_Export_Save_Data::sk_EventType);
+    IEventMgr::Get()->VAddListener(MakeDelegate(
+        this, &HumanView::ImportSaveDataDelegate), EventData_Import_Save_Data::sk_EventType);
+    IEventMgr::Get()->VAddListener(MakeDelegate(
         this, &HumanView::StartNewGameDelegate), EventData_Start_New_Game::sk_EventType);
+    IEventMgr::Get()->VAddListener(MakeDelegate(
+        this, &HumanView::ResetSaveProgressFromManageSavesDelegate), EventData_Reset_Save_Progress_From_Manage_Saves::sk_EventType);
 
 }
 
@@ -594,7 +603,13 @@ void HumanView::RemoveAllDelegates()
     IEventMgr::Get()->VRemoveListener(MakeDelegate(
         this, &HumanView::ResetSaveProgressDelegate), EventData_Reset_Save_Progress::sk_EventType);
     IEventMgr::Get()->VRemoveListener(MakeDelegate(
+        this, &HumanView::ExportSaveDataDelegate), EventData_Export_Save_Data::sk_EventType);
+    IEventMgr::Get()->VRemoveListener(MakeDelegate(
+        this, &HumanView::ImportSaveDataDelegate), EventData_Import_Save_Data::sk_EventType);
+    IEventMgr::Get()->VRemoveListener(MakeDelegate(
         this, &HumanView::StartNewGameDelegate), EventData_Start_New_Game::sk_EventType);
+    IEventMgr::Get()->VRemoveListener(MakeDelegate(
+        this, &HumanView::ResetSaveProgressFromManageSavesDelegate), EventData_Reset_Save_Progress_From_Manage_Saves::sk_EventType);
 }
 
 //=====================================================================================================================
@@ -1154,6 +1169,32 @@ void HumanView::ResetSaveProgressDelegate(IEventDataPtr pEventData)
 
     IEventMgr::Get()->VQueueEvent(IEventDataPtr(
         new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_NewGame")));
+}
+
+void HumanView::ExportSaveDataDelegate(IEventDataPtr pEventData)
+{
+#ifdef __EMSCRIPTEN__
+    EM_ASM({ window.exportSaveData(); });
+#endif
+}
+
+void HumanView::ImportSaveDataDelegate(IEventDataPtr pEventData)
+{
+#ifdef __EMSCRIPTEN__
+    EM_ASM({ window.importSaveData(); });
+#endif
+}
+
+void HumanView::ResetSaveProgressFromManageSavesDelegate(IEventDataPtr pEventData)
+{
+#ifdef __EMSCRIPTEN__
+    SaveBridge::DeleteSaveData();
+#endif
+
+    g_pApp->GetGameLogic()->GetGameSaveMgr()->ResetToNewGame();
+
+    IEventMgr::Get()->VQueueEvent(IEventDataPtr(
+        new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_SaveData")));
 }
 
 void HumanView::StartNewGameDelegate(IEventDataPtr pEventData)

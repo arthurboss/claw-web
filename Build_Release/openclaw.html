@@ -437,6 +437,9 @@
     </style>
   </head>
   <body>
+    <!-- Hidden file input for save data import -->
+    <input type="file" id="importSaveInput" accept=".json" style="display:none">
+
     <!-- Asset Upload UI (shown on first run) -->
     <section id="assetUpload" style="display: none;">
       <h2>First Time Setup</h2>
@@ -1028,6 +1031,32 @@
     <!-- Graphics Bridges for WASM Module (optional - loaded by game-init.js) -->
     <script type="module" src="graphics-bridge.js"></script>
     <script type="module" src="texture-bridge.js"></script>
+
+
+    <!-- Save data export/import helpers -->
+    <script src="save-storage.js"></script>
+
+    <!-- Wire import save file input -->
+    <script>
+      document.getElementById('importSaveInput').addEventListener('change', function(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            var text = e.target.result;
+            JSON.parse(text); // validate
+            localStorage.setItem('openclaw:saves', text);
+            Module.ccall('OnJSSaveDataImported', null, [], []);
+            console.log('[SaveStorage] Save data imported successfully');
+          } catch (err) {
+            console.error('[SaveStorage] Import error:', err);
+          }
+        };
+        reader.readAsText(file);
+        this.value = '';
+      });
+    </script>
 
 
     <!-- Gamepad Bridge - polls browser Gamepad API and sends events to C++ -->

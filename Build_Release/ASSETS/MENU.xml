@@ -156,12 +156,24 @@
             </GeneratedEvent>
         </MenuItem>
         <MenuItem>
+            <Name>MANAGE_SAVES_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/SAVE_DATA/manage_saves_inactive.png</InactiveImage>
+            <ActiveImage>/SAVE_DATA/manage_saves_active.png</ActiveImage>
+            <Position x="178" y="280" />
+            <GeneratedEvent>
+                <Type>SwitchPage</Type>
+                <PageName>MenuPage_SinglePlayer_SaveData</PageName>
+            </GeneratedEvent>
+        </MenuItem>
+        <MenuItem>
             <Name>LOAD_CUSTOM_LEVEL_BUTTON</Name>
             <Type>Button</Type>
             <State>Inactive</State>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/005_LOADCUSTOM.PCX</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/006_LOADCUSTOM.PCX</ActiveImage>
-            <Position x="124" y="280" />
+            <Position x="124" y="315" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_SinglePlayer_LoadCustomLevel</PageName>
@@ -174,7 +186,7 @@
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/009_UPLOADSCORES.PCX</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/010_UPLOADSCORES.PCX</ActiveImage>
             <DisabledImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/011_UPLOADSCORES.PCX</DisabledImage>
-            <Position x="168" y="315" />
+            <Position x="168" y="350" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_SinglePlayer_UploadScores</PageName>
@@ -186,10 +198,121 @@
             <State>Inactive</State>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/012_PREVIOUSMENU.PCX</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/013_PREVIOUSMENU.PCX</ActiveImage>
-            <Position x="266" y="350" />
+            <Position x="266" y="385" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_Main</PageName>
+            </GeneratedEvent>
+        </MenuItem>
+    </MenuPage>
+
+
+    <!-- MANAGE SAVES PAGE -->
+    <MenuPage>
+        <PageName>MenuPage_SinglePlayer_SaveData</PageName>
+        <KeyboardEvent>
+            <KeyType>Escape</KeyType>
+            <GeneratedEvent>
+                <Type>SwitchPage</Type>
+                <PageName>MenuPage_SinglePlayer</PageName>
+            </GeneratedEvent>
+        </KeyboardEvent>
+        <MenuItem>
+            <Name>SAVE_DATA_TITLE</Name>
+            <Type>Text</Type>
+            <State>Inactive</State>
+            <InactiveImage>/SAVE_DATA/title.png</InactiveImage>
+            <Position x="185" y="161" />
+        </MenuItem>
+        <MenuItem>
+            <Name>EXPORT_SAVE_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Active</State>
+            <InactiveImage>/SAVE_DATA/export_inactive.png</InactiveImage>
+            <ActiveImage>/SAVE_DATA/export_active.png</ActiveImage>
+            <Position x="219" y="250" />
+            <GeneratedEvent>
+                <Type>ExportSaveData</Type>
+            </GeneratedEvent>
+        </MenuItem>
+        <MenuItem>
+            <Name>IMPORT_SAVE_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/SAVE_DATA/import_inactive.png</InactiveImage>
+            <ActiveImage>/SAVE_DATA/import_active.png</ActiveImage>
+            <Position x="213" y="300" />
+            <GeneratedEvent>
+                <Type>ImportSaveData</Type>
+            </GeneratedEvent>
+        </MenuItem>
+        <MenuItem>
+            <Name>RESET_PROGRESS_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/SAVE_DATA/reset_inactive.png</InactiveImage>
+            <ActiveImage>/SAVE_DATA/reset_active.png</ActiveImage>
+            <Position x="161" y="350" />
+            <GeneratedEvent>
+                <Type>SwitchPage</Type>
+                <PageName>MenuPage_SinglePlayer_SaveData_ResetConfirm</PageName>
+            </GeneratedEvent>
+        </MenuItem>
+        <MenuItem>
+            <Name>BACK_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Inactive</State>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/012_PREVIOUSMENU.PCX</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/013_PREVIOUSMENU.PCX</ActiveImage>
+            <Position x="266" y="390" />
+            <GeneratedEvent>
+                <Type>SwitchPage</Type>
+                <PageName>MenuPage_SinglePlayer</PageName>
+            </GeneratedEvent>
+        </MenuItem>
+    </MenuPage>
+
+
+    <!-- MANAGE SAVES RESET CONFIRMATION PAGE -->
+    <MenuPage>
+        <PageName>MenuPage_SinglePlayer_SaveData_ResetConfirm</PageName>
+        <KeyboardEvent>
+            <KeyType>Escape</KeyType>
+            <GeneratedEvent>
+                <Type>SwitchPage</Type>
+                <PageName>MenuPage_SinglePlayer_SaveData</PageName>
+            </GeneratedEvent>
+        </KeyboardEvent>
+        <MenuItem>
+            <Name>RESET_WARNING_TEXT</Name>
+            <Type>Text</Type>
+            <State>Inactive</State>
+            <InactiveImage>/RESET_CONFIRM/reset_text.png</InactiveImage>
+            <Position x="152" y="170" />
+        </MenuItem>
+        <MenuItem>
+            <Name>YES_RESET_BUTTON</Name>
+            <Type>Button</Type>
+            <Hotkey>Y</Hotkey>
+            <State>Active</State>
+            <InactiveImage>/RESET_CONFIRM/yes_inactive.png</InactiveImage>
+            <ActiveImage>/RESET_CONFIRM/yes_active.png</ActiveImage>
+            <Position x="281" y="290" />
+            <GeneratedEvent>
+                <Type>ResetProgressFromManageSaves</Type>
+            </GeneratedEvent>
+        </MenuItem>
+        <MenuItem>
+            <Name>NO_RESET_BUTTON</Name>
+            <Type>Button</Type>
+            <Hotkey>N</Hotkey>
+            <State>Inactive</State>
+            <InactiveImage>/RESET_CONFIRM/no_inactive.png</InactiveImage>
+            <ActiveImage>/RESET_CONFIRM/no_active.png</ActiveImage>
+            <Position x="291" y="333" />
+            <GeneratedEvent>
+                <Type>SwitchPage</Type>
+                <PageName>MenuPage_SinglePlayer_SaveData</PageName>
             </GeneratedEvent>
         </MenuItem>
     </MenuPage>

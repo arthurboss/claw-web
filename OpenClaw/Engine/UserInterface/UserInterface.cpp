@@ -29,6 +29,8 @@ std::map<std::string, MenuPage> g_StringToMenuPageEnumMap =
     { "MenuPage_SinglePlayer_LoadGame",         MenuPage_SinglePlayer_LoadGame },
     { "MenuPage_SinglePlayer_LoadCustomLevel",  MenuPage_SinglePlayer_LoadCustomLevel },
     { "MenuPage_SinglePlayer_UploadScores",     MenuPage_SinglePlayer_UploadScores },
+    { "MenuPage_SinglePlayer_SaveData",         MenuPage_SinglePlayer_SaveData },
+    { "MenuPage_SinglePlayer_SaveData_ResetConfirm", MenuPage_SinglePlayer_SaveData_ResetConfirm },
     { "MenuPage_SinglePlayer_LoadGame_Level1",  MenuPage_SinglePlayer_LoadGame_Level1 },
     { "MenuPage_SinglePlayer_LoadGame_Level2",  MenuPage_SinglePlayer_LoadGame_Level2 },
     { "MenuPage_SinglePlayer_LoadGame_Level3",  MenuPage_SinglePlayer_LoadGame_Level3 },
@@ -363,6 +365,18 @@ static IEventDataPtr XmlElemToGeneratedEvent(TiXmlElement* pElem)
     else if (eventType == "ResetProgress")
     {
         pEventData.reset(new EventData_Reset_Save_Progress());
+    }
+    else if (eventType == "ResetProgressFromManageSaves")
+    {
+        pEventData.reset(new EventData_Reset_Save_Progress_From_Manage_Saves());
+    }
+    else if (eventType == "ExportSaveData")
+    {
+        pEventData.reset(new EventData_Export_Save_Data());
+    }
+    else if (eventType == "ImportSaveData")
+    {
+        pEventData.reset(new EventData_Import_Save_Data());
     }
     else if (eventType == "StartNewGame")
     {

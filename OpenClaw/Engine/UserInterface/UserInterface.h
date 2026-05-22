@@ -54,7 +54,9 @@ enum MenuPage
     MenuPage_SinglePlayer_LoadGame,
     MenuPage_SinglePlayer_LoadCustomLevel, // Unused
     MenuPage_SinglePlayer_SaveGame,        // Unused
-    MenuPage_SinglePlayer_UploadScores,     // Unused
+    MenuPage_SinglePlayer_UploadScores,    // Unused
+    MenuPage_SinglePlayer_SaveData,
+    MenuPage_SinglePlayer_SaveData_ResetConfirm,
 
     MenuPage_SinglePlayer_LoadGame_Level1,
     MenuPage_SinglePlayer_LoadGame_Level2,

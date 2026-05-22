@@ -1,4 +1,9 @@
 #include "SaveBridge.h"
+#include "BaseGameApp.h"
+#include "BaseGameLogic.h"
+#include "GameSaves.h"
+#include "../Events/Events.h"
+#include "../Events/EventMgr.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -71,5 +76,29 @@ bool DeleteSaveData() {
 }
 
 } // namespace SaveBridge
+
+extern "C" {
+
+EMSCRIPTEN_KEEPALIVE void OnJSSaveDataImported() {
+    std::string jsonData = SaveBridge::LoadFromIndexedDB();
+    if (jsonData.empty()) {
+        LOG_WARNING("OnJSSaveDataImported: no save data found in localStorage");
+        return;
+    }
+
+    auto pSaveMgr = g_pApp->GetGameLogic()->GetGameSaveMgr();
+    if (!pSaveMgr->InitializeFromJson(jsonData)) {
+        LOG_WARNING("OnJSSaveDataImported: failed to parse save data");
+        return;
+    }
+
+    LOG("OnJSSaveDataImported: save data loaded successfully");
+
+    // Switch back to SinglePlayer page so SaveDataExists conditions re-evaluate
+    IEventMgr::Get()->VQueueEvent(IEventDataPtr(
+        new EventData_Menu_SwitchPage("MenuPage_SinglePlayer")));
+}
+
+} // extern "C"
 
 #endif // __EMSCRIPTEN__
