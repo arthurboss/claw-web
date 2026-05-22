@@ -1,0 +1,34 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+
+      - name: Prepare deploy directory
+        run: |
+          cp Build_Release/openclaw.html Build_Release/index.html
+          rm -f Build_Release/SAVES.XML \
+                Build_Release/ClawLauncher.exe.config \
+                Build_Release/Makefile \
+                Build_Release/startup_commands.txt \
+                Build_Release/config_linux.xml \
+                Build_Release/config_linux_release.xml
+          rm -rf Build_Release/ASSETS Build_Release/ASSETS.ZIP
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./Build_Release
+          publish_branch: gh-pages
