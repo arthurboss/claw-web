@@ -475,6 +475,12 @@ public:
         return (GetCheckpointSave(levelNumber, checkpointNumber) != NULL);
     }
 
+    // Returns true when the player has progressed beyond the initial new-game state
+    bool HasProgress()
+    {
+        return m_LevelSaveMap.size() > 1;
+    }
+
     bool IsSaveSupported()
     {
         return IS_SAVE_SUPPORTED;

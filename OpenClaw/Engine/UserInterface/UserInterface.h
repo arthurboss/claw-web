@@ -278,6 +278,7 @@ struct MenuItemImageContainer
 
 struct MenuItemStateCondition
 {
+    std::string conditionType;
     std::string conditionForState;
     std::string defaultState;
     int level = -1;

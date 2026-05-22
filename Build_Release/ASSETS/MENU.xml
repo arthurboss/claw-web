@@ -135,17 +135,21 @@
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/002_NEWGAME.PCX</ActiveImage>
             <Position x="218" y="210" />
             <GeneratedEvent>
-                <Type>SwitchPage</Type>
-                <PageName>MenuPage_SinglePlayer_NewGame_ResetConfirm</PageName>
+                <Type>StartNewGame</Type>
             </GeneratedEvent>
         </MenuItem>
         <MenuItem>
             <Name>LOAD_GAME_BUTTON</Name>
             <Type>Button</Type>
-            <State>Inactive</State>
+            <State>Disabled</State>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/003_LOADGAME.PCX</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/004_LOADGAME.PCX</ActiveImage>
+            <DisabledImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/003_LOADGAME_DISABLED.png</DisabledImage>
             <Position x="210" y="245" />
+            <StateCondition>
+                <ConditionForState>Inactive</ConditionForState>
+                <ConditionType>SaveDataExists</ConditionType>
+            </StateCondition>
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_SinglePlayer_LoadGame</PageName>

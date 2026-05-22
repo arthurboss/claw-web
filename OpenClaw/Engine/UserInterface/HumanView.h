@@ -85,6 +85,7 @@ protected:
     void BossFightEndedDelegate(IEventDataPtr pEventData);
     void IngameMenuEndGameDelegate(IEventDataPtr pEventData);
     void ResetSaveProgressDelegate(IEventDataPtr pEventData);
+    void StartNewGameDelegate(IEventDataPtr pEventData);
 
     uint32 m_ViewId;
     uint32 m_ActorId;

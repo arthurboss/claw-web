@@ -364,6 +364,10 @@ static IEventDataPtr XmlElemToGeneratedEvent(TiXmlElement* pElem)
     {
         pEventData.reset(new EventData_Reset_Save_Progress());
     }
+    else if (eventType == "StartNewGame")
+    {
+        pEventData.reset(new EventData_Start_New_Game());
+    }
     else
     {
         return nullptr;
@@ -1526,12 +1530,24 @@ bool ScreenElementMenuItem::Initialize(TiXmlElement* pElem)
             ParseValueFromXmlElem(&checkpoint, pStateConditionElem->FirstChildElement("Checkpoint"));
             assert(level != -1 && checkpoint != -1);
 
+            m_StateCondition.conditionType = conditionTypeStr;
             m_StateCondition.conditionForState = conditionForStateStr;
             m_StateCondition.defaultState = menuItemStateStr;
             m_StateCondition.level = level;
             m_StateCondition.checkpoint = checkpoint;
 
             if (g_pApp->GetGameLogic()->GetGameSaveMgr()->HasCheckpointSave(level, checkpoint))
+            {
+                m_State = StringToMenuItemStateEnum(conditionForStateStr);
+            }
+        }
+        else if (conditionTypeStr == "SaveDataExists")
+        {
+            m_StateCondition.conditionType = conditionTypeStr;
+            m_StateCondition.conditionForState = conditionForStateStr;
+            m_StateCondition.defaultState = menuItemStateStr;
+
+            if (g_pApp->GetGameLogic()->GetGameSaveMgr()->HasProgress())
             {
                 m_State = StringToMenuItemStateEnum(conditionForStateStr);
             }
@@ -1833,13 +1849,21 @@ void ScreenElementMenuItem::OnStateChanged(MenuItemState newState, MenuItemState
 
 void ScreenElementMenuItem::ReEvaluateStateCondition()
 {
-    if (m_StateCondition.level == -1)
+    if (m_StateCondition.conditionType.empty())
     {
         return;
     }
 
-    bool conditionMet = g_pApp->GetGameLogic()->GetGameSaveMgr()->HasCheckpointSave(
-        m_StateCondition.level, m_StateCondition.checkpoint);
+    bool conditionMet = false;
+    if (m_StateCondition.conditionType == "CheckpointReached")
+    {
+        conditionMet = g_pApp->GetGameLogic()->GetGameSaveMgr()->HasCheckpointSave(
+            m_StateCondition.level, m_StateCondition.checkpoint);
+    }
+    else if (m_StateCondition.conditionType == "SaveDataExists")
+    {
+        conditionMet = g_pApp->GetGameLogic()->GetGameSaveMgr()->HasProgress();
+    }
 
     m_State = StringToMenuItemStateEnum(conditionMet
         ? m_StateCondition.conditionForState

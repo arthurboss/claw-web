@@ -553,6 +553,8 @@ void HumanView::RegisterAllDelegates()
         this, &HumanView::IngameMenuEndGameDelegate), EventData_IngameMenu_End_Game::sk_EventType);
     IEventMgr::Get()->VAddListener(MakeDelegate(
         this, &HumanView::ResetSaveProgressDelegate), EventData_Reset_Save_Progress::sk_EventType);
+    IEventMgr::Get()->VAddListener(MakeDelegate(
+        this, &HumanView::StartNewGameDelegate), EventData_Start_New_Game::sk_EventType);
 
 }
 
@@ -591,6 +593,8 @@ void HumanView::RemoveAllDelegates()
         this, &HumanView::BossFightEndedDelegate), EventData_Boss_Fight_Ended::sk_EventType);
     IEventMgr::Get()->VRemoveListener(MakeDelegate(
         this, &HumanView::ResetSaveProgressDelegate), EventData_Reset_Save_Progress::sk_EventType);
+    IEventMgr::Get()->VRemoveListener(MakeDelegate(
+        this, &HumanView::StartNewGameDelegate), EventData_Start_New_Game::sk_EventType);
 }
 
 //=====================================================================================================================
@@ -1150,6 +1154,20 @@ void HumanView::ResetSaveProgressDelegate(IEventDataPtr pEventData)
 
     IEventMgr::Get()->VQueueEvent(IEventDataPtr(
         new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_NewGame")));
+}
+
+void HumanView::StartNewGameDelegate(IEventDataPtr pEventData)
+{
+    if (g_pApp->GetGameLogic()->GetGameSaveMgr()->HasProgress())
+    {
+        IEventMgr::Get()->VQueueEvent(IEventDataPtr(
+            new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_NewGame_ResetConfirm")));
+    }
+    else
+    {
+        IEventMgr::Get()->VQueueEvent(IEventDataPtr(
+            new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_NewGame")));
+    }
 }
 
 //=================================================================================================
