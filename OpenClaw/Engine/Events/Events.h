@@ -2352,6 +2352,43 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
+// EventData_Start_New_Game
+// Fired by the "New Game" button. HumanView routes to reset confirm or level select based on save state.
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Start_New_Game : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Start_New_Game() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Start_New_Game()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Start_New_Game"; }
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventData_Reset_Save_Progress
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Reset_Save_Progress : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Reset_Save_Progress() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Reset_Save_Progress()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Reset_Save_Progress"; }
+};
+
+//---------------------------------------------------------------------------------------------------------------------
 // EventData_Set_Volume
 //---------------------------------------------------------------------------------------------------------------------
 class EventData_Set_Volume : public BaseEventData

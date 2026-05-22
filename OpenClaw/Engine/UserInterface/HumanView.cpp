@@ -1,7 +1,9 @@
 #include "HumanView.h"
 #include "../GameApp/BaseGameApp.h"
 #include "../GameApp/BaseGameLogic.h"
+#include "../GameApp/GameSaves.h"
 #include "../GameApp/HapticFeedback.h"
+#include "../GameApp/SaveBridge.h"
 #include "../Events/EventMgr.h"
 #include "../Events/Events.h"
 #include "../Audio/Audio.h"
@@ -549,7 +551,11 @@ void HumanView::RegisterAllDelegates()
         this, &HumanView::BossFightEndedDelegate), EventData_Boss_Fight_Ended::sk_EventType);
     IEventMgr::Get()->VAddListener(MakeDelegate(
         this, &HumanView::IngameMenuEndGameDelegate), EventData_IngameMenu_End_Game::sk_EventType);
-    
+    IEventMgr::Get()->VAddListener(MakeDelegate(
+        this, &HumanView::ResetSaveProgressDelegate), EventData_Reset_Save_Progress::sk_EventType);
+    IEventMgr::Get()->VAddListener(MakeDelegate(
+        this, &HumanView::StartNewGameDelegate), EventData_Start_New_Game::sk_EventType);
+
 }
 
 void HumanView::RemoveAllDelegates()
@@ -585,6 +591,10 @@ void HumanView::RemoveAllDelegates()
         this, &HumanView::BossFightEndedDelegate), EventData_Boss_Fight_Ended::sk_EventType);
     IEventMgr::Get()->VRemoveListener(MakeDelegate(
         this, &HumanView::BossFightEndedDelegate), EventData_Boss_Fight_Ended::sk_EventType);
+    IEventMgr::Get()->VRemoveListener(MakeDelegate(
+        this, &HumanView::ResetSaveProgressDelegate), EventData_Reset_Save_Progress::sk_EventType);
+    IEventMgr::Get()->VRemoveListener(MakeDelegate(
+        this, &HumanView::StartNewGameDelegate), EventData_Start_New_Game::sk_EventType);
 }
 
 //=====================================================================================================================
@@ -1132,6 +1142,32 @@ void HumanView::TeleportActorDelegate(IEventDataPtr pEventData)
 void HumanView::IngameMenuEndGameDelegate(IEventDataPtr pEventData)
 {
     IEventMgr::Get()->VQueueEvent(IEventDataPtr(new EventData_Enter_Menu()));
+}
+
+void HumanView::ResetSaveProgressDelegate(IEventDataPtr pEventData)
+{
+#ifdef __EMSCRIPTEN__
+    SaveBridge::DeleteSaveData();
+#endif
+
+    g_pApp->GetGameLogic()->GetGameSaveMgr()->ResetToNewGame();
+
+    IEventMgr::Get()->VQueueEvent(IEventDataPtr(
+        new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_NewGame")));
+}
+
+void HumanView::StartNewGameDelegate(IEventDataPtr pEventData)
+{
+    if (g_pApp->GetGameLogic()->GetGameSaveMgr()->HasProgress())
+    {
+        IEventMgr::Get()->VQueueEvent(IEventDataPtr(
+            new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_NewGame_ResetConfirm")));
+    }
+    else
+    {
+        IEventMgr::Get()->VQueueEvent(IEventDataPtr(
+            new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_NewGame")));
+    }
 }
 
 //=================================================================================================

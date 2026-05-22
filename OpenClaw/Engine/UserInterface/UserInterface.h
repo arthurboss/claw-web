@@ -50,6 +50,7 @@ enum MenuPage
     
     // Pages accessible from MenuPage_SinglePlayer
     MenuPage_SinglePlayer_NewGame,
+    MenuPage_SinglePlayer_NewGame_ResetConfirm,
     MenuPage_SinglePlayer_LoadGame,
     MenuPage_SinglePlayer_LoadCustomLevel, // Unused
     MenuPage_SinglePlayer_SaveGame,        // Unused
@@ -275,6 +276,15 @@ struct MenuItemImageContainer
 };
 */
 
+struct MenuItemStateCondition
+{
+    std::string conditionType;
+    std::string conditionForState;
+    std::string defaultState;
+    int level = -1;
+    int checkpoint = -1;
+};
+
 // This is menu item like button, slider, text, etc.
 class ScreenElementMenuItem : public IScreenElement
 {
@@ -312,6 +322,7 @@ public:
     SDL_Rect GetMenuItemRect();
 
     void OnStateChanged(MenuItemState newState, MenuItemState oldState);
+    void ReEvaluateStateCondition();
 
 private:
     std::string m_Name;
@@ -330,6 +341,8 @@ private:
     MenuItemImageMap m_Images;
     //MenuItemImageContainerList m_MenuItemImageContainerList;
     SDL_Renderer* m_pRenderer;
+
+    MenuItemStateCondition m_StateCondition;
 };
 
 #endif

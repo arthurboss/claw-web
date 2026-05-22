@@ -25,6 +25,7 @@ std::map<std::string, MenuPage> g_StringToMenuPageEnumMap =
     { "MenuPage_QuitGame",                      MenuPage_QuitGame },
     { "MenuPage_Help_TouchScreen",              MenuPage_Help_TouchScreen },
     { "MenuPage_SinglePlayer_NewGame",          MenuPage_SinglePlayer_NewGame },
+    { "MenuPage_SinglePlayer_NewGame_ResetConfirm", MenuPage_SinglePlayer_NewGame_ResetConfirm },
     { "MenuPage_SinglePlayer_LoadGame",         MenuPage_SinglePlayer_LoadGame },
     { "MenuPage_SinglePlayer_LoadCustomLevel",  MenuPage_SinglePlayer_LoadCustomLevel },
     { "MenuPage_SinglePlayer_UploadScores",     MenuPage_SinglePlayer_UploadScores },
@@ -358,6 +359,14 @@ static IEventDataPtr XmlElemToGeneratedEvent(TiXmlElement* pElem)
     else if (eventType == "EndGame")
     {
         pEventData.reset(new EventData_IngameMenu_End_Game());
+    }
+    else if (eventType == "ResetProgress")
+    {
+        pEventData.reset(new EventData_Reset_Save_Progress());
+    }
+    else if (eventType == "StartNewGame")
+    {
+        pEventData.reset(new EventData_Start_New_Game());
     }
     else
     {
@@ -1384,6 +1393,11 @@ bool ScreenElementMenuPage::FocusMenuItemAtIdx(int idx, bool playSound)
 
 void ScreenElementMenuPage::OnPageLoaded()
 {
+    for (shared_ptr<ScreenElementMenuItem> pItem : m_MenuItems)
+    {
+        pItem->ReEvaluateStateCondition();
+    }
+
     // Focus on first active button
     MoveToMenuItemIdx(m_MenuItems.size() - 1, 1, false);
 }
@@ -1516,10 +1530,26 @@ bool ScreenElementMenuItem::Initialize(TiXmlElement* pElem)
             ParseValueFromXmlElem(&checkpoint, pStateConditionElem->FirstChildElement("Checkpoint"));
             assert(level != -1 && checkpoint != -1);
 
+            m_StateCondition.conditionType = conditionTypeStr;
+            m_StateCondition.conditionForState = conditionForStateStr;
+            m_StateCondition.defaultState = menuItemStateStr;
+            m_StateCondition.level = level;
+            m_StateCondition.checkpoint = checkpoint;
+
             if (g_pApp->GetGameLogic()->GetGameSaveMgr()->HasCheckpointSave(level, checkpoint))
             {
-                ParseValueFromXmlElem(&menuItemStateStr, pStateConditionElem->FirstChildElement("ConditionForState"));
-                m_State = StringToMenuItemStateEnum(menuItemStateStr);
+                m_State = StringToMenuItemStateEnum(conditionForStateStr);
+            }
+        }
+        else if (conditionTypeStr == "SaveDataExists")
+        {
+            m_StateCondition.conditionType = conditionTypeStr;
+            m_StateCondition.conditionForState = conditionForStateStr;
+            m_StateCondition.defaultState = menuItemStateStr;
+
+            if (g_pApp->GetGameLogic()->GetGameSaveMgr()->HasProgress())
+            {
+                m_State = StringToMenuItemStateEnum(conditionForStateStr);
             }
         }
     }
@@ -1815,6 +1845,29 @@ void ScreenElementMenuItem::OnStateChanged(MenuItemState newState, MenuItemState
             IEventMgr::Get()->VQueueEvent(pEvent);
         }
     }
+}
+
+void ScreenElementMenuItem::ReEvaluateStateCondition()
+{
+    if (m_StateCondition.conditionType.empty())
+    {
+        return;
+    }
+
+    bool conditionMet = false;
+    if (m_StateCondition.conditionType == "CheckpointReached")
+    {
+        conditionMet = g_pApp->GetGameLogic()->GetGameSaveMgr()->HasCheckpointSave(
+            m_StateCondition.level, m_StateCondition.checkpoint);
+    }
+    else if (m_StateCondition.conditionType == "SaveDataExists")
+    {
+        conditionMet = g_pApp->GetGameLogic()->GetGameSaveMgr()->HasProgress();
+    }
+
+    m_State = StringToMenuItemStateEnum(conditionMet
+        ? m_StateCondition.conditionForState
+        : m_StateCondition.defaultState);
 }
 
 SDL_Rect ScreenElementMenuItem::GetMenuItemRect()

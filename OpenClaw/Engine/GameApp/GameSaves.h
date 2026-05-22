@@ -323,6 +323,29 @@ public:
         return true;
     }
 
+    void ResetToNewGame()
+    {
+        m_LevelSaveMap.clear();
+
+        CheckpointSave startingCheckpoint;
+        startingCheckpoint.bulletCount = 10;
+        startingCheckpoint.checkpointIdx = 0;
+        startingCheckpoint.dynamiteCount = 5;
+        startingCheckpoint.health = 100;
+        startingCheckpoint.lives = 6;
+        startingCheckpoint.magicCount = 5;
+        startingCheckpoint.score = 0;
+
+        LevelSave level1;
+        level1.levelNumber = 1;
+        level1.levelName = "La Roca";
+        level1.checkpointMap[0] = startingCheckpoint;
+
+        m_LevelSaveMap[1] = level1;
+
+        LOG("Game progress reset to new game state");
+    }
+
     void InitializeWithAllLevels()
     {
         int lastLevel = 13;
@@ -450,6 +473,12 @@ public:
     bool HasCheckpointSave(uint32 levelNumber, uint32 checkpointNumber)
     {
         return (GetCheckpointSave(levelNumber, checkpointNumber) != NULL);
+    }
+
+    // Returns true when the player has progressed beyond the initial new-game state
+    bool HasProgress()
+    {
+        return m_LevelSaveMap.size() > 1;
     }
 
     bool IsSaveSupported()
