@@ -6,9 +6,13 @@
 
 Browser-based version of the classic platformer. Based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek.
 
-| Main Menu | Level 1 Gameplay |
+| Main Menu | Level 1 Gameplay (in ultra widescreen) |
 |-----------|------------------|
-| ![Game Menu](docs/screenshots/game-menu.png) | ![Level 1 Gameplay](docs/screenshots/gameplay-level1.png) |
+| ![Game Menu](docs/screenshots/game-menu.jpeg) | ![Level 1 Gameplay](docs/screenshots/gameplay-level1.jpeg) |
+
+- Supports wide, ultra, and super widescreen resolutions
+- Supports gamepad with vibration/rumble
+- Supports save game progress
 
 ## Quick Start
 
