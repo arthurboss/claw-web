@@ -161,7 +161,7 @@
             <State>Inactive</State>
             <InactiveImage>/SAVE_DATA/manage_saves_inactive.png</InactiveImage>
             <ActiveImage>/SAVE_DATA/manage_saves_active.png</ActiveImage>
-            <Position x="112" y="277" />
+            <Position x="112" y="280" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_SinglePlayer_SaveData</PageName>
@@ -234,7 +234,7 @@
             </StateCondition>
             <InactiveImage>/SAVE_DATA/export_inactive.png</InactiveImage>
             <ActiveImage>/SAVE_DATA/export_active.png</ActiveImage>
-            <Position x="219" y="250" />
+            <Position x="219" y="210" />
             <GeneratedEvent>
                 <Type>ExportSaveData</Type>
             </GeneratedEvent>
@@ -245,7 +245,7 @@
             <State>Inactive</State>
             <InactiveImage>/SAVE_DATA/import_inactive.png</InactiveImage>
             <ActiveImage>/SAVE_DATA/import_active.png</ActiveImage>
-            <Position x="213" y="300" />
+            <Position x="213" y="245" />
             <GeneratedEvent>
                 <Type>ImportSaveData</Type>
             </GeneratedEvent>
@@ -260,7 +260,7 @@
             </StateCondition>
             <InactiveImage>/SAVE_DATA/reset_inactive.png</InactiveImage>
             <ActiveImage>/SAVE_DATA/reset_active.png</ActiveImage>
-            <Position x="161" y="350" />
+            <Position x="161" y="280" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_SinglePlayer_SaveData_ResetConfirm</PageName>
@@ -272,7 +272,7 @@
             <State>Inactive</State>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/012_PREVIOUSMENU.PCX</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/SINGLEPLAYER/013_PREVIOUSMENU.PCX</ActiveImage>
-            <Position x="266" y="390" />
+            <Position x="266" y="315" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_SinglePlayer</PageName>
