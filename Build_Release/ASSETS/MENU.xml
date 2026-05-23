@@ -161,7 +161,7 @@
             <State>Inactive</State>
             <InactiveImage>/SAVE_DATA/manage_saves_inactive.png</InactiveImage>
             <ActiveImage>/SAVE_DATA/manage_saves_active.png</ActiveImage>
-            <Position x="178" y="280" />
+            <Position x="112" y="277" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_SinglePlayer_SaveData</PageName>
@@ -227,7 +227,11 @@
         <MenuItem>
             <Name>EXPORT_SAVE_BUTTON</Name>
             <Type>Button</Type>
-            <State>Active</State>
+            <State>Disabled</State>
+            <StateCondition>
+                <ConditionForState>Active</ConditionForState>
+                <ConditionType>SaveDataExists</ConditionType>
+            </StateCondition>
             <InactiveImage>/SAVE_DATA/export_inactive.png</InactiveImage>
             <ActiveImage>/SAVE_DATA/export_active.png</ActiveImage>
             <Position x="219" y="250" />
@@ -249,7 +253,11 @@
         <MenuItem>
             <Name>RESET_PROGRESS_BUTTON</Name>
             <Type>Button</Type>
-            <State>Inactive</State>
+            <State>Disabled</State>
+            <StateCondition>
+                <ConditionForState>Active</ConditionForState>
+                <ConditionType>SaveDataExists</ConditionType>
+            </StateCondition>
             <InactiveImage>/SAVE_DATA/reset_inactive.png</InactiveImage>
             <ActiveImage>/SAVE_DATA/reset_active.png</ActiveImage>
             <Position x="161" y="350" />
