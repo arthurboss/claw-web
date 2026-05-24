@@ -225,27 +225,29 @@
             <Position x="185" y="161" />
         </MenuItem>
         <MenuItem>
-            <Name>EXPORT_SAVE_BUTTON</Name>
+            <Name>SAVE_TO_FILE_BUTTON</Name>
             <Type>Button</Type>
             <State>Disabled</State>
             <StateCondition>
                 <ConditionForState>Active</ConditionForState>
                 <ConditionType>SaveDataExists</ConditionType>
             </StateCondition>
-            <InactiveImage>/SAVE_DATA/export_inactive.png</InactiveImage>
-            <ActiveImage>/SAVE_DATA/export_active.png</ActiveImage>
-            <Position x="219" y="210" />
+            <InactiveImage>/SAVE_DATA/save_to_file_inactive.png</InactiveImage>
+            <ActiveImage>/SAVE_DATA/save_to_file_active.png</ActiveImage>
+            <DisabledImage>/SAVE_DATA/save_to_file_disabled.png</DisabledImage>
+            <Position x="197" y="210" />
             <GeneratedEvent>
                 <Type>ExportSaveData</Type>
             </GeneratedEvent>
         </MenuItem>
         <MenuItem>
-            <Name>IMPORT_SAVE_BUTTON</Name>
+            <Name>IMPORT_FROM_FILE_BUTTON</Name>
             <Type>Button</Type>
             <State>Inactive</State>
-            <InactiveImage>/SAVE_DATA/import_inactive.png</InactiveImage>
-            <ActiveImage>/SAVE_DATA/import_active.png</ActiveImage>
-            <Position x="213" y="245" />
+            <InactiveImage>/SAVE_DATA/import_from_file_inactive.png</InactiveImage>
+            <DisabledImage>/SAVE_DATA/import_from_file_disabled.png</DisabledImage>
+            <ActiveImage>/SAVE_DATA/import_from_file_active.png</ActiveImage>
+            <Position x="164" y="245" />
             <GeneratedEvent>
                 <Type>ImportSaveData</Type>
             </GeneratedEvent>
@@ -258,8 +260,9 @@
                 <ConditionForState>Active</ConditionForState>
                 <ConditionType>SaveDataExists</ConditionType>
             </StateCondition>
-            <InactiveImage>/SAVE_DATA/reset_inactive.png</InactiveImage>
-            <ActiveImage>/SAVE_DATA/reset_active.png</ActiveImage>
+            <InactiveImage>/SAVE_DATA/reset_progress_inactive.png</InactiveImage>
+            <ActiveImage>/SAVE_DATA/reset_progress_active.png</ActiveImage>
+            <DisabledImage>/SAVE_DATA/reset_progress_disabled.png</DisabledImage>
             <Position x="161" y="280" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
