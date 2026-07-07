@@ -826,6 +826,15 @@
           }
         }
       }
+      window.toggleFullscreen = toggleFullscreen;
+
+      // Aspect ratio state - false = widescreen (dynamic), true = force 4:3 original
+      window.forceOriginalAspect = false;
+
+      window.toggleAspectRatio = function() {
+        window.forceOriginalAspect = !window.forceOriginalAspect;
+        updateGameResolution();
+      };
 
       // Handle fullscreen/resize - adjust resolution based on current dimensions
       function updateGameResolution() {
@@ -852,7 +861,12 @@
           }
         }
 
-        var newWidth = GameResolution.calculateWidth(size.width, size.height);
+        var newWidth;
+        if (window.forceOriginalAspect) {
+          newWidth = Math.round(GameResolution.BASE_HEIGHT * (4 / 3));
+        } else {
+          newWidth = GameResolution.calculateWidth(size.width, size.height);
+        }
         GameResolution.apply(newWidth, GameResolution.BASE_HEIGHT);
       }
 
