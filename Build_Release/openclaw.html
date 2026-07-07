@@ -697,6 +697,7 @@
 
       // FPS measurement and display
       var fpsEnabled = true;
+      window.fpsEnabled = fpsEnabled;
       var fpsFrameCount = 0;
       var fpsLastTime = performance.now();
       var fpsCurrentValue = 60;
@@ -734,6 +735,10 @@
       // Toggle FPS display overlay
       function toggleFPS() {
         fpsEnabled = !fpsEnabled;
+        window.fpsEnabled = fpsEnabled;
+        if (typeof Module !== "undefined" && Module._OnJSFullscreenChange) {
+          Module._OnJSFullscreenChange();
+        }
         var btn = document.getElementById("fpsBtn");
         var overlay = document.getElementById("fpsOverlay");
 

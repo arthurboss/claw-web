@@ -568,6 +568,8 @@ void HumanView::RegisterAllDelegates()
         this, &HumanView::ToggleFullscreenDelegate), EventData_Menu_ToggleFullscreen::sk_EventType);
     IEventMgr::Get()->VAddListener(MakeDelegate(
         this, &HumanView::ToggleAspectRatioDelegate), EventData_Menu_ToggleAspectRatio::sk_EventType);
+    IEventMgr::Get()->VAddListener(MakeDelegate(
+        this, &HumanView::ToggleFPSDelegate), EventData_Menu_ToggleFPS::sk_EventType);
 
 }
 
@@ -618,6 +620,8 @@ void HumanView::RemoveAllDelegates()
         this, &HumanView::ToggleFullscreenDelegate), EventData_Menu_ToggleFullscreen::sk_EventType);
     IEventMgr::Get()->VRemoveListener(MakeDelegate(
         this, &HumanView::ToggleAspectRatioDelegate), EventData_Menu_ToggleAspectRatio::sk_EventType);
+    IEventMgr::Get()->VRemoveListener(MakeDelegate(
+        this, &HumanView::ToggleFPSDelegate), EventData_Menu_ToggleFPS::sk_EventType);
 }
 
 //=====================================================================================================================
@@ -1230,6 +1234,13 @@ void HumanView::ToggleAspectRatioDelegate(IEventDataPtr pEventData)
 {
 #ifdef __EMSCRIPTEN__
     EM_ASM({ window.toggleAspectRatio(); });
+#endif
+}
+
+void HumanView::ToggleFPSDelegate(IEventDataPtr pEventData)
+{
+#ifdef __EMSCRIPTEN__
+    EM_ASM({ toggleFPS(); });
 #endif
 }
 

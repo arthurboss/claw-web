@@ -94,6 +94,7 @@ protected:
 
     void ToggleFullscreenDelegate(IEventDataPtr pEventData);
     void ToggleAspectRatioDelegate(IEventDataPtr pEventData);
+    void ToggleFPSDelegate(IEventDataPtr pEventData);
 
     uint32 m_ViewId;
     uint32 m_ActorId;

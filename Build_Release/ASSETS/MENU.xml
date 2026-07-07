@@ -3034,12 +3034,82 @@
         </MenuItem>
 
         <MenuItem>
+            <Name>FPS_ON_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Active</State>
+            <VisibilityCondition>
+                <ConditionType>FPSOn</ConditionType>
+            </VisibilityCondition>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/011_FPS_COUNTER_ON.png</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/012_FPS_COUNTER_ON.png</ActiveImage>
+            <Position x="148" y="295" />
+            <GeneratedEvent>
+                <Type>ToggleFPS</Type>
+            </GeneratedEvent>
+            <GeneratedEvent>
+                <Type>ModifyMenuItemVisibility</Type>
+                <MenuItemName>FPS_ON_BUTTON</MenuItemName>
+                <IsVisible>false</IsVisible>
+            </GeneratedEvent>
+            <GeneratedEvent>
+                <Type>ModifyMenuItemState</Type>
+                <MenuItemName>FPS_ON_BUTTON</MenuItemName>
+                <State>Inactive</State>
+            </GeneratedEvent>
+            <GeneratedEvent>
+                <Type>ModifyMenuItemVisibility</Type>
+                <MenuItemName>FPS_OFF_BUTTON</MenuItemName>
+                <IsVisible>true</IsVisible>
+            </GeneratedEvent>
+            <GeneratedEvent>
+                <Type>ModifyMenuItemState</Type>
+                <MenuItemName>FPS_OFF_BUTTON</MenuItemName>
+                <State>Active</State>
+            </GeneratedEvent>
+        </MenuItem>
+
+        <MenuItem>
+            <Name>FPS_OFF_BUTTON</Name>
+            <Type>Button</Type>
+            <State>Active</State>
+            <VisibilityCondition>
+                <ConditionType>FPSOff</ConditionType>
+            </VisibilityCondition>
+            <InactiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/013_FPS_COUNTER_OFF.png</InactiveImage>
+            <ActiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/014_FPS_COUNTER_OFF.png</ActiveImage>
+            <Position x="148" y="295" />
+            <GeneratedEvent>
+                <Type>ToggleFPS</Type>
+            </GeneratedEvent>
+            <GeneratedEvent>
+                <Type>ModifyMenuItemVisibility</Type>
+                <MenuItemName>FPS_OFF_BUTTON</MenuItemName>
+                <IsVisible>false</IsVisible>
+            </GeneratedEvent>
+            <GeneratedEvent>
+                <Type>ModifyMenuItemState</Type>
+                <MenuItemName>FPS_OFF_BUTTON</MenuItemName>
+                <State>Inactive</State>
+            </GeneratedEvent>
+            <GeneratedEvent>
+                <Type>ModifyMenuItemVisibility</Type>
+                <MenuItemName>FPS_ON_BUTTON</MenuItemName>
+                <IsVisible>true</IsVisible>
+            </GeneratedEvent>
+            <GeneratedEvent>
+                <Type>ModifyMenuItemState</Type>
+                <MenuItemName>FPS_ON_BUTTON</MenuItemName>
+                <State>Active</State>
+            </GeneratedEvent>
+        </MenuItem>
+
+        <MenuItem>
             <Name>BACK_BUTTON</Name>
             <Type>Button</Type>
             <State>Active</State>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/012_PREVIOUSMENU.PCX</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/013_PREVIOUSMENU.PCX</ActiveImage>
-            <Position x="266" y="295" />
+            <Position x="266" y="330" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_Options</PageName>
