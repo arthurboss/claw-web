@@ -6,7 +6,6 @@
 #include "../GameApp/SaveBridge.h"
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#include <emscripten/html5.h>
 #endif
 #include "../Events/EventMgr.h"
 #include "../Events/Events.h"
@@ -1223,12 +1222,7 @@ void HumanView::StartNewGameDelegate(IEventDataPtr pEventData)
 void HumanView::ToggleFullscreenDelegate(IEventDataPtr pEventData)
 {
 #ifdef __EMSCRIPTEN__
-    EmscriptenFullscreenChangeEvent status;
-    emscripten_get_fullscreen_status(&status);
-    if (status.isFullscreen)
-        emscripten_exit_fullscreen();
-    else
-        emscripten_request_fullscreen("#gameContainer", true);
+    EM_ASM({ window.toggleFullscreen(); });
 #endif
 }
 
