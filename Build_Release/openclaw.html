@@ -473,7 +473,7 @@
         <span id="loading"></span>
         <div id="canvasContainer">
           <canvas
-            id="canvas"
+            id="canvas" class="force-4-3"
             oncontextmenu="event.preventDefault()"
             tabindex="-1"
           ></canvas>
@@ -835,7 +835,7 @@
       window.toggleFullscreen = toggleFullscreen;
 
       // Aspect ratio state - false = widescreen (dynamic), true = force 4:3 original
-      window.forceOriginalAspect = false;
+      window.forceOriginalAspect = true;
 
       window.toggleAspectRatio = function() {
         window.forceOriginalAspect = !window.forceOriginalAspect;
