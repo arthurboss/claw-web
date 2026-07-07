@@ -123,6 +123,12 @@
         outline: none;
       }
 
+      canvas.force-4-3 {
+        width: auto;
+        height: 100%;
+        aspect-ratio: 4 / 3;
+      }
+
       canvas:focus {
         outline: none;
       }
@@ -833,6 +839,8 @@
 
       window.toggleAspectRatio = function() {
         window.forceOriginalAspect = !window.forceOriginalAspect;
+        var canvas = document.getElementById("canvas");
+        if (canvas) canvas.classList.toggle("force-4-3", window.forceOriginalAspect);
         updateGameResolution();
       };
 
