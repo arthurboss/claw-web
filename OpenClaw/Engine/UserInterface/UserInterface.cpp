@@ -1421,6 +1421,7 @@ void ScreenElementMenuPage::OnPageLoaded()
 {
     for (shared_ptr<ScreenElementMenuItem> pItem : m_MenuItems)
     {
+        pItem->ReEvaluateVisibilityCondition();
         pItem->ReEvaluateStateCondition();
     }
 
@@ -1584,6 +1585,7 @@ bool ScreenElementMenuItem::Initialize(TiXmlElement* pElem)
     {
         std::string conditionTypeStr;
         ParseValueFromXmlElem(&conditionTypeStr, pVisibilityConditionElem->FirstChildElement("ConditionType"));
+        m_VisibilityConditionType = conditionTypeStr;
         
         // This element is visible only when certain condition is met
         // so it is safe to assume it is not visible by default
@@ -1922,6 +1924,51 @@ void ScreenElementMenuItem::ReEvaluateStateCondition()
     m_State = StringToMenuItemStateEnum(conditionMet
         ? m_StateCondition.conditionForState
         : m_StateCondition.defaultState);
+}
+
+void ScreenElementMenuItem::ReEvaluateVisibilityCondition()
+{
+    if (m_VisibilityConditionType.empty())
+        return;
+
+    m_bVisible = false;
+
+    if (m_VisibilityConditionType == "SoundOn")
+        m_bVisible = g_pApp->GetAudio()->IsSoundActive();
+    else if (m_VisibilityConditionType == "SoundOff")
+        m_bVisible = !g_pApp->GetAudio()->IsSoundActive();
+    else if (m_VisibilityConditionType == "MusicOn")
+        m_bVisible = g_pApp->GetAudio()->IsMusicActive();
+    else if (m_VisibilityConditionType == "MusicOff")
+        m_bVisible = !g_pApp->GetAudio()->IsMusicActive();
+    else if (m_VisibilityConditionType == "FullscreenOn")
+    {
+#ifdef __EMSCRIPTEN__
+        m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 1 : 0; });
+#endif
+    }
+    else if (m_VisibilityConditionType == "FullscreenOff")
+    {
+#ifdef __EMSCRIPTEN__
+        m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 0 : 1; });
+#else
+        m_bVisible = true;
+#endif
+    }
+    else if (m_VisibilityConditionType == "WidescreenOn")
+    {
+#ifdef __EMSCRIPTEN__
+        m_bVisible = (bool)EM_ASM_INT({ return window.forceOriginalAspect ? 0 : 1; });
+#else
+        m_bVisible = true;
+#endif
+    }
+    else if (m_VisibilityConditionType == "WidescreenOff")
+    {
+#ifdef __EMSCRIPTEN__
+        m_bVisible = (bool)EM_ASM_INT({ return window.forceOriginalAspect ? 1 : 0; });
+#endif
+    }
 }
 
 SDL_Rect ScreenElementMenuItem::GetMenuItemRect()

@@ -325,6 +325,7 @@ public:
 
     void OnStateChanged(MenuItemState newState, MenuItemState oldState);
     void ReEvaluateStateCondition();
+    void ReEvaluateVisibilityCondition();
 
 private:
     std::string m_Name;
@@ -345,6 +346,7 @@ private:
     SDL_Renderer* m_pRenderer;
 
     MenuItemStateCondition m_StateCondition;
+    std::string m_VisibilityConditionType;
 };
 
 #endif
