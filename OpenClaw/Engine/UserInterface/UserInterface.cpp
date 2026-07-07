@@ -13,6 +13,10 @@
 
 #include <cctype>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 std::map<std::string, MenuPage> g_StringToMenuPageEnumMap =
 {
     { "MenuPage_Main",                          MenuPage_Main },
@@ -381,6 +385,14 @@ static IEventDataPtr XmlElemToGeneratedEvent(TiXmlElement* pElem)
     else if (eventType == "StartNewGame")
     {
         pEventData.reset(new EventData_Start_New_Game());
+    }
+    else if (eventType == "ToggleFullscreen")
+    {
+        pEventData.reset(new EventData_Menu_ToggleFullscreen());
+    }
+    else if (eventType == "ToggleAspectRatio")
+    {
+        pEventData.reset(new EventData_Menu_ToggleAspectRatio());
     }
     else
     {
@@ -1621,6 +1633,34 @@ bool ScreenElementMenuItem::Initialize(TiXmlElement* pElem)
         else if (conditionTypeStr == "AmbientOff")
         {
             m_bVisible = false;
+        }
+        else if (conditionTypeStr == "FullscreenOn")
+        {
+#ifdef __EMSCRIPTEN__
+            m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 1 : 0; });
+#endif
+        }
+        else if (conditionTypeStr == "FullscreenOff")
+        {
+#ifdef __EMSCRIPTEN__
+            m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 0 : 1; });
+#else
+            m_bVisible = true;
+#endif
+        }
+        else if (conditionTypeStr == "WidescreenOn")
+        {
+#ifdef __EMSCRIPTEN__
+            m_bVisible = (bool)EM_ASM_INT({ return window.forceOriginalAspect ? 0 : 1; });
+#else
+            m_bVisible = true;
+#endif
+        }
+        else if (conditionTypeStr == "WidescreenOff")
+        {
+#ifdef __EMSCRIPTEN__
+            m_bVisible = (bool)EM_ASM_INT({ return window.forceOriginalAspect ? 1 : 0; });
+#endif
         }
     }
     std::string menuItemTypeStr;

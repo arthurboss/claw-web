@@ -89,6 +89,8 @@ protected:
     void ImportSaveDataDelegate(IEventDataPtr pEventData);
     void StartNewGameDelegate(IEventDataPtr pEventData);
     void ResetSaveProgressFromManageSavesDelegate(IEventDataPtr pEventData);
+    void ToggleFullscreenDelegate(IEventDataPtr pEventData);
+    void ToggleAspectRatioDelegate(IEventDataPtr pEventData);
 
     uint32 m_ViewId;
     uint32 m_ActorId;

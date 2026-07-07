@@ -6,6 +6,7 @@
 #include "../GameApp/SaveBridge.h"
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#include <emscripten/html5.h>
 #endif
 #include "../Events/EventMgr.h"
 #include "../Events/Events.h"
@@ -564,6 +565,10 @@ void HumanView::RegisterAllDelegates()
         this, &HumanView::StartNewGameDelegate), EventData_Start_New_Game::sk_EventType);
     IEventMgr::Get()->VAddListener(MakeDelegate(
         this, &HumanView::ResetSaveProgressFromManageSavesDelegate), EventData_Reset_Save_Progress_From_Manage_Saves::sk_EventType);
+    IEventMgr::Get()->VAddListener(MakeDelegate(
+        this, &HumanView::ToggleFullscreenDelegate), EventData_Menu_ToggleFullscreen::sk_EventType);
+    IEventMgr::Get()->VAddListener(MakeDelegate(
+        this, &HumanView::ToggleAspectRatioDelegate), EventData_Menu_ToggleAspectRatio::sk_EventType);
 
 }
 
@@ -610,6 +615,10 @@ void HumanView::RemoveAllDelegates()
         this, &HumanView::StartNewGameDelegate), EventData_Start_New_Game::sk_EventType);
     IEventMgr::Get()->VRemoveListener(MakeDelegate(
         this, &HumanView::ResetSaveProgressFromManageSavesDelegate), EventData_Reset_Save_Progress_From_Manage_Saves::sk_EventType);
+    IEventMgr::Get()->VRemoveListener(MakeDelegate(
+        this, &HumanView::ToggleFullscreenDelegate), EventData_Menu_ToggleFullscreen::sk_EventType);
+    IEventMgr::Get()->VRemoveListener(MakeDelegate(
+        this, &HumanView::ToggleAspectRatioDelegate), EventData_Menu_ToggleAspectRatio::sk_EventType);
 }
 
 //=====================================================================================================================
@@ -1209,6 +1218,25 @@ void HumanView::StartNewGameDelegate(IEventDataPtr pEventData)
         IEventMgr::Get()->VQueueEvent(IEventDataPtr(
             new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_NewGame")));
     }
+}
+
+void HumanView::ToggleFullscreenDelegate(IEventDataPtr pEventData)
+{
+#ifdef __EMSCRIPTEN__
+    EmscriptenFullscreenChangeEvent status;
+    emscripten_get_fullscreen_status(&status);
+    if (status.isFullscreen)
+        emscripten_exit_fullscreen();
+    else
+        emscripten_request_fullscreen("#gameContainer", true);
+#endif
+}
+
+void HumanView::ToggleAspectRatioDelegate(IEventDataPtr pEventData)
+{
+#ifdef __EMSCRIPTEN__
+    EM_ASM({ window.toggleAspectRatio(); });
+#endif
 }
 
 //=================================================================================================
