@@ -147,6 +147,10 @@ public:
 
 private:
     void SwitchPageDelegate(IEventDataPtr pEventData);
+
+public:
+    void RefreshActivePageVisibility();
+private:
     void ModifyMenuItemVisibilityDelegate(IEventDataPtr pEventData);
     void ModifyMenuItemStateDelegate(IEventDataPtr pEventData);
     void IngameMenuResumeGameDelegate(IEventDataPtr pEventData);

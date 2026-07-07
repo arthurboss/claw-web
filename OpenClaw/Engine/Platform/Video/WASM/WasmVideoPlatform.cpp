@@ -6,6 +6,7 @@
 #include "../../Events/AppEventQueue.h"
 #include "../../../GameApp/BaseGameApp.h"
 #include "../../../GameApp/BaseGameLogic.h"
+#include "../../../UserInterface/HumanView.h"
 
 #include <SDL2/SDL_scancode.h>
 #include <cmath>
@@ -280,6 +281,12 @@ EMSCRIPTEN_KEEPALIVE int GetGameWidth() {
 EMSCRIPTEN_KEEPALIVE int GetGameHeight() {
   if (!g_pApp) return 480;
   return (int)g_pApp->GetWindowSize().y;
+}
+
+EMSCRIPTEN_KEEPALIVE void OnJSFullscreenChange() {
+  if (!g_pApp || !g_pApp->GetHumanView()) return;
+  auto pMenu = g_pApp->GetHumanView()->GetActiveMenu();
+  if (pMenu) pMenu->RefreshActivePageVisibility();
 }
 
 } // extern "C"

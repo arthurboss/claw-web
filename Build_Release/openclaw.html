@@ -883,6 +883,11 @@
 
       // Listen for fullscreen changes
       document.addEventListener("fullscreenchange", updateGameResolution);
+      document.addEventListener("fullscreenchange", function() {
+        if (typeof Module !== "undefined" && Module._OnJSFullscreenChange) {
+          Module._OnJSFullscreenChange();
+        }
+      });
       window.addEventListener("resize", updateGameResolution);
 
       // Initialize resolution on load
