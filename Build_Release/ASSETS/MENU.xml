@@ -2972,7 +2972,7 @@
             </VisibilityCondition>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/007_WIDESCREEN.png</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/008_WIDESCREEN.png</ActiveImage>
-            <Position x="196" y="295" />
+            <Position x="196" y="260" />
             <GeneratedEvent>
                 <Type>ToggleAspectRatio</Type>
             </GeneratedEvent>
@@ -3007,7 +3007,7 @@
             </VisibilityCondition>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/009_ORIGINAL.png</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/010_ORIGINAL.png</ActiveImage>
-            <Position x="196" y="295" />
+            <Position x="196" y="260" />
             <GeneratedEvent>
                 <Type>ToggleAspectRatio</Type>
             </GeneratedEvent>
@@ -3039,7 +3039,7 @@
             <State>Active</State>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/012_PREVIOUSMENU.PCX</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/013_PREVIOUSMENU.PCX</ActiveImage>
-            <Position x="266" y="365" />
+            <Position x="266" y="295" />
             <GeneratedEvent>
                 <Type>SwitchPage</Type>
                 <PageName>MenuPage_Options</PageName>
