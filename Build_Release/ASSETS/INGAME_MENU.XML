@@ -759,7 +759,7 @@
             </VisibilityCondition>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/003_FULLSCREEN_ON.png</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/004_FULLSCREEN_ON.png</ActiveImage>
-            <Position x="170" y="190" />
+            <Position x="156" y="190" />
             <GeneratedEvent>
                 <Type>ToggleFullscreen</Type>
             </GeneratedEvent>
@@ -795,7 +795,7 @@
             </VisibilityCondition>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/005_FULLSCREEN_OFF.png</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/006_FULLSCREEN_OFF.png</ActiveImage>
-            <Position x="170" y="190" />
+            <Position x="156" y="190" />
             <GeneratedEvent>
                 <Type>ToggleFullscreen</Type>
             </GeneratedEvent>
@@ -831,7 +831,7 @@
             </VisibilityCondition>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/007_WIDESCREEN_ON.png</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/008_WIDESCREEN_ON.png</ActiveImage>
-            <Position x="196" y="225" />
+            <Position x="154" y="225" />
             <GeneratedEvent>
                 <Type>ToggleAspectRatio</Type>
             </GeneratedEvent>
@@ -867,7 +867,7 @@
             </VisibilityCondition>
             <InactiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/009_WIDESCREEN_OFF.png</InactiveImage>
             <ActiveImage>/STATES/MENU/IMAGES/MAIN/OPTIONS/DISPLAY/010_WIDESCREEN_OFF.png</ActiveImage>
-            <Position x="196" y="225" />
+            <Position x="154" y="225" />
             <GeneratedEvent>
                 <Type>ToggleAspectRatio</Type>
             </GeneratedEvent>
