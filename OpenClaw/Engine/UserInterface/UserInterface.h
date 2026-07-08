@@ -54,7 +54,9 @@ enum MenuPage
     MenuPage_SinglePlayer_LoadGame,
     MenuPage_SinglePlayer_LoadCustomLevel, // Unused
     MenuPage_SinglePlayer_SaveGame,        // Unused
-    MenuPage_SinglePlayer_UploadScores,     // Unused
+    MenuPage_SinglePlayer_UploadScores,    // Unused
+    MenuPage_SinglePlayer_SaveData,
+    MenuPage_SinglePlayer_SaveData_ResetConfirm,
 
     MenuPage_SinglePlayer_LoadGame_Level1,
     MenuPage_SinglePlayer_LoadGame_Level2,
@@ -145,6 +147,10 @@ public:
 
 private:
     void SwitchPageDelegate(IEventDataPtr pEventData);
+
+public:
+    void RefreshActivePageVisibility();
+private:
     void ModifyMenuItemVisibilityDelegate(IEventDataPtr pEventData);
     void ModifyMenuItemStateDelegate(IEventDataPtr pEventData);
     void IngameMenuResumeGameDelegate(IEventDataPtr pEventData);
@@ -204,6 +210,7 @@ public:
     void OnPageLoaded();
 
     shared_ptr<ScreenElementMenuItem> FindMenuItemByName(std::string name);
+    const MenuItemList& GetMenuItems() const { return m_MenuItems; }
 
 private:
     void DeactivateAllMenuItems();
@@ -323,6 +330,7 @@ public:
 
     void OnStateChanged(MenuItemState newState, MenuItemState oldState);
     void ReEvaluateStateCondition();
+    void ReEvaluateVisibilityCondition();
 
 private:
     std::string m_Name;
@@ -343,6 +351,7 @@ private:
     SDL_Renderer* m_pRenderer;
 
     MenuItemStateCondition m_StateCondition;
+    std::string m_VisibilityConditionType;
 };
 
 #endif

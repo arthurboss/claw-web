@@ -117,10 +117,16 @@
       canvas {
         display: block;
         width: 100%;
-        min-aspect-ratio: 4 / 3;
+        max-height: 100%;
         aspect-ratio: var(--game-aspect-ratio, 4 / 3);
         image-rendering: pixelated;
         outline: none;
+      }
+
+      canvas.force-4-3 {
+        width: auto;
+        height: 100%;
+        aspect-ratio: 4 / 3;
       }
 
       canvas:focus {
@@ -467,7 +473,7 @@
         <span id="loading"></span>
         <div id="canvasContainer">
           <canvas
-            id="canvas"
+            id="canvas" class="force-4-3"
             oncontextmenu="event.preventDefault()"
             tabindex="-1"
           ></canvas>
@@ -691,6 +697,7 @@
 
       // FPS measurement and display
       var fpsEnabled = true;
+      window.fpsEnabled = fpsEnabled;
       var fpsFrameCount = 0;
       var fpsLastTime = performance.now();
       var fpsCurrentValue = 60;
@@ -728,6 +735,10 @@
       // Toggle FPS display overlay
       function toggleFPS() {
         fpsEnabled = !fpsEnabled;
+        window.fpsEnabled = fpsEnabled;
+        if (typeof Module !== "undefined" && Module._OnJSFullscreenChange) {
+          Module._OnJSFullscreenChange();
+        }
         var btn = document.getElementById("fpsBtn");
         var overlay = document.getElementById("fpsOverlay");
 
@@ -773,9 +784,10 @@
 
         // Get screen dimensions (for fullscreen mode)
         getScreenSize: function() {
+          var container = document.getElementById('gameContainer');
           return {
-            width: window.screen.width,
-            height: window.screen.height
+            width: container ? container.clientWidth : window.screen.width,
+            height: container ? container.clientHeight : window.screen.height
           };
         },
 
@@ -796,6 +808,14 @@
           }
 
           console.log("[Resolution] Applied: " + width + "x" + height);
+
+          // Force SDL to recalculate mouse position after resolution change
+          if (canvas) {
+            canvas.dispatchEvent(new MouseEvent('mousemove', {
+              clientX: window._lastMouseX || 0,
+              clientY: window._lastMouseY || 0
+            }));
+          }
         }
       };
 
@@ -826,6 +846,17 @@
           }
         }
       }
+      window.toggleFullscreen = toggleFullscreen;
+
+      // Aspect ratio state - false = widescreen (dynamic), true = force 4:3 original
+      window.forceOriginalAspect = true;
+
+      window.toggleAspectRatio = function() {
+        window.forceOriginalAspect = !window.forceOriginalAspect;
+        var canvas = document.getElementById("canvas");
+        if (canvas) canvas.classList.toggle("force-4-3", window.forceOriginalAspect);
+        updateGameResolution();
+      };
 
       // Handle fullscreen/resize - adjust resolution based on current dimensions
       function updateGameResolution() {
@@ -852,7 +883,12 @@
           }
         }
 
-        var newWidth = GameResolution.calculateWidth(size.width, size.height);
+        var newWidth;
+        if (window.forceOriginalAspect) {
+          newWidth = Math.round(GameResolution.BASE_HEIGHT * (4 / 3));
+        } else {
+          newWidth = GameResolution.calculateWidth(size.width, size.height);
+        }
         GameResolution.apply(newWidth, GameResolution.BASE_HEIGHT);
       }
 
@@ -860,7 +896,13 @@
       var onFullscreenChange = updateGameResolution;
 
       // Listen for fullscreen changes
+      document.addEventListener("mousemove", function(e) { window._lastMouseX = e.clientX; window._lastMouseY = e.clientY; });
       document.addEventListener("fullscreenchange", updateGameResolution);
+      document.addEventListener("fullscreenchange", function() {
+        if (typeof Module !== "undefined" && Module._OnJSFullscreenChange) {
+          Module._OnJSFullscreenChange();
+        }
+      });
       window.addEventListener("resize", updateGameResolution);
 
       // Initialize resolution on load

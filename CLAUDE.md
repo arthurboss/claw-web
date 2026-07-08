@@ -538,7 +538,7 @@ See `docs/` directory for detailed information:
 
 - **BUILDING.md** - Complete build guide
 - **ARCHITECTURE.md** - Technical architecture and lazy-loading design
-- **SAVE_SYSTEM.md** - IndexedDB save implementation
+- **SAVE_SYSTEM.md** - localStorage save implementation
 - **HAPTIC_FEEDBACK.md** - Gamepad vibration system
 - **SCREEN_RENDERING.md** - UI and screen code locations
 - **GENERIC_GRAPHICS.md** - Cross-platform graphics module

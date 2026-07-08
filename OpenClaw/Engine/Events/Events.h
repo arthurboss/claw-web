@@ -2389,6 +2389,42 @@ public:
 };
 
 //---------------------------------------------------------------------------------------------------------------------
+// EventData_Export_Save_Data
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Export_Save_Data : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Export_Save_Data() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Export_Save_Data()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Export_Save_Data"; }
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventData_Import_Save_Data
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Import_Save_Data : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Import_Save_Data() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Import_Save_Data()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Import_Save_Data"; }
+};
+
+//---------------------------------------------------------------------------------------------------------------------
 // EventData_Set_Volume
 //---------------------------------------------------------------------------------------------------------------------
 class EventData_Set_Volume : public BaseEventData
@@ -2746,4 +2782,77 @@ public:
     virtual const char* GetName(void) const { return "EventData_World_Finished_Loading"; }
 };
 
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventData_Reset_Save_Progress_From_Manage_Saves
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Reset_Save_Progress_From_Manage_Saves : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Reset_Save_Progress_From_Manage_Saves() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Reset_Save_Progress_From_Manage_Saves()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Reset_Save_Progress_From_Manage_Saves"; }
+};
+
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventData_Menu_ToggleFullscreen
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Menu_ToggleFullscreen : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Menu_ToggleFullscreen() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Menu_ToggleFullscreen()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Menu_ToggleFullscreen"; }
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventData_Menu_ToggleAspectRatio
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Menu_ToggleAspectRatio : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Menu_ToggleAspectRatio() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Menu_ToggleAspectRatio()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Menu_ToggleAspectRatio"; }
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventData_Menu_ToggleFPS
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Menu_ToggleFPS : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Menu_ToggleFPS() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Menu_ToggleFPS()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Menu_ToggleFPS"; }
+};
 #endif

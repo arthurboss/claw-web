@@ -13,6 +13,10 @@
 
 #include <cctype>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 std::map<std::string, MenuPage> g_StringToMenuPageEnumMap =
 {
     { "MenuPage_Main",                          MenuPage_Main },
@@ -29,6 +33,8 @@ std::map<std::string, MenuPage> g_StringToMenuPageEnumMap =
     { "MenuPage_SinglePlayer_LoadGame",         MenuPage_SinglePlayer_LoadGame },
     { "MenuPage_SinglePlayer_LoadCustomLevel",  MenuPage_SinglePlayer_LoadCustomLevel },
     { "MenuPage_SinglePlayer_UploadScores",     MenuPage_SinglePlayer_UploadScores },
+    { "MenuPage_SinglePlayer_SaveData",         MenuPage_SinglePlayer_SaveData },
+    { "MenuPage_SinglePlayer_SaveData_ResetConfirm", MenuPage_SinglePlayer_SaveData_ResetConfirm },
     { "MenuPage_SinglePlayer_LoadGame_Level1",  MenuPage_SinglePlayer_LoadGame_Level1 },
     { "MenuPage_SinglePlayer_LoadGame_Level2",  MenuPage_SinglePlayer_LoadGame_Level2 },
     { "MenuPage_SinglePlayer_LoadGame_Level3",  MenuPage_SinglePlayer_LoadGame_Level3 },
@@ -364,9 +370,33 @@ static IEventDataPtr XmlElemToGeneratedEvent(TiXmlElement* pElem)
     {
         pEventData.reset(new EventData_Reset_Save_Progress());
     }
+    else if (eventType == "ResetProgressFromManageSaves")
+    {
+        pEventData.reset(new EventData_Reset_Save_Progress_From_Manage_Saves());
+    }
+    else if (eventType == "ExportSaveData")
+    {
+        pEventData.reset(new EventData_Export_Save_Data());
+    }
+    else if (eventType == "ImportSaveData")
+    {
+        pEventData.reset(new EventData_Import_Save_Data());
+    }
     else if (eventType == "StartNewGame")
     {
         pEventData.reset(new EventData_Start_New_Game());
+    }
+    else if (eventType == "ToggleFullscreen")
+    {
+        pEventData.reset(new EventData_Menu_ToggleFullscreen());
+    }
+    else if (eventType == "ToggleAspectRatio")
+    {
+        pEventData.reset(new EventData_Menu_ToggleAspectRatio());
+    }
+    else if (eventType == "ToggleFPS")
+    {
+        pEventData.reset(new EventData_Menu_ToggleFPS());
     }
     else
     {
@@ -791,6 +821,16 @@ void ScreenElementMenu::SwitchPageDelegate(IEventDataPtr pEventData)
     else
     {
         LOG_ERROR("Could not switch to page: " + pCastEventData->GetNewPageName() + ", Probably not implemented yet");
+    }
+}
+
+void ScreenElementMenu::RefreshActivePageVisibility()
+{
+    if (!m_pActiveMenuPage)
+        return;
+    for (auto& pItem : m_pActiveMenuPage->GetMenuItems())
+    {
+        pItem->ReEvaluateVisibilityCondition();
     }
 }
 
@@ -1395,6 +1435,7 @@ void ScreenElementMenuPage::OnPageLoaded()
 {
     for (shared_ptr<ScreenElementMenuItem> pItem : m_MenuItems)
     {
+        pItem->ReEvaluateVisibilityCondition();
         pItem->ReEvaluateStateCondition();
     }
 
@@ -1558,6 +1599,7 @@ bool ScreenElementMenuItem::Initialize(TiXmlElement* pElem)
     {
         std::string conditionTypeStr;
         ParseValueFromXmlElem(&conditionTypeStr, pVisibilityConditionElem->FirstChildElement("ConditionType"));
+        m_VisibilityConditionType = conditionTypeStr;
         
         // This element is visible only when certain condition is met
         // so it is safe to assume it is not visible by default
@@ -1607,6 +1649,48 @@ bool ScreenElementMenuItem::Initialize(TiXmlElement* pElem)
         else if (conditionTypeStr == "AmbientOff")
         {
             m_bVisible = false;
+        }
+        else if (conditionTypeStr == "FullscreenOn")
+        {
+#ifdef __EMSCRIPTEN__
+            m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 1 : 0; });
+#endif
+        }
+        else if (conditionTypeStr == "FullscreenOff")
+        {
+#ifdef __EMSCRIPTEN__
+            m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 0 : 1; });
+#else
+            m_bVisible = true;
+#endif
+        }
+        else if (conditionTypeStr == "WidescreenOn")
+        {
+#ifdef __EMSCRIPTEN__
+            m_bVisible = (bool)EM_ASM_INT({ return window.forceOriginalAspect ? 0 : 1; });
+#else
+            m_bVisible = true;
+#endif
+        }
+        else if (conditionTypeStr == "WidescreenOff")
+        {
+#ifdef __EMSCRIPTEN__
+            m_bVisible = (bool)EM_ASM_INT({ return window.forceOriginalAspect ? 1 : 0; });
+#endif
+        }
+        else if (conditionTypeStr == "FPSOn")
+        {
+#ifdef __EMSCRIPTEN__
+            m_bVisible = (bool)EM_ASM_INT({ return window.fpsEnabled ? 1 : 0; });
+#else
+            m_bVisible = true;
+#endif
+        }
+        else if (conditionTypeStr == "FPSOff")
+        {
+#ifdef __EMSCRIPTEN__
+            m_bVisible = (bool)EM_ASM_INT({ return window.fpsEnabled ? 0 : 1; });
+#endif
         }
     }
     std::string menuItemTypeStr;
@@ -1868,6 +1952,65 @@ void ScreenElementMenuItem::ReEvaluateStateCondition()
     m_State = StringToMenuItemStateEnum(conditionMet
         ? m_StateCondition.conditionForState
         : m_StateCondition.defaultState);
+}
+
+void ScreenElementMenuItem::ReEvaluateVisibilityCondition()
+{
+    if (m_VisibilityConditionType.empty())
+        return;
+
+    m_bVisible = false;
+
+    if (m_VisibilityConditionType == "SoundOn")
+        m_bVisible = g_pApp->GetAudio()->IsSoundActive();
+    else if (m_VisibilityConditionType == "SoundOff")
+        m_bVisible = !g_pApp->GetAudio()->IsSoundActive();
+    else if (m_VisibilityConditionType == "MusicOn")
+        m_bVisible = g_pApp->GetAudio()->IsMusicActive();
+    else if (m_VisibilityConditionType == "MusicOff")
+        m_bVisible = !g_pApp->GetAudio()->IsMusicActive();
+    else if (m_VisibilityConditionType == "FullscreenOn")
+    {
+#ifdef __EMSCRIPTEN__
+        m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 1 : 0; });
+#endif
+    }
+    else if (m_VisibilityConditionType == "FullscreenOff")
+    {
+#ifdef __EMSCRIPTEN__
+        m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 0 : 1; });
+#else
+        m_bVisible = true;
+#endif
+    }
+    else if (m_VisibilityConditionType == "WidescreenOn")
+    {
+#ifdef __EMSCRIPTEN__
+        m_bVisible = (bool)EM_ASM_INT({ return window.forceOriginalAspect ? 0 : 1; });
+#else
+        m_bVisible = true;
+#endif
+    }
+    else if (m_VisibilityConditionType == "WidescreenOff")
+    {
+#ifdef __EMSCRIPTEN__
+        m_bVisible = (bool)EM_ASM_INT({ return window.forceOriginalAspect ? 1 : 0; });
+#endif
+    }
+    else if (m_VisibilityConditionType == "FPSOn")
+    {
+#ifdef __EMSCRIPTEN__
+        m_bVisible = (bool)EM_ASM_INT({ return window.fpsEnabled ? 1 : 0; });
+#else
+        m_bVisible = true;
+#endif
+    }
+    else if (m_VisibilityConditionType == "FPSOff")
+    {
+#ifdef __EMSCRIPTEN__
+        m_bVisible = (bool)EM_ASM_INT({ return window.fpsEnabled ? 0 : 1; });
+#endif
+    }
 }
 
 SDL_Rect ScreenElementMenuItem::GetMenuItemRect()
