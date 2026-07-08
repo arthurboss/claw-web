@@ -222,7 +222,7 @@
             <Type>Text</Type>
             <State>Inactive</State>
             <InactiveImage>/SAVE_DATA/title.png</InactiveImage>
-            <Position x="185" y="161" />
+            <Position x="150" y="161" />
         </MenuItem>
         <MenuItem>
             <Name>SAVE_TO_FILE_BUTTON</Name>
