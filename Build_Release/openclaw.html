@@ -116,14 +116,16 @@
 
       canvas {
         display: block;
-        height: 100%;
-        max-width: 100%;
+        width: 100%;
+        max-height: 100%;
         aspect-ratio: var(--game-aspect-ratio, 4 / 3);
         image-rendering: pixelated;
         outline: none;
       }
 
       canvas.force-4-3 {
+        width: auto;
+        height: 100%;
         aspect-ratio: 4 / 3;
       }
 
@@ -782,9 +784,10 @@
 
         // Get screen dimensions (for fullscreen mode)
         getScreenSize: function() {
+          var container = document.getElementById('gameContainer');
           return {
-            width: window.screen.width,
-            height: window.screen.height
+            width: container ? container.clientWidth : window.screen.width,
+            height: container ? container.clientHeight : window.screen.height
           };
         },
 
