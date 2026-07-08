@@ -808,6 +808,14 @@
           }
 
           console.log("[Resolution] Applied: " + width + "x" + height);
+
+          // Force SDL to recalculate mouse position after resolution change
+          if (canvas) {
+            canvas.dispatchEvent(new MouseEvent('mousemove', {
+              clientX: window._lastMouseX || 0,
+              clientY: window._lastMouseY || 0
+            }));
+          }
         }
       };
 
@@ -888,6 +896,7 @@
       var onFullscreenChange = updateGameResolution;
 
       // Listen for fullscreen changes
+      document.addEventListener("mousemove", function(e) { window._lastMouseX = e.clientX; window._lastMouseY = e.clientY; });
       document.addEventListener("fullscreenchange", updateGameResolution);
       document.addEventListener("fullscreenchange", function() {
         if (typeof Module !== "undefined" && Module._OnJSFullscreenChange) {
