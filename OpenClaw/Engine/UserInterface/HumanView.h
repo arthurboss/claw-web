@@ -60,6 +60,8 @@ public:
 
     void SetCurrentLevelMusic(const std::string& music) { m_CurrentLevelMusic = music; }
 
+shared_ptr<ScreenElementMenu> GetActiveMenu() { return m_pMenu ? m_pMenu : m_pIngameMenu; }
+
 protected:
     virtual bool VLoadGameDelegate(TiXmlElement* pLevelXmlElem, LevelData* pLevelData) { VPushElement(m_pScene); return true; }
 
@@ -89,6 +91,10 @@ protected:
     void ImportSaveDataDelegate(IEventDataPtr pEventData);
     void StartNewGameDelegate(IEventDataPtr pEventData);
     void ResetSaveProgressFromManageSavesDelegate(IEventDataPtr pEventData);
+
+    void ToggleFullscreenDelegate(IEventDataPtr pEventData);
+    void ToggleAspectRatioDelegate(IEventDataPtr pEventData);
+    void ToggleFPSDelegate(IEventDataPtr pEventData);
 
     uint32 m_ViewId;
     uint32 m_ActorId;

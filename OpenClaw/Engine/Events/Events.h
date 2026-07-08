@@ -2801,4 +2801,58 @@ public:
     virtual const char* GetName(void) const { return "EventData_Reset_Save_Progress_From_Manage_Saves"; }
 };
 
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventData_Menu_ToggleFullscreen
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Menu_ToggleFullscreen : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Menu_ToggleFullscreen() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Menu_ToggleFullscreen()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Menu_ToggleFullscreen"; }
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventData_Menu_ToggleAspectRatio
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Menu_ToggleAspectRatio : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Menu_ToggleAspectRatio() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Menu_ToggleAspectRatio()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Menu_ToggleAspectRatio"; }
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+// EventData_Menu_ToggleFPS
+//---------------------------------------------------------------------------------------------------------------------
+class EventData_Menu_ToggleFPS : public BaseEventData
+{
+public:
+    static const EventType sk_EventType;
+
+    EventData_Menu_ToggleFPS() { }
+
+    virtual const EventType& VGetEventType(void) const { return sk_EventType; }
+    virtual IEventDataPtr VCopy() const { return IEventDataPtr(new EventData_Menu_ToggleFPS()); }
+    virtual void VSerialize(std::ostringstream& out) const { }
+    virtual void VDeserialize(std::istringstream& in) { }
+
+    virtual const char* GetName(void) const { return "EventData_Menu_ToggleFPS"; }
+};
 #endif
