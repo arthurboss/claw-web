@@ -210,6 +210,7 @@ public:
     void OnPageLoaded();
 
     shared_ptr<ScreenElementMenuItem> FindMenuItemByName(std::string name);
+    const MenuItemList& GetMenuItems() const { return m_MenuItems; }
 
 private:
     void DeactivateAllMenuItems();

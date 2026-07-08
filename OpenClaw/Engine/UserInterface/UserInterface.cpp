@@ -826,8 +826,12 @@ void ScreenElementMenu::SwitchPageDelegate(IEventDataPtr pEventData)
 
 void ScreenElementMenu::RefreshActivePageVisibility()
 {
-    if (m_pActiveMenuPage)
-        m_pActiveMenuPage->OnPageLoaded();
+    if (!m_pActiveMenuPage)
+        return;
+    for (auto& pItem : m_pActiveMenuPage->GetMenuItems())
+    {
+        pItem->ReEvaluateVisibilityCondition();
+    }
 }
 
 void ScreenElementMenu::ModifyMenuItemVisibilityDelegate(IEventDataPtr pEventData)
