@@ -1211,16 +1211,8 @@ void HumanView::ResetSaveProgressFromManageSavesDelegate(IEventDataPtr pEventDat
 
 void HumanView::StartNewGameDelegate(IEventDataPtr pEventData)
 {
-    if (g_pApp->GetGameLogic()->GetGameSaveMgr()->HasProgress())
-    {
-        IEventMgr::Get()->VQueueEvent(IEventDataPtr(
-            new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_NewGame_ResetConfirm")));
-    }
-    else
-    {
-        IEventMgr::Get()->VQueueEvent(IEventDataPtr(
-            new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_NewGame")));
-    }
+    IEventMgr::Get()->VQueueEvent(IEventDataPtr(
+        new EventData_Menu_SwitchPage("MenuPage_SinglePlayer_NewGame")));
 }
 
 void HumanView::ToggleFullscreenDelegate(IEventDataPtr pEventData)
