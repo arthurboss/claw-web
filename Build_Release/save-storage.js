@@ -27,5 +27,32 @@ window.exportSaveData = function() {
 
 window.importSaveData = function() {
   var input = document.getElementById('importSaveInput');
-  if (input) input.click();
+  if (!input) {
+    input = document.createElement('input');
+    input.type = 'file';
+    input.id = 'importSaveInput';
+    input.accept = '.json';
+    input.style.display = 'none';
+    input.addEventListener('change', function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          JSON.parse(ev.target.result);
+          localStorage.setItem('openclaw:saves', ev.target.result);
+          console.log('[SaveStorage] Save data imported');
+          if (Module && Module._OnJSSaveDataImported) {
+            Module._OnJSSaveDataImported();
+          }
+        } catch (err) {
+          console.error('[SaveStorage] Import error: invalid JSON', err);
+        }
+      };
+      reader.readAsText(file);
+      input.value = '';
+    });
+    document.body.appendChild(input);
+  }
+  input.click();
 };
