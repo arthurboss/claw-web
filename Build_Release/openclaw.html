@@ -116,16 +116,14 @@
 
       canvas {
         display: block;
-        width: 100%;
-        min-aspect-ratio: 4 / 3;
+        height: 100%;
+        max-width: 100%;
         aspect-ratio: var(--game-aspect-ratio, 4 / 3);
         image-rendering: pixelated;
         outline: none;
       }
 
       canvas.force-4-3 {
-        width: auto;
-        height: 100%;
         aspect-ratio: 4 / 3;
       }
 
