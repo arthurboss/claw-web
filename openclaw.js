@@ -29,7 +29,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: /tmp/tmpuktjt6dq.js
+// include: /tmp/tmpar4bms5_.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -48,7 +48,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
         // web worker
         PACKAGE_PATH = encodeURIComponent(location.pathname.substring(0, location.pathname.lastIndexOf('/')) + '/');
       }
-      var PACKAGE_NAME = '/mnt/hgfs/dealer-poc/Build_Release/openclaw.data';
+      var PACKAGE_NAME = '/home/testuser/projects/dealer-poc/Build_Release/openclaw.data';
       var REMOTE_PACKAGE_BASE = 'openclaw.data';
       var REMOTE_PACKAGE_NAME = Module['locateFile'] ? Module['locateFile'](REMOTE_PACKAGE_BASE, '') : REMOTE_PACKAGE_BASE;
       var REMOTE_PACKAGE_SIZE = metadata['remote_package_size'];
@@ -136,9 +136,9 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
         Module['FS_createDataFile'](name, null, data, true, true, true);
         Module['removeRunDependency'](`fp ${name}`);
           }
-          Module['removeRunDependency']('datafile_/mnt/hgfs/dealer-poc/Build_Release/openclaw.data');
+          Module['removeRunDependency']('datafile_/home/testuser/projects/dealer-poc/Build_Release/openclaw.data');
       }
-      Module['addRunDependency']('datafile_/mnt/hgfs/dealer-poc/Build_Release/openclaw.data');
+      Module['addRunDependency']('datafile_/home/testuser/projects/dealer-poc/Build_Release/openclaw.data');
 
       if (!Module['preloadResults']) Module['preloadResults'] = {};
 
@@ -157,11 +157,11 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
     }
 
     }
-    loadPackage({"files": [{"filename": "/ASSETS.ZIP", "start": 0, "end": 5519488}, {"filename": "/clacon.ttf", "start": 5519488, "end": 5593700}, {"filename": "/console02.tga", "start": 5593700, "end": 5656452}], "remote_package_size": 5656452});
+    loadPackage({"files": [{"filename": "/ASSETS.ZIP", "start": 0, "end": 5647892}, {"filename": "/clacon.ttf", "start": 5647892, "end": 5722104}, {"filename": "/console02.tga", "start": 5722104, "end": 5784856}], "remote_package_size": 5784856});
 
   })();
 
-// end include: /tmp/tmpuktjt6dq.js
+// end include: /tmp/tmpar4bms5_.js
 
 
 var arguments_ = [];
@@ -730,6 +730,83 @@ async function createWasm() {
 
   
 
+  var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
+  
+  var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
+      var maxIdx = idx + maxBytesToRead;
+      if (ignoreNul) return maxIdx;
+      // TextDecoder needs to know the byte length in advance, it doesn't stop on
+      // null terminator by itself.
+      // As a tiny code save trick, compare idx against maxIdx using a negation,
+      // so that maxBytesToRead=undefined/NaN means Infinity.
+      while (heapOrArray[idx] && !(idx >= maxIdx)) ++idx;
+      return idx;
+    };
+  
+    /**
+   * Given a pointer 'idx' to a null-terminated UTF8-encoded string in the given
+   * array that contains uint8 values, returns a copy of that string as a
+   * Javascript String object.
+   * heapOrArray is either a regular array, or a JavaScript typed array view.
+   * @param {number=} idx
+   * @param {number=} maxBytesToRead
+   * @param {boolean=} ignoreNul - If true, the function will not stop on a NUL character.
+   * @return {string}
+   */
+  var UTF8ArrayToString = (heapOrArray, idx = 0, maxBytesToRead, ignoreNul) => {
+  
+      var endPtr = findStringEnd(heapOrArray, idx, maxBytesToRead, ignoreNul);
+  
+      // When using conditional TextDecoder, skip it for short strings as the overhead of the native call is not worth it.
+      if (endPtr - idx > 16 && heapOrArray.buffer && UTF8Decoder) {
+        return UTF8Decoder.decode(heapOrArray.subarray(idx, endPtr));
+      }
+      var str = '';
+      while (idx < endPtr) {
+        // For UTF8 byte structure, see:
+        // http://en.wikipedia.org/wiki/UTF-8#Description
+        // https://www.ietf.org/rfc/rfc2279.txt
+        // https://tools.ietf.org/html/rfc3629
+        var u0 = heapOrArray[idx++];
+        if (!(u0 & 0x80)) { str += String.fromCharCode(u0); continue; }
+        var u1 = heapOrArray[idx++] & 63;
+        if ((u0 & 0xE0) == 0xC0) { str += String.fromCharCode(((u0 & 31) << 6) | u1); continue; }
+        var u2 = heapOrArray[idx++] & 63;
+        if ((u0 & 0xF0) == 0xE0) {
+          u0 = ((u0 & 15) << 12) | (u1 << 6) | u2;
+        } else {
+          u0 = ((u0 & 7) << 18) | (u1 << 12) | (u2 << 6) | (heapOrArray[idx++] & 63);
+        }
+  
+        if (u0 < 0x10000) {
+          str += String.fromCharCode(u0);
+        } else {
+          var ch = u0 - 0x10000;
+          str += String.fromCharCode(0xD800 | (ch >> 10), 0xDC00 | (ch & 0x3FF));
+        }
+      }
+      return str;
+    };
+  
+    /**
+   * Given a pointer 'ptr' to a null-terminated UTF8-encoded string in the
+   * emscripten HEAP, returns a copy of that string as a Javascript String object.
+   *
+   * @param {number} ptr
+   * @param {number=} maxBytesToRead - An optional length that specifies the
+   *   maximum number of bytes to read. You can omit this parameter to scan the
+   *   string until the first 0 byte. If maxBytesToRead is passed, and the string
+   *   at [ptr, ptr+maxBytesToReadr[ contains a null byte in the middle, then the
+   *   string will cut short at that byte index.
+   * @param {boolean=} ignoreNul - If true, the function will not stop on a NUL character.
+   * @return {string}
+   */
+  var UTF8ToString = (ptr, maxBytesToRead, ignoreNul) => {
+      return ptr ? UTF8ArrayToString(HEAPU8, ptr, maxBytesToRead, ignoreNul) : '';
+    };
+  var ___assert_fail = (condition, filename, line, func) =>
+      abort(`Assertion failed: ${UTF8ToString(condition)}, at: ` + [filename ? UTF8ToString(filename) : 'unknown filename', line, func ? UTF8ToString(func) : 'unknown function']);
+
   class ExceptionInfo {
       // excPtr - Thrown object pointer to wrap. Metadata pointer is calculated from it.
       constructor(excPtr) {
@@ -940,128 +1017,71 @@ relative:(from, to) => {
 };
 
 
-var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
 
-var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
-    var maxIdx = idx + maxBytesToRead;
-    if (ignoreNul) return maxIdx;
-    // TextDecoder needs to know the byte length in advance, it doesn't stop on
-    // null terminator by itself.
-    // As a tiny code save trick, compare idx against maxIdx using a negation,
-    // so that maxBytesToRead=undefined/NaN means Infinity.
-    while (heapOrArray[idx] && !(idx >= maxIdx)) ++idx;
-    return idx;
+var FS_stdin_getChar_buffer = [];
+
+var lengthBytesUTF8 = (str) => {
+    var len = 0;
+    for (var i = 0; i < str.length; ++i) {
+      // Gotcha: charCodeAt returns a 16-bit word that is a UTF-16 encoded code
+      // unit, not a Unicode code point of the character! So decode
+      // UTF16->UTF32->UTF8.
+      // See http://unicode.org/faq/utf_bom.html#utf16-3
+      var c = str.charCodeAt(i); // possibly a lead surrogate
+      if (c <= 0x7F) {
+        len++;
+      } else if (c <= 0x7FF) {
+        len += 2;
+      } else if (c >= 0xD800 && c <= 0xDFFF) {
+        len += 4; ++i;
+      } else {
+        len += 3;
+      }
+    }
+    return len;
   };
 
-  /**
-   * Given a pointer 'idx' to a null-terminated UTF8-encoded string in the given
-   * array that contains uint8 values, returns a copy of that string as a
-   * Javascript String object.
-   * heapOrArray is either a regular array, or a JavaScript typed array view.
-   * @param {number=} idx
-   * @param {number=} maxBytesToRead
-   * @param {boolean=} ignoreNul - If true, the function will not stop on a NUL character.
-   * @return {string}
-   */
-  var UTF8ArrayToString = (heapOrArray, idx = 0, maxBytesToRead, ignoreNul) => {
-  
-      var endPtr = findStringEnd(heapOrArray, idx, maxBytesToRead, ignoreNul);
-  
-      // When using conditional TextDecoder, skip it for short strings as the overhead of the native call is not worth it.
-      if (endPtr - idx > 16 && heapOrArray.buffer && UTF8Decoder) {
-        return UTF8Decoder.decode(heapOrArray.subarray(idx, endPtr));
+var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
+    // Parameter maxBytesToWrite is not optional. Negative values, 0, null,
+    // undefined and false each don't write out any bytes.
+    if (!(maxBytesToWrite > 0))
+      return 0;
+
+    var startIdx = outIdx;
+    var endIdx = outIdx + maxBytesToWrite - 1; // -1 for string null terminator.
+    for (var i = 0; i < str.length; ++i) {
+      // For UTF8 byte structure, see http://en.wikipedia.org/wiki/UTF-8#Description
+      // and https://www.ietf.org/rfc/rfc2279.txt
+      // and https://tools.ietf.org/html/rfc3629
+      var u = str.codePointAt(i);
+      if (u <= 0x7F) {
+        if (outIdx >= endIdx) break;
+        heap[outIdx++] = u;
+      } else if (u <= 0x7FF) {
+        if (outIdx + 1 >= endIdx) break;
+        heap[outIdx++] = 0xC0 | (u >> 6);
+        heap[outIdx++] = 0x80 | (u & 63);
+      } else if (u <= 0xFFFF) {
+        if (outIdx + 2 >= endIdx) break;
+        heap[outIdx++] = 0xE0 | (u >> 12);
+        heap[outIdx++] = 0x80 | ((u >> 6) & 63);
+        heap[outIdx++] = 0x80 | (u & 63);
+      } else {
+        if (outIdx + 3 >= endIdx) break;
+        heap[outIdx++] = 0xF0 | (u >> 18);
+        heap[outIdx++] = 0x80 | ((u >> 12) & 63);
+        heap[outIdx++] = 0x80 | ((u >> 6) & 63);
+        heap[outIdx++] = 0x80 | (u & 63);
+        // Gotcha: if codePoint is over 0xFFFF, it is represented as a surrogate pair in UTF-16.
+        // We need to manually skip over the second code unit for correct iteration.
+        i++;
       }
-      var str = '';
-      while (idx < endPtr) {
-        // For UTF8 byte structure, see:
-        // http://en.wikipedia.org/wiki/UTF-8#Description
-        // https://www.ietf.org/rfc/rfc2279.txt
-        // https://tools.ietf.org/html/rfc3629
-        var u0 = heapOrArray[idx++];
-        if (!(u0 & 0x80)) { str += String.fromCharCode(u0); continue; }
-        var u1 = heapOrArray[idx++] & 63;
-        if ((u0 & 0xE0) == 0xC0) { str += String.fromCharCode(((u0 & 31) << 6) | u1); continue; }
-        var u2 = heapOrArray[idx++] & 63;
-        if ((u0 & 0xF0) == 0xE0) {
-          u0 = ((u0 & 15) << 12) | (u1 << 6) | u2;
-        } else {
-          u0 = ((u0 & 7) << 18) | (u1 << 12) | (u2 << 6) | (heapOrArray[idx++] & 63);
-        }
-  
-        if (u0 < 0x10000) {
-          str += String.fromCharCode(u0);
-        } else {
-          var ch = u0 - 0x10000;
-          str += String.fromCharCode(0xD800 | (ch >> 10), 0xDC00 | (ch & 0x3FF));
-        }
-      }
-      return str;
-    };
-  
-  var FS_stdin_getChar_buffer = [];
-  
-  var lengthBytesUTF8 = (str) => {
-      var len = 0;
-      for (var i = 0; i < str.length; ++i) {
-        // Gotcha: charCodeAt returns a 16-bit word that is a UTF-16 encoded code
-        // unit, not a Unicode code point of the character! So decode
-        // UTF16->UTF32->UTF8.
-        // See http://unicode.org/faq/utf_bom.html#utf16-3
-        var c = str.charCodeAt(i); // possibly a lead surrogate
-        if (c <= 0x7F) {
-          len++;
-        } else if (c <= 0x7FF) {
-          len += 2;
-        } else if (c >= 0xD800 && c <= 0xDFFF) {
-          len += 4; ++i;
-        } else {
-          len += 3;
-        }
-      }
-      return len;
-    };
-  
-  var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
-      // Parameter maxBytesToWrite is not optional. Negative values, 0, null,
-      // undefined and false each don't write out any bytes.
-      if (!(maxBytesToWrite > 0))
-        return 0;
-  
-      var startIdx = outIdx;
-      var endIdx = outIdx + maxBytesToWrite - 1; // -1 for string null terminator.
-      for (var i = 0; i < str.length; ++i) {
-        // For UTF8 byte structure, see http://en.wikipedia.org/wiki/UTF-8#Description
-        // and https://www.ietf.org/rfc/rfc2279.txt
-        // and https://tools.ietf.org/html/rfc3629
-        var u = str.codePointAt(i);
-        if (u <= 0x7F) {
-          if (outIdx >= endIdx) break;
-          heap[outIdx++] = u;
-        } else if (u <= 0x7FF) {
-          if (outIdx + 1 >= endIdx) break;
-          heap[outIdx++] = 0xC0 | (u >> 6);
-          heap[outIdx++] = 0x80 | (u & 63);
-        } else if (u <= 0xFFFF) {
-          if (outIdx + 2 >= endIdx) break;
-          heap[outIdx++] = 0xE0 | (u >> 12);
-          heap[outIdx++] = 0x80 | ((u >> 6) & 63);
-          heap[outIdx++] = 0x80 | (u & 63);
-        } else {
-          if (outIdx + 3 >= endIdx) break;
-          heap[outIdx++] = 0xF0 | (u >> 18);
-          heap[outIdx++] = 0x80 | ((u >> 12) & 63);
-          heap[outIdx++] = 0x80 | ((u >> 6) & 63);
-          heap[outIdx++] = 0x80 | (u & 63);
-          // Gotcha: if codePoint is over 0xFFFF, it is represented as a surrogate pair in UTF-16.
-          // We need to manually skip over the second code unit for correct iteration.
-          i++;
-        }
-      }
-      // Null-terminate the pointer to the buffer.
-      heap[outIdx] = 0;
-      return outIdx - startIdx;
-    };
-  /** @type {function(string, boolean=, number=)} */
+    }
+    // Null-terminate the pointer to the buffer.
+    heap[outIdx] = 0;
+    return outIdx - startIdx;
+  };
+/** @type {function(string, boolean=, number=)} */
   var intArrayFromString = (stringy, dontAddNull, length) => {
       var len = length > 0 ? length : lengthBytesUTF8(stringy)+1;
       var u8array = new Array(len);
@@ -3274,23 +3294,6 @@ var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
       },
   };
   
-  
-    /**
-   * Given a pointer 'ptr' to a null-terminated UTF8-encoded string in the
-   * emscripten HEAP, returns a copy of that string as a Javascript String object.
-   *
-   * @param {number} ptr
-   * @param {number=} maxBytesToRead - An optional length that specifies the
-   *   maximum number of bytes to read. You can omit this parameter to scan the
-   *   string until the first 0 byte. If maxBytesToRead is passed, and the string
-   *   at [ptr, ptr+maxBytesToReadr[ contains a null byte in the middle, then the
-   *   string will cut short at that byte index.
-   * @param {boolean=} ignoreNul - If true, the function will not stop on a NUL character.
-   * @return {string}
-   */
-  var UTF8ToString = (ptr, maxBytesToRead, ignoreNul) => {
-      return ptr ? UTF8ArrayToString(HEAPU8, ptr, maxBytesToRead, ignoreNul) : '';
-    };
   var SYSCALLS = {
   calculateAt(dirfd, path, allowEmpty) {
         if (PATH.isAbs(path)) {
@@ -9713,69 +9716,86 @@ if (Module['wasmBinary']) wasmBinary = Module['wasmBinary'];
 // end include: postlibrary.js
 
 var ASM_CONSTS = {
-  691536: ($0) => { try { const name = UTF8ToString($0); let wavFileName = 'sounds/menu/CLICK.WAV'; if (name.includes('SELECT.WAV') || name.includes('SELECT_MENU_ITEM')) { wavFileName = 'sounds/menu/SELECT.WAV'; } else if (name.includes('CLICK.WAV') || name.includes('CHANGE_MENU_ITEM')) { wavFileName = 'sounds/menu/CLICK.WAV'; } else if (name.includes('MENUBED.WAV') || name.includes('MENUMUSIC')) { wavFileName = 'sounds/menu/MENUBED.WAV'; } fetch(wavFileName) .then(function(response) { if (!response.ok) { throw new Error('Failed to load WAV file: ' + response.status + ' ' + response.statusText); } return response.arrayBuffer(); }) .then(function(arrayBuffer) { const audioContext = window.audioContext; return audioContext.decodeAudioData(arrayBuffer); }) .then(function(audioBuffer) { window.soundBuffers = window.soundBuffers || new Map(); window.soundBuffers.set(name, audioBuffer); }) .catch(function(error) { console.error('Error loading WAV file:', error); window.soundBuffers = window.soundBuffers || new Map(); window.soundBuffers.set(name, { type: 'oscillator', frequency: 800, duration: 0.5 }); }); return true; } catch (e) { console.error('Error loading sound:', e); return false; } },  
- 692722: ($0, $1) => { try { const name = UTF8ToString($0); const volume = $1; const soundBuffers = window.soundBuffers; if (!soundBuffers || !soundBuffers.has(name)) { return false; } const soundData = soundBuffers.get(name); const audioContext = window.audioContext; if (soundData.type === 'oscillator') { const oscillator = audioContext.createOscillator(); const gainNode = audioContext.createGain(); oscillator.frequency.setValueAtTime(soundData.frequency, audioContext.currentTime); oscillator.type = 'sine'; gainNode.gain.setValueAtTime(volume * window.soundVolume, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + soundData.duration); oscillator.connect(gainNode); gainNode.connect(audioContext.destination); oscillator.start(); oscillator.stop(audioContext.currentTime + soundData.duration); return true; } else { const source = audioContext.createBufferSource(); const gainNode = audioContext.createGain(); source.buffer = soundData; source.loop = false; gainNode.gain.value = volume * window.soundVolume; source.connect(gainNode); gainNode.connect(audioContext.destination); source.start(); return true; } } catch (e) { console.error('Error playing sound:', e); return false; } },  
- 693945: ($0) => { if (window.activeSources && window.activeSources.has(UTF8ToString($0))) { const name = UTF8ToString($0); try { window.activeSources.get(name).stop(); window.activeSources.delete(name); } catch(e) { } } if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'stopSound', name: UTF8ToString($0) }); } },  
- 694273: () => { if (window.activeSources) { window.activeSources.forEach((source, path) => { try { source.stop(); } catch(e) { } }); window.activeSources.clear(); } if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'stopAllSounds' }); } },  
- 694528: ($0, $1, $2) => { if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'loadMusic', name: UTF8ToString($0), data: new Uint8Array(HEAPU8.buffer, $1, $2) }); } },  
- 694699: ($0, $1, $2) => { if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'playMusic', name: UTF8ToString($0), looping: $1, volume: $2 }); } },  
- 694850: () => { if (window.musicSource) { window.musicSource.stop(); window.musicSource = null; } if (window.musicGainNode) { window.musicGainNode = null; } if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'stopMusic' }); } },  
- 695093: () => { if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'pauseMusic' }); } },  
- 695196: () => { if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'resumeMusic' }); } },  
- 695300: ($0, $1, $2, $3, $4) => { try { const dataPtr = $0; const dataSize = $1; const volume = $2; const loops = $3; const originalPath = UTF8ToString($4); const audioData = new Uint8Array(dataSize); audioData.set(HEAPU8.subarray(dataPtr, dataPtr + dataSize)); const arrayBuffer = audioData.buffer; const header = String.fromCharCode.apply(null, audioData.slice(0, 4)); if (header !== 'RIFF') { console.error('[Audio] Invalid WAV header:', header); return false; } const audioContext = window.audioContext; audioContext.decodeAudioData(arrayBuffer.slice(0)) .then(function(audioBuffer) { window.soundBuffers = window.soundBuffers || new Map(); window.soundBuffers.set(originalPath, audioBuffer); const source = audioContext.createBufferSource(); const gainNode = audioContext.createGain(); source.buffer = audioBuffer; source.loop = (loops === -1); let volumeMultiplier = window.soundVolume; let isMusic = false; if (originalPath.includes('MENUBED.WAV') || originalPath.includes('MENUMUSIC')) { volumeMultiplier = window.musicVolume; isMusic = true; } let finalVolume = volume * volumeMultiplier; if (isMusic && !window.musicEnabled) { finalVolume = 0; } finalVolume = Math.max(0.0, Math.min(1.0, finalVolume)); gainNode.gain.value = finalVolume; if (isMusic) { window.musicGainNode = gainNode; window.musicSource = source; window.musicVolume = volumeMultiplier; } window.activeSources = window.activeSources || new Map(); const isLooping = (loops === -1); if (isLooping || isMusic) { if (window.activeSources.has(originalPath)) { try { window.activeSources.get(originalPath).stop(); } catch(e) {} } window.activeSources.set(originalPath, source); } source.onended = function() { if (window.activeSources && window.activeSources.get(originalPath) === source) { window.activeSources.delete(originalPath); } }; source.connect(gainNode); gainNode.connect(audioContext.destination); source.start(); }) .catch(function(error) { console.error('[Audio] Failed to decode:', originalPath, error); }); return true; } catch (e) { console.error('[Audio] Exception:', e); return false; } },  
- 697346: ($0) => { window.soundVolume = $0; if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'setSoundVolume', volume: $0 }); } },  
- 697490: ($0) => { window.musicEnabled = $0; if (!window.musicEnabled) { if (window.musicGainNode) { window.musicGainNode.gain.value = 0; } } else { if (window.musicGainNode) { window.musicGainNode.gain.value = window.musicVolume; } } if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'setMusicEnabled', enabled: $0 }); } },  
- 697827: ($0) => { window.musicVolume = $0; if (window.musicGainNode && window.musicEnabled) { window.musicGainNode.gain.value = $0; } if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'setMusicVolume', volume: $0 }); } },  
- 698062: () => { try { window.AudioContext = window.AudioContext || window.webkitAudioContext; if (!window.AudioContext) { console.error('Web Audio API not supported'); return false; } window.audioContext = new AudioContext(); window.soundVolume = 1.0; window.musicVolume = 1.0; window.musicEnabled = true; window.soundEnabled = true; const resumeAudio = () => { if (window.audioContext.state === 'suspended') { window.audioContext.resume(); } document.removeEventListener('click', resumeAudio); document.removeEventListener('keydown', resumeAudio); document.removeEventListener('touchstart', resumeAudio); }; document.addEventListener('click', resumeAudio); document.addEventListener('keydown', resumeAudio); document.addEventListener('touchstart', resumeAudio); return true; } catch (e) { console.error('Error initializing AudioContext:', e); return false; } },  
- 698910: () => { try { if (!window.audioContext || !window.audioContext.audioWorklet) { console.error('AudioWorklet not supported in this browser'); return false; } const audioWorkletScript = 'class GameAudioProcessor extends AudioWorkletProcessor {' + '    constructor() {' + '        super();' + '        this.soundVolume = 1.0;' + '        this.musicVolume = 1.0;' + '        this.port.onmessage = (event) => { this.handleMessage(event.data); };' + '    }' + '    handleMessage(data) {' + '        switch (data.type) {' + '            case "setSoundVolume": this.soundVolume = data.volume; break;' + '            case "setMusicVolume": this.musicVolume = data.volume; break;' + '        }' + '    }' + '    process(inputs, outputs, parameters) {' + '        // Simple audio processing - just pass through with volume control' + '        const output = outputs[0];' + '        if (output && output.length > 0) {' + '            for (let channel = 0; channel < output.length; channel++) {' + '                const outputChannel = output[channel];' + '                if (outputChannel) {' + '                    for (let i = 0; i < outputChannel.length; i++) {' + '                        outputChannel[i] = 0; // Clear output' + '                    }' + '                }' + '            }' + '        }' + '        return true;' + '    }' + '}' + 'registerProcessor("game-audio-processor", GameAudioProcessor);'; const blob = new Blob([audioWorkletScript], { type: 'application/javascript' }); const url = URL.createObjectURL(blob); return new Promise((resolve, reject) => { window.audioContext.audioWorklet.addModule(url) .then(() => { try { window.audioWorkletNode = new AudioWorkletNode(window.audioContext, 'game-audio-processor'); window.audioWorkletNode.connect(window.audioContext.destination); resolve(true); } catch (e) { console.error('Error creating AudioWorkletNode:', e); reject(e); } }) .catch(error => { console.error('Error loading AudioWorklet module:', error); reject(error); }); }).then(() => true).catch(() => false); } catch (e) { console.error('Error setting up AudioWorklet:', e); return false; } },  
- 701023: ($0) => { if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage(JSON.parse(UTF8ToString($0))); } },  
- 701132: () => { console.log('[Debug] m_videoPlatform exists, calling PumpEvents'); },  
- 701203: () => { console.log('[Debug] m_videoPlatform is NULL!'); },  
- 701256: () => { var canvas = document.getElementById('canvas'); return canvas ? canvas.width : 640; },  
- 701344: () => { var canvas = document.getElementById('canvas'); return canvas ? canvas.height : 480; },  
- 701433: ($0, $1) => { if (typeof triggerHaptic === 'function') { triggerHaptic($0, UTF8ToString($1)); } },  
- 701519: ($0, $1, $2, $3) => { if (typeof triggerHapticCustom === 'function') { triggerHapticCustom($0, $1, $2, $3); } },  
- 701611: ($0) => { if (typeof setHapticEnabled === 'function') { setHapticEnabled($0); } },  
- 701685: ($0) => { var jsonStr = UTF8ToString($0); try { localStorage.setItem('OpenClawSaves_backup', jsonStr); if (typeof window.saveGameToIndexedDB === 'function') { window.saveGameToIndexedDB(jsonStr).then(function(success) { if (success) { console.log('[SaveBridge] Saved to IndexedDB'); } }).catch(function(err) { console.error('[SaveBridge] IndexedDB save failed:', err); }); } console.log('[SaveBridge] Save initiated'); return 1; } catch (e) { console.error('[SaveBridge] Save error:', e); return 0; } },  
- 702180: () => { var jsonStr = null; try { jsonStr = localStorage.getItem('OpenClawSaves_backup'); if (jsonStr) { console.log('[SaveBridge] Loaded from localStorage backup'); } } catch (e) { console.warn('[SaveBridge] localStorage not available:', e); } if (jsonStr) { var lengthBytes = lengthBytesUTF8(jsonStr) + 1; var stringOnWasmHeap = _malloc(lengthBytes); stringToUTF8(jsonStr, stringOnWasmHeap, lengthBytes); return stringOnWasmHeap; } return 0; },  
- 702620: () => { try { var data = localStorage.getItem('OpenClawSaves_backup'); return data ? 1 : 0; } catch (e) { return 0; } },  
- 702734: () => { try { localStorage.removeItem('OpenClawSaves_backup'); if (typeof window.deleteSaveDataFromIndexedDB === 'function') { window.deleteSaveDataFromIndexedDB(); } console.log('[SaveBridge] Save data deleted'); return 1; } catch (e) { console.error('[SaveBridge] Delete error:', e); return 0; } },  
- 703028: () => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.cleanup) { window.webglBridge.cleanup(); } },  
- 703143: ($0, $1, $2, $3) => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.setViewport) { window.webglBridge.setViewport($0, $1, $2, $3); } },  
- 703280: ($0, $1, $2, $3) => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.clear) { window.webglBridge.clear($0, $1, $2, $3); } },  
- 703405: () => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.present) { window.webglBridge.present(); } },  
- 703520: () => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.initialize) { return window.webglBridge.initialize() ? 1 : 0; } return 0; },  
- 703666: () => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.createShaders) { return window.webglBridge.createShaders() ? 1 : 0; } return 0; },  
- 703818: () => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.createBuffers) { return window.webglBridge.createBuffers() ? 1 : 0; } return 0; },  
- 703970: ($0, $1, $2, $3, $4, $5, $6, $7) => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.renderQuad) { window.webglBridge.renderQuad($0, $1, $2, $3, $4, $5, $6, $7); } },  
- 704121: () => { if (!window.textureBridge) { window.textureBridge = new TextureBridge(); } window.textureBridge.initialize(); },  
- 704235: () => { if (window.textureBridge) { window.textureBridge.shutdown(); delete window.textureBridge; window.textureBridge = null; } },  
- 704360: ($0, $1) => { if (window.textureBridge) { return window.textureBridge.loadTexture(UTF8ToString($0), $1) ? 1 : 0; } return 0; },  
- 704475: ($0) => { return window.textureBridge ? window.textureBridge.getTextureWidth($0) : 0; },  
- 704555: ($0) => { return window.textureBridge ? window.textureBridge.getTextureHeight($0) : 0; },  
- 704636: ($0) => { return window.textureBridge ? window.textureBridge.getTextureFormat($0) : 0; },  
- 704717: ($0) => { return window.textureBridge ? window.textureBridge.hasTransparency($0) : 0; },  
- 704797: ($0) => { if (window.textureBridge) { window.textureBridge.unloadTexture($0); } },  
- 704871: ($0) => { console.log('[Gamepad C++] Controller ' + $0 + ' connected'); },  
- 704937: ($0) => { console.log('[Gamepad C++] Controller ' + $0 + ' disconnected'); },  
- 705006: ($0, $1) => { console.log('[Resolution] Changing to ' + $0 + 'x' + $1); },  
- 705068: () => { return window.devicePixelRatio ? window.devicePixelRatio : 1.0; },  
- 705136: ($0) => { var str = UTF8ToString($0) + '\n\n' + 'Abort/Retry/Ignore/AlwaysIgnore? [ariA] :'; var reply = window.prompt(str, "i"); if (reply === null) { reply = "i"; } return reply.length === 1 ? reply.charCodeAt(0) : -1; },  
- 705351: () => { if (typeof(AudioContext) !== 'undefined') { return true; } else if (typeof(webkitAudioContext) !== 'undefined') { return true; } return false; },  
- 705498: () => { if ((typeof(navigator.mediaDevices) !== 'undefined') && (typeof(navigator.mediaDevices.getUserMedia) !== 'undefined')) { return true; } else if (typeof(navigator.webkitGetUserMedia) !== 'undefined') { return true; } return false; },  
- 705732: ($0) => { if(typeof(Module['SDL2']) === 'undefined') { Module['SDL2'] = {}; } var SDL2 = Module['SDL2']; if (!$0) { SDL2.audio = {}; } else { SDL2.capture = {}; } if (!SDL2.audioContext) { if (typeof(AudioContext) !== 'undefined') { SDL2.audioContext = new AudioContext(); } else if (typeof(webkitAudioContext) !== 'undefined') { SDL2.audioContext = new webkitAudioContext(); } if (SDL2.audioContext) { if ((typeof navigator.userActivation) === 'undefined') { autoResumeAudioContext(SDL2.audioContext); } } } return SDL2.audioContext === undefined ? -1 : 0; },  
- 706284: () => { var SDL2 = Module['SDL2']; return SDL2.audioContext.sampleRate; },  
- 706352: ($0, $1, $2, $3) => { var SDL2 = Module['SDL2']; var have_microphone = function(stream) { if (SDL2.capture.silenceTimer !== undefined) { clearInterval(SDL2.capture.silenceTimer); SDL2.capture.silenceTimer = undefined; SDL2.capture.silenceBuffer = undefined } SDL2.capture.mediaStreamNode = SDL2.audioContext.createMediaStreamSource(stream); SDL2.capture.scriptProcessorNode = SDL2.audioContext.createScriptProcessor($1, $0, 1); SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) { if ((SDL2 === undefined) || (SDL2.capture === undefined)) { return; } audioProcessingEvent.outputBuffer.getChannelData(0).fill(0.0); SDL2.capture.currentCaptureBuffer = audioProcessingEvent.inputBuffer; dynCall('vp', $2, [$3]); }; SDL2.capture.mediaStreamNode.connect(SDL2.capture.scriptProcessorNode); SDL2.capture.scriptProcessorNode.connect(SDL2.audioContext.destination); SDL2.capture.stream = stream; }; var no_microphone = function(error) { }; SDL2.capture.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.capture.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { SDL2.capture.currentCaptureBuffer = SDL2.capture.silenceBuffer; dynCall('vp', $2, [$3]); }; SDL2.capture.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); if ((navigator.mediaDevices !== undefined) && (navigator.mediaDevices.getUserMedia !== undefined)) { navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(have_microphone).catch(no_microphone); } else if (navigator.webkitGetUserMedia !== undefined) { navigator.webkitGetUserMedia({ audio: true, video: false }, have_microphone, no_microphone); } },  
- 708045: ($0, $1, $2, $3) => { var SDL2 = Module['SDL2']; SDL2.audio.scriptProcessorNode = SDL2.audioContext['createScriptProcessor']($1, 0, $0); SDL2.audio.scriptProcessorNode['onaudioprocess'] = function (e) { if ((SDL2 === undefined) || (SDL2.audio === undefined)) { return; } if (SDL2.audio.silenceTimer !== undefined) { clearInterval(SDL2.audio.silenceTimer); SDL2.audio.silenceTimer = undefined; SDL2.audio.silenceBuffer = undefined; } SDL2.audio.currentOutputBuffer = e['outputBuffer']; dynCall('vp', $2, [$3]); }; SDL2.audio.scriptProcessorNode['connect'](SDL2.audioContext['destination']); if (SDL2.audioContext.state === 'suspended') { SDL2.audio.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.audio.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { if ((typeof navigator.userActivation) !== 'undefined') { if (navigator.userActivation.hasBeenActive) { SDL2.audioContext.resume(); } } SDL2.audio.currentOutputBuffer = SDL2.audio.silenceBuffer; dynCall('vp', $2, [$3]); SDL2.audio.currentOutputBuffer = undefined; }; SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); } },  
- 709220: ($0, $1) => { var SDL2 = Module['SDL2']; var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.capture.currentCaptureBuffer.getChannelData(c); if (channelData.length != $1) { throw 'Web Audio capture buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } if (numChannels == 1) { for (var j = 0; j < $1; ++j) { setValue($0 + (j * 4), channelData[j], 'float'); } } else { for (var j = 0; j < $1; ++j) { setValue($0 + (((j * numChannels) + c) * 4), channelData[j], 'float'); } } } },  
- 709825: ($0, $1) => { var SDL2 = Module['SDL2']; var buf = $0 >>> 2; var numChannels = SDL2.audio.currentOutputBuffer['numberOfChannels']; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.audio.currentOutputBuffer['getChannelData'](c); if (channelData.length != $1) { throw 'Web Audio output buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } for (var j = 0; j < $1; ++j) { channelData[j] = HEAPF32[buf + (j*numChannels + c)]; } } },  
- 710314: ($0) => { var SDL2 = Module['SDL2']; if ($0) { if (SDL2.capture.silenceTimer !== undefined) { clearInterval(SDL2.capture.silenceTimer); } if (SDL2.capture.stream !== undefined) { var tracks = SDL2.capture.stream.getAudioTracks(); for (var i = 0; i < tracks.length; i++) { SDL2.capture.stream.removeTrack(tracks[i]); } } if (SDL2.capture.scriptProcessorNode !== undefined) { SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) {}; SDL2.capture.scriptProcessorNode.disconnect(); } if (SDL2.capture.mediaStreamNode !== undefined) { SDL2.capture.mediaStreamNode.disconnect(); } SDL2.capture = undefined; } else { if (SDL2.audio.scriptProcessorNode != undefined) { SDL2.audio.scriptProcessorNode.disconnect(); } if (SDL2.audio.silenceTimer !== undefined) { clearInterval(SDL2.audio.silenceTimer); } SDL2.audio = undefined; } if ((SDL2.audioContext !== undefined) && (SDL2.audio === undefined) && (SDL2.capture === undefined)) { SDL2.audioContext.close(); SDL2.audioContext = undefined; } },  
- 711320: ($0, $1, $2) => { var w = $0; var h = $1; var pixels = $2; if (!Module['SDL2']) Module['SDL2'] = {}; var SDL2 = Module['SDL2']; if (SDL2.ctxCanvas !== Module['canvas']) { SDL2.ctx = Browser.createContext(Module['canvas'], false, true); SDL2.ctxCanvas = Module['canvas']; } if (SDL2.w !== w || SDL2.h !== h || SDL2.imageCtx !== SDL2.ctx) { SDL2.image = SDL2.ctx.createImageData(w, h); SDL2.w = w; SDL2.h = h; SDL2.imageCtx = SDL2.ctx; } var data = SDL2.image.data; var src = pixels / 4; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = 0xff; src++; dst += 4; } } else { if (SDL2.data32Data !== data) { SDL2.data32 = new Int32Array(data.buffer); SDL2.data8 = new Uint8Array(data.buffer); SDL2.data32Data = data; } var data32 = SDL2.data32; num = data32.length; data32.set(HEAP32.subarray(src, src + num)); var data8 = SDL2.data8; var i = 3; var j = i + 4*num; if (num % 8 == 0) { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; } } else { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; } } } SDL2.ctx.putImageData(SDL2.image, 0, 0); },  
- 712786: ($0, $1, $2, $3, $4) => { var w = $0; var h = $1; var hot_x = $2; var hot_y = $3; var pixels = $4; var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h; var ctx = canvas.getContext("2d"); var image = ctx.createImageData(w, h); var data = image.data; var src = pixels / 4; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = (val >> 24) & 0xff; src++; dst += 4; } } else { var data32 = new Int32Array(data.buffer); num = data32.length; data32.set(HEAP32.subarray(src, src + num)); } ctx.putImageData(image, 0, 0); var url = hot_x === 0 && hot_y === 0 ? "url(" + canvas.toDataURL() + "), auto" : "url(" + canvas.toDataURL() + ") " + hot_x + " " + hot_y + ", auto"; var urlBuf = _malloc(url.length + 1); stringToUTF8(url, urlBuf, url.length + 1); return urlBuf; },  
- 713774: ($0) => { if (Module['canvas']) { Module['canvas'].style['cursor'] = UTF8ToString($0); } },  
- 713857: () => { if (Module['canvas']) { Module['canvas'].style['cursor'] = 'none'; } },  
- 713926: () => { return window.innerWidth; },  
- 713956: () => { return window.innerHeight; }
+  722528: ($0) => { try { const name = UTF8ToString($0); let wavFileName = 'sounds/menu/CLICK.WAV'; if (name.includes('SELECT.WAV') || name.includes('SELECT_MENU_ITEM')) { wavFileName = 'sounds/menu/SELECT.WAV'; } else if (name.includes('CLICK.WAV') || name.includes('CHANGE_MENU_ITEM')) { wavFileName = 'sounds/menu/CLICK.WAV'; } else if (name.includes('MENUBED.WAV') || name.includes('MENUMUSIC')) { wavFileName = 'sounds/menu/MENUBED.WAV'; } fetch(wavFileName) .then(function(response) { if (!response.ok) { throw new Error('Failed to load WAV file: ' + response.status + ' ' + response.statusText); } return response.arrayBuffer(); }) .then(function(arrayBuffer) { const audioContext = window.audioContext; return audioContext.decodeAudioData(arrayBuffer); }) .then(function(audioBuffer) { window.soundBuffers = window.soundBuffers || new Map(); window.soundBuffers.set(name, audioBuffer); }) .catch(function(error) { console.error('Error loading WAV file:', error); window.soundBuffers = window.soundBuffers || new Map(); window.soundBuffers.set(name, { type: 'oscillator', frequency: 800, duration: 0.5 }); }); return true; } catch (e) { console.error('Error loading sound:', e); return false; } },  
+ 723714: ($0, $1) => { try { const name = UTF8ToString($0); const volume = $1; const soundBuffers = window.soundBuffers; if (!soundBuffers || !soundBuffers.has(name)) { return false; } const soundData = soundBuffers.get(name); const audioContext = window.audioContext; if (soundData.type === 'oscillator') { const oscillator = audioContext.createOscillator(); const gainNode = audioContext.createGain(); oscillator.frequency.setValueAtTime(soundData.frequency, audioContext.currentTime); oscillator.type = 'sine'; gainNode.gain.setValueAtTime(volume * window.soundVolume, audioContext.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + soundData.duration); oscillator.connect(gainNode); gainNode.connect(audioContext.destination); oscillator.start(); oscillator.stop(audioContext.currentTime + soundData.duration); return true; } else { const source = audioContext.createBufferSource(); const gainNode = audioContext.createGain(); source.buffer = soundData; source.loop = false; gainNode.gain.value = volume * window.soundVolume; source.connect(gainNode); gainNode.connect(audioContext.destination); source.start(); return true; } } catch (e) { console.error('Error playing sound:', e); return false; } },  
+ 724937: ($0) => { if (window.activeSources && window.activeSources.has(UTF8ToString($0))) { const name = UTF8ToString($0); try { window.activeSources.get(name).stop(); window.activeSources.delete(name); } catch(e) { } } if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'stopSound', name: UTF8ToString($0) }); } },  
+ 725265: () => { if (window.activeSources) { window.activeSources.forEach((source, path) => { try { source.stop(); } catch(e) { } }); window.activeSources.clear(); } if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'stopAllSounds' }); } },  
+ 725520: ($0, $1, $2) => { if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'loadMusic', name: UTF8ToString($0), data: new Uint8Array(HEAPU8.buffer, $1, $2) }); } },  
+ 725691: ($0, $1, $2) => { if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'playMusic', name: UTF8ToString($0), looping: $1, volume: $2 }); } },  
+ 725842: () => { if (window.musicSource) { window.musicSource.stop(); window.musicSource = null; } if (window.musicGainNode) { window.musicGainNode = null; } if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'stopMusic' }); } },  
+ 726085: () => { if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'pauseMusic' }); } },  
+ 726188: () => { if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'resumeMusic' }); } },  
+ 726292: ($0, $1, $2, $3, $4) => { try { const dataPtr = $0; const dataSize = $1; const volume = $2; const loops = $3; const originalPath = UTF8ToString($4); const audioData = new Uint8Array(dataSize); audioData.set(HEAPU8.subarray(dataPtr, dataPtr + dataSize)); const arrayBuffer = audioData.buffer; const header = String.fromCharCode.apply(null, audioData.slice(0, 4)); if (header !== 'RIFF') { console.error('[Audio] Invalid WAV header:', header); return false; } const audioContext = window.audioContext; audioContext.decodeAudioData(arrayBuffer.slice(0)) .then(function(audioBuffer) { window.soundBuffers = window.soundBuffers || new Map(); window.soundBuffers.set(originalPath, audioBuffer); const source = audioContext.createBufferSource(); const gainNode = audioContext.createGain(); source.buffer = audioBuffer; source.loop = (loops === -1); let volumeMultiplier = window.soundVolume; let isMusic = false; if (originalPath.includes('MENUBED.WAV') || originalPath.includes('MENUMUSIC')) { volumeMultiplier = window.musicVolume; isMusic = true; } let finalVolume = volume * volumeMultiplier; if (isMusic && !window.musicEnabled) { finalVolume = 0; } finalVolume = Math.max(0.0, Math.min(1.0, finalVolume)); gainNode.gain.value = finalVolume; if (isMusic) { window.musicGainNode = gainNode; window.musicSource = source; window.musicVolume = volumeMultiplier; } window.activeSources = window.activeSources || new Map(); const isLooping = (loops === -1); if (isLooping || isMusic) { if (window.activeSources.has(originalPath)) { try { window.activeSources.get(originalPath).stop(); } catch(e) {} } window.activeSources.set(originalPath, source); } source.onended = function() { if (window.activeSources && window.activeSources.get(originalPath) === source) { window.activeSources.delete(originalPath); } }; source.connect(gainNode); gainNode.connect(audioContext.destination); source.start(); }) .catch(function(error) { console.error('[Audio] Failed to decode:', originalPath, error); }); return true; } catch (e) { console.error('[Audio] Exception:', e); return false; } },  
+ 728338: ($0) => { window.soundVolume = $0; if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'setSoundVolume', volume: $0 }); } },  
+ 728482: ($0) => { window.musicEnabled = $0; if (!window.musicEnabled) { if (window.musicGainNode) { window.musicGainNode.gain.value = 0; } } else { if (window.musicGainNode) { window.musicGainNode.gain.value = window.musicVolume; } } if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'setMusicEnabled', enabled: $0 }); } },  
+ 728819: ($0) => { window.musicVolume = $0; if (window.musicGainNode && window.musicEnabled) { window.musicGainNode.gain.value = $0; } if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage({ type: 'setMusicVolume', volume: $0 }); } },  
+ 729054: () => { try { window.AudioContext = window.AudioContext || window.webkitAudioContext; if (!window.AudioContext) { console.error('Web Audio API not supported'); return false; } window.audioContext = new AudioContext(); window.soundVolume = 1.0; window.musicVolume = 1.0; window.musicEnabled = true; window.soundEnabled = true; const resumeAudio = () => { if (window.audioContext.state === 'suspended') { window.audioContext.resume(); } document.removeEventListener('click', resumeAudio); document.removeEventListener('keydown', resumeAudio); document.removeEventListener('touchstart', resumeAudio); }; document.addEventListener('click', resumeAudio); document.addEventListener('keydown', resumeAudio); document.addEventListener('touchstart', resumeAudio); return true; } catch (e) { console.error('Error initializing AudioContext:', e); return false; } },  
+ 729902: () => { try { if (!window.audioContext || !window.audioContext.audioWorklet) { console.error('AudioWorklet not supported in this browser'); return false; } const audioWorkletScript = 'class GameAudioProcessor extends AudioWorkletProcessor {' + '    constructor() {' + '        super();' + '        this.soundVolume = 1.0;' + '        this.musicVolume = 1.0;' + '        this.port.onmessage = (event) => { this.handleMessage(event.data); };' + '    }' + '    handleMessage(data) {' + '        switch (data.type) {' + '            case "setSoundVolume": this.soundVolume = data.volume; break;' + '            case "setMusicVolume": this.musicVolume = data.volume; break;' + '        }' + '    }' + '    process(inputs, outputs, parameters) {' + '        // Simple audio processing - just pass through with volume control' + '        const output = outputs[0];' + '        if (output && output.length > 0) {' + '            for (let channel = 0; channel < output.length; channel++) {' + '                const outputChannel = output[channel];' + '                if (outputChannel) {' + '                    for (let i = 0; i < outputChannel.length; i++) {' + '                        outputChannel[i] = 0; // Clear output' + '                    }' + '                }' + '            }' + '        }' + '        return true;' + '    }' + '}' + 'registerProcessor("game-audio-processor", GameAudioProcessor);'; const blob = new Blob([audioWorkletScript], { type: 'application/javascript' }); const url = URL.createObjectURL(blob); return new Promise((resolve, reject) => { window.audioContext.audioWorklet.addModule(url) .then(() => { try { window.audioWorkletNode = new AudioWorkletNode(window.audioContext, 'game-audio-processor'); window.audioWorkletNode.connect(window.audioContext.destination); resolve(true); } catch (e) { console.error('Error creating AudioWorkletNode:', e); reject(e); } }) .catch(error => { console.error('Error loading AudioWorklet module:', error); reject(error); }); }).then(() => true).catch(() => false); } catch (e) { console.error('Error setting up AudioWorklet:', e); return false; } },  
+ 732015: ($0) => { if (window.audioWorkletNode) { window.audioWorkletNode.port.postMessage(JSON.parse(UTF8ToString($0))); } },  
+ 732124: () => { console.log('[Debug] m_videoPlatform exists, calling PumpEvents'); },  
+ 732195: () => { console.log('[Debug] m_videoPlatform is NULL!'); },  
+ 732248: () => { var canvas = document.getElementById('canvas'); return canvas ? canvas.width : 640; },  
+ 732336: () => { var canvas = document.getElementById('canvas'); return canvas ? canvas.height : 480; },  
+ 732425: ($0, $1) => { if (typeof triggerHaptic === 'function') { triggerHaptic($0, UTF8ToString($1)); } },  
+ 732511: ($0, $1, $2, $3) => { if (typeof triggerHapticCustom === 'function') { triggerHapticCustom($0, $1, $2, $3); } },  
+ 732603: ($0) => { if (typeof setHapticEnabled === 'function') { setHapticEnabled($0); } },  
+ 732677: ($0) => { try { localStorage.setItem('openclaw:saves', UTF8ToString($0)); return 1; } catch (e) { console.error('[SaveBridge] Save error:', e); return 0; } },  
+ 732827: () => { try { var jsonStr = localStorage.getItem('openclaw:saves'); if (!jsonStr) return 0; var lengthBytes = lengthBytesUTF8(jsonStr) + 1; var ptr = _malloc(lengthBytes); stringToUTF8(jsonStr, ptr, lengthBytes); return ptr; } catch (e) { console.warn('[SaveBridge] Load error:', e); return 0; } },  
+ 733119: () => { try { return localStorage.getItem('openclaw:saves') ? 1 : 0; } catch (e) { return 0; } },  
+ 733210: () => { try { localStorage.removeItem('openclaw:saves'); return 1; } catch (e) { console.error('[SaveBridge] Delete error:', e); return 0; } },  
+ 733347: () => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.cleanup) { window.webglBridge.cleanup(); } },  
+ 733462: ($0, $1, $2, $3) => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.setViewport) { window.webglBridge.setViewport($0, $1, $2, $3); } },  
+ 733599: ($0, $1, $2, $3) => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.clear) { window.webglBridge.clear($0, $1, $2, $3); } },  
+ 733724: () => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.present) { window.webglBridge.present(); } },  
+ 733839: () => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.initialize) { return window.webglBridge.initialize() ? 1 : 0; } return 0; },  
+ 733985: () => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.createShaders) { return window.webglBridge.createShaders() ? 1 : 0; } return 0; },  
+ 734137: () => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.createBuffers) { return window.webglBridge.createBuffers() ? 1 : 0; } return 0; },  
+ 734289: ($0, $1, $2, $3, $4, $5, $6, $7) => { if (typeof window.webglBridge !== 'undefined' && window.webglBridge.renderQuad) { window.webglBridge.renderQuad($0, $1, $2, $3, $4, $5, $6, $7); } },  
+ 734440: () => { if (!window.textureBridge) { window.textureBridge = new TextureBridge(); } window.textureBridge.initialize(); },  
+ 734554: () => { if (window.textureBridge) { window.textureBridge.shutdown(); delete window.textureBridge; window.textureBridge = null; } },  
+ 734679: ($0, $1) => { if (window.textureBridge) { return window.textureBridge.loadTexture(UTF8ToString($0), $1) ? 1 : 0; } return 0; },  
+ 734794: ($0) => { return window.textureBridge ? window.textureBridge.getTextureWidth($0) : 0; },  
+ 734874: ($0) => { return window.textureBridge ? window.textureBridge.getTextureHeight($0) : 0; },  
+ 734955: ($0) => { return window.textureBridge ? window.textureBridge.getTextureFormat($0) : 0; },  
+ 735036: ($0) => { return window.textureBridge ? window.textureBridge.hasTransparency($0) : 0; },  
+ 735116: ($0) => { if (window.textureBridge) { window.textureBridge.unloadTexture($0); } },  
+ 735190: () => { window.exportSaveData(); },  
+ 735219: () => { window.importSaveData(); },  
+ 735248: () => { window.toggleFullscreen(); },  
+ 735279: () => { window.toggleAspectRatio(); },  
+ 735311: () => { toggleFPS(); },  
+ 735328: () => { return document.fullscreenElement ? 1 : 0; },  
+ 735375: () => { return document.fullscreenElement ? 0 : 1; },  
+ 735422: () => { return window.forceOriginalAspect ? 0 : 1; },  
+ 735469: () => { return window.forceOriginalAspect ? 1 : 0; },  
+ 735516: () => { return window.fpsEnabled ? 1 : 0; },  
+ 735554: () => { return window.fpsEnabled ? 0 : 1; },  
+ 735592: () => { return document.fullscreenElement ? 1 : 0; },  
+ 735639: () => { return document.fullscreenElement ? 0 : 1; },  
+ 735686: () => { return window.forceOriginalAspect ? 0 : 1; },  
+ 735733: () => { return window.forceOriginalAspect ? 1 : 0; },  
+ 735780: () => { return window.fpsEnabled ? 1 : 0; },  
+ 735818: () => { return window.fpsEnabled ? 0 : 1; },  
+ 735856: ($0) => { console.log('[Gamepad C++] Controller ' + $0 + ' connected'); },  
+ 735922: ($0) => { console.log('[Gamepad C++] Controller ' + $0 + ' disconnected'); },  
+ 735991: ($0, $1) => { console.log('[Resolution] Changing to ' + $0 + 'x' + $1); },  
+ 736053: () => { return window.devicePixelRatio ? window.devicePixelRatio : 1.0; },  
+ 736121: ($0) => { var str = UTF8ToString($0) + '\n\n' + 'Abort/Retry/Ignore/AlwaysIgnore? [ariA] :'; var reply = window.prompt(str, "i"); if (reply === null) { reply = "i"; } return reply.length === 1 ? reply.charCodeAt(0) : -1; },  
+ 736336: () => { if (typeof(AudioContext) !== 'undefined') { return true; } else if (typeof(webkitAudioContext) !== 'undefined') { return true; } return false; },  
+ 736483: () => { if ((typeof(navigator.mediaDevices) !== 'undefined') && (typeof(navigator.mediaDevices.getUserMedia) !== 'undefined')) { return true; } else if (typeof(navigator.webkitGetUserMedia) !== 'undefined') { return true; } return false; },  
+ 736717: ($0) => { if(typeof(Module['SDL2']) === 'undefined') { Module['SDL2'] = {}; } var SDL2 = Module['SDL2']; if (!$0) { SDL2.audio = {}; } else { SDL2.capture = {}; } if (!SDL2.audioContext) { if (typeof(AudioContext) !== 'undefined') { SDL2.audioContext = new AudioContext(); } else if (typeof(webkitAudioContext) !== 'undefined') { SDL2.audioContext = new webkitAudioContext(); } if (SDL2.audioContext) { if ((typeof navigator.userActivation) === 'undefined') { autoResumeAudioContext(SDL2.audioContext); } } } return SDL2.audioContext === undefined ? -1 : 0; },  
+ 737269: () => { var SDL2 = Module['SDL2']; return SDL2.audioContext.sampleRate; },  
+ 737337: ($0, $1, $2, $3) => { var SDL2 = Module['SDL2']; var have_microphone = function(stream) { if (SDL2.capture.silenceTimer !== undefined) { clearInterval(SDL2.capture.silenceTimer); SDL2.capture.silenceTimer = undefined; SDL2.capture.silenceBuffer = undefined } SDL2.capture.mediaStreamNode = SDL2.audioContext.createMediaStreamSource(stream); SDL2.capture.scriptProcessorNode = SDL2.audioContext.createScriptProcessor($1, $0, 1); SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) { if ((SDL2 === undefined) || (SDL2.capture === undefined)) { return; } audioProcessingEvent.outputBuffer.getChannelData(0).fill(0.0); SDL2.capture.currentCaptureBuffer = audioProcessingEvent.inputBuffer; dynCall('vp', $2, [$3]); }; SDL2.capture.mediaStreamNode.connect(SDL2.capture.scriptProcessorNode); SDL2.capture.scriptProcessorNode.connect(SDL2.audioContext.destination); SDL2.capture.stream = stream; }; var no_microphone = function(error) { }; SDL2.capture.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.capture.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { SDL2.capture.currentCaptureBuffer = SDL2.capture.silenceBuffer; dynCall('vp', $2, [$3]); }; SDL2.capture.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); if ((navigator.mediaDevices !== undefined) && (navigator.mediaDevices.getUserMedia !== undefined)) { navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(have_microphone).catch(no_microphone); } else if (navigator.webkitGetUserMedia !== undefined) { navigator.webkitGetUserMedia({ audio: true, video: false }, have_microphone, no_microphone); } },  
+ 739030: ($0, $1, $2, $3) => { var SDL2 = Module['SDL2']; SDL2.audio.scriptProcessorNode = SDL2.audioContext['createScriptProcessor']($1, 0, $0); SDL2.audio.scriptProcessorNode['onaudioprocess'] = function (e) { if ((SDL2 === undefined) || (SDL2.audio === undefined)) { return; } if (SDL2.audio.silenceTimer !== undefined) { clearInterval(SDL2.audio.silenceTimer); SDL2.audio.silenceTimer = undefined; SDL2.audio.silenceBuffer = undefined; } SDL2.audio.currentOutputBuffer = e['outputBuffer']; dynCall('vp', $2, [$3]); }; SDL2.audio.scriptProcessorNode['connect'](SDL2.audioContext['destination']); if (SDL2.audioContext.state === 'suspended') { SDL2.audio.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.audio.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { if ((typeof navigator.userActivation) !== 'undefined') { if (navigator.userActivation.hasBeenActive) { SDL2.audioContext.resume(); } } SDL2.audio.currentOutputBuffer = SDL2.audio.silenceBuffer; dynCall('vp', $2, [$3]); SDL2.audio.currentOutputBuffer = undefined; }; SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); } },  
+ 740205: ($0, $1) => { var SDL2 = Module['SDL2']; var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.capture.currentCaptureBuffer.getChannelData(c); if (channelData.length != $1) { throw 'Web Audio capture buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } if (numChannels == 1) { for (var j = 0; j < $1; ++j) { setValue($0 + (j * 4), channelData[j], 'float'); } } else { for (var j = 0; j < $1; ++j) { setValue($0 + (((j * numChannels) + c) * 4), channelData[j], 'float'); } } } },  
+ 740810: ($0, $1) => { var SDL2 = Module['SDL2']; var buf = $0 >>> 2; var numChannels = SDL2.audio.currentOutputBuffer['numberOfChannels']; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.audio.currentOutputBuffer['getChannelData'](c); if (channelData.length != $1) { throw 'Web Audio output buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } for (var j = 0; j < $1; ++j) { channelData[j] = HEAPF32[buf + (j*numChannels + c)]; } } },  
+ 741299: ($0) => { var SDL2 = Module['SDL2']; if ($0) { if (SDL2.capture.silenceTimer !== undefined) { clearInterval(SDL2.capture.silenceTimer); } if (SDL2.capture.stream !== undefined) { var tracks = SDL2.capture.stream.getAudioTracks(); for (var i = 0; i < tracks.length; i++) { SDL2.capture.stream.removeTrack(tracks[i]); } } if (SDL2.capture.scriptProcessorNode !== undefined) { SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) {}; SDL2.capture.scriptProcessorNode.disconnect(); } if (SDL2.capture.mediaStreamNode !== undefined) { SDL2.capture.mediaStreamNode.disconnect(); } SDL2.capture = undefined; } else { if (SDL2.audio.scriptProcessorNode != undefined) { SDL2.audio.scriptProcessorNode.disconnect(); } if (SDL2.audio.silenceTimer !== undefined) { clearInterval(SDL2.audio.silenceTimer); } SDL2.audio = undefined; } if ((SDL2.audioContext !== undefined) && (SDL2.audio === undefined) && (SDL2.capture === undefined)) { SDL2.audioContext.close(); SDL2.audioContext = undefined; } },  
+ 742305: ($0, $1, $2) => { var w = $0; var h = $1; var pixels = $2; if (!Module['SDL2']) Module['SDL2'] = {}; var SDL2 = Module['SDL2']; if (SDL2.ctxCanvas !== Module['canvas']) { SDL2.ctx = Browser.createContext(Module['canvas'], false, true); SDL2.ctxCanvas = Module['canvas']; } if (SDL2.w !== w || SDL2.h !== h || SDL2.imageCtx !== SDL2.ctx) { SDL2.image = SDL2.ctx.createImageData(w, h); SDL2.w = w; SDL2.h = h; SDL2.imageCtx = SDL2.ctx; } var data = SDL2.image.data; var src = pixels / 4; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = 0xff; src++; dst += 4; } } else { if (SDL2.data32Data !== data) { SDL2.data32 = new Int32Array(data.buffer); SDL2.data8 = new Uint8Array(data.buffer); SDL2.data32Data = data; } var data32 = SDL2.data32; num = data32.length; data32.set(HEAP32.subarray(src, src + num)); var data8 = SDL2.data8; var i = 3; var j = i + 4*num; if (num % 8 == 0) { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; } } else { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; } } } SDL2.ctx.putImageData(SDL2.image, 0, 0); },  
+ 743771: ($0, $1, $2, $3, $4) => { var w = $0; var h = $1; var hot_x = $2; var hot_y = $3; var pixels = $4; var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h; var ctx = canvas.getContext("2d"); var image = ctx.createImageData(w, h); var data = image.data; var src = pixels / 4; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = (val >> 24) & 0xff; src++; dst += 4; } } else { var data32 = new Int32Array(data.buffer); num = data32.length; data32.set(HEAP32.subarray(src, src + num)); } ctx.putImageData(image, 0, 0); var url = hot_x === 0 && hot_y === 0 ? "url(" + canvas.toDataURL() + "), auto" : "url(" + canvas.toDataURL() + ") " + hot_x + " " + hot_y + ", auto"; var urlBuf = _malloc(url.length + 1); stringToUTF8(url, urlBuf, url.length + 1); return urlBuf; },  
+ 744759: ($0) => { if (Module['canvas']) { Module['canvas'].style['cursor'] = UTF8ToString($0); } },  
+ 744842: () => { if (Module['canvas']) { Module['canvas'].style['cursor'] = 'none'; } },  
+ 744911: () => { return window.innerWidth; },  
+ 744941: () => { return window.innerHeight; }
 };
 function js_CreatePlayer() { if (!Module.genericVideoPlayers) Module.genericVideoPlayers = {}; var id = Object.keys(Module.genericVideoPlayers).length + 1; Module.genericVideoPlayers[id] = { video : document.createElement('video'), ready : false }; return id; }
 function js_DestroyPlayer(id) { if (Module.genericVideoPlayers && Module.genericVideoPlayers[id]) { var player = Module.genericVideoPlayers[id]; if (player.keyHandler) { document.removeEventListener('keydown', player.keyHandler, true); player.keyHandler = null; } if (player.video && player.video.parentNode) { player.video.parentNode.removeChild(player.video); } delete Module.genericVideoPlayers[id]; } }
@@ -9788,6 +9808,7 @@ function js_PauseVideo(id) { var player = Module.genericVideoPlayers[id]; if (pl
 // Imports from the Wasm binary.
 var _main,
   _free,
+  _OnJSSaveDataImported,
   _malloc,
   _OnJSGamepadConnected,
   _OnJSGamepadDisconnected,
@@ -9798,6 +9819,7 @@ var _main,
   _OnJSResolutionChange,
   _GetGameWidth,
   _GetGameHeight,
+  _OnJSFullscreenChange,
   _fileno,
   _emscripten_builtin_memalign,
   _setThrew,
@@ -9875,6 +9897,7 @@ var _main,
 function assignWasmExports(wasmExports) {
   _main = Module['_main'] = wasmExports['__main_argc_argv'];
   _free = wasmExports['free'];
+  _OnJSSaveDataImported = Module['_OnJSSaveDataImported'] = wasmExports['OnJSSaveDataImported'];
   _malloc = wasmExports['malloc'];
   _OnJSGamepadConnected = Module['_OnJSGamepadConnected'] = wasmExports['OnJSGamepadConnected'];
   _OnJSGamepadDisconnected = Module['_OnJSGamepadDisconnected'] = wasmExports['OnJSGamepadDisconnected'];
@@ -9885,6 +9908,7 @@ function assignWasmExports(wasmExports) {
   _OnJSResolutionChange = Module['_OnJSResolutionChange'] = wasmExports['OnJSResolutionChange'];
   _GetGameWidth = Module['_GetGameWidth'] = wasmExports['GetGameWidth'];
   _GetGameHeight = Module['_GetGameHeight'] = wasmExports['GetGameHeight'];
+  _OnJSFullscreenChange = Module['_OnJSFullscreenChange'] = wasmExports['OnJSFullscreenChange'];
   _fileno = wasmExports['fileno'];
   _emscripten_builtin_memalign = wasmExports['emscripten_builtin_memalign'];
   _setThrew = wasmExports['setThrew'];
@@ -9958,6 +9982,8 @@ function assignWasmExports(wasmExports) {
 }
 
 var wasmImports = {
+  /** @export */
+  __assert_fail: ___assert_fail,
   /** @export */
   __cxa_throw: ___cxa_throw,
   /** @export */
