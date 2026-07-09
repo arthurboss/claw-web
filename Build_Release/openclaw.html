@@ -20,8 +20,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="manifest" href="site.webmanifest" />
 
-    <!-- Viewport adapts to canvas width (default 640 for 4:3, changes dynamically in fullscreen) -->
-    <meta name="viewport" content="width=660" />
+    <!-- Viewport adapts to device width, allowing responsive scaling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Preload critical ES modules for faster loading -->
     <link rel="modulepreload" href="game-init.js" />
@@ -114,19 +114,14 @@
         align-items: center;
       }
 
+      /* Canvas element is sized in JS (fitCanvasToContainer) so the element box
+         exactly matches the rendered bitmap. This keeps SDL's cursor mapping
+         (getBoundingClientRect vs canvas.width) accurate — no object-fit
+         letterboxing inside a larger box, which would offset the in-game cursor. */
       canvas {
         display: block;
-        width: 100%;
-        max-height: 100%;
-        aspect-ratio: var(--game-aspect-ratio, 4 / 3);
         image-rendering: pixelated;
         outline: none;
-      }
-
-      canvas.force-4-3 {
-        width: auto;
-        height: 100%;
-        aspect-ratio: 4 / 3;
       }
 
       canvas:focus {
@@ -791,6 +786,31 @@
           };
         },
 
+        // Fit the canvas ELEMENT (CSS pixels) inside its container while
+        // preserving aspect ratio. The element box ends up exactly matching the
+        // rendered bitmap (letterbox is empty container space, not padding
+        // inside the canvas), so SDL's cursor mapping stays accurate.
+        fitCanvasToContainer: function(bufferWidth, bufferHeight) {
+          var canvas = document.getElementById("canvas");
+          var container = document.getElementById("gameContainer");
+          if (!canvas || !container) return;
+
+          var availW = container.clientWidth;
+          var availH = container.clientHeight;
+          var aspect = bufferWidth / bufferHeight;
+
+          // Fit within container: constrain by whichever dimension is limiting
+          var cssW = availW;
+          var cssH = Math.round(cssW / aspect);
+          if (cssH > availH) {
+            cssH = availH;
+            cssW = Math.round(cssH * aspect);
+          }
+
+          canvas.style.width = cssW + "px";
+          canvas.style.height = cssH + "px";
+        },
+
         // Apply resolution change
         apply: function(width, height) {
           var canvas = document.getElementById("canvas");
@@ -800,6 +820,8 @@
             canvas.height = height;
             // Update CSS aspect ratio to match game resolution
             canvas.style.setProperty('--game-aspect-ratio', width + ' / ' + height);
+            // Size the element box to exactly fit the rendered bitmap
+            this.fitCanvasToContainer(width, height);
           }
 
           // Notify C++ of resolution change if game is running
@@ -823,27 +845,28 @@
       // Uses Keyboard Lock API to capture ESC key in fullscreen (Chrome/Edge)
       function toggleFullscreen() {
         var gameContainer = document.getElementById("gameContainer");
-        if (gameContainer) {
-          if (!document.fullscreenElement) {
-            gameContainer.requestFullscreen().then(function() {
-              // Request keyboard lock to capture ESC and system keys
-              if (navigator.keyboard && navigator.keyboard.lock) {
-                navigator.keyboard.lock(['Escape']).then(function() {
-                  console.log('[Keyboard] Locked ESC key in fullscreen');
-                }).catch(function(err) {
-                  console.log('[Keyboard] Could not lock ESC:', err.message);
-                });
-              }
-            }).catch(function (err) {
-              console.error("Fullscreen request failed:", err);
-            });
-          } else {
-            // Unlock keyboard before exiting fullscreen
-            if (navigator.keyboard && navigator.keyboard.unlock) {
-              navigator.keyboard.unlock();
+        if (!gameContainer) return;
+
+        if (!document.fullscreenElement) {
+          gameContainer.requestFullscreen().then(function() {
+            if (navigator.keyboard && navigator.keyboard.lock) {
+              navigator.keyboard.lock(['Escape']).then(function() {
+                console.log('[Keyboard] Locked ESC key in fullscreen');
+              }).catch(function(err) {
+                console.log('[Keyboard] Could not lock ESC:', err.message);
+              });
             }
-            document.exitFullscreen();
+            syncCursorAfterFullscreenChange();
+          }).catch(function (err) {
+            console.error("Fullscreen request failed:", err);
+          });
+        } else {
+          if (navigator.keyboard && navigator.keyboard.unlock) {
+            navigator.keyboard.unlock();
           }
+          document.exitFullscreen().then(function() {
+            syncCursorAfterFullscreenChange();
+          });
         }
       }
       window.toggleFullscreen = toggleFullscreen;
@@ -896,7 +919,30 @@
       var onFullscreenChange = updateGameResolution;
 
       // Listen for fullscreen changes
-      document.addEventListener("mousemove", function(e) { window._lastMouseX = e.clientX; window._lastMouseY = e.clientY; });
+      // Track both client and screen coords. In fullscreen clientX == screenX
+      // (viewport fills screen), so after a fullscreen transition we dispatch
+      // with screenX/Y to get the correct viewport-relative position.
+      document.addEventListener("mousemove", function(e) {
+        window._lastMouseX = e.clientX;
+        window._lastMouseY = e.clientY;
+        window._lastMouseScreenX = e.screenX;
+        window._lastMouseScreenY = e.screenY;
+      });
+      // screenX/Y are physical coords that equal clientX/Y in fullscreen,
+      // so using them after a fullscreen transition gives the correct position.
+      function syncCursorAfterFullscreenChange() {
+        var canvas = document.getElementById("canvas");
+        if (!canvas) return;
+        GameResolution.fitCanvasToContainer(canvas.width, canvas.height);
+        var cx = document.fullscreenElement
+          ? (window._lastMouseScreenX || 0)
+          : (window._lastMouseX || 0);
+        var cy = document.fullscreenElement
+          ? (window._lastMouseScreenY || 0)
+          : (window._lastMouseY || 0);
+        canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: cx, clientY: cy }));
+      }
+
       document.addEventListener("fullscreenchange", updateGameResolution);
       document.addEventListener("fullscreenchange", function() {
         if (typeof Module !== "undefined" && Module._OnJSFullscreenChange) {
