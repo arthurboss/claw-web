@@ -15,17 +15,25 @@ let pollingActive = false;
 let debugMode = false;
 let hapticEnabled = true;
 
-// Haptic feedback presets (duration in ms, weakMagnitude/strongMagnitude 0-1)
+// Haptic feedback presets (duration in ms, weakMagnitude/strongMagnitude 0-1).
+// dual-rumble maps strongMagnitude -> the big low-frequency motor (the "thud"
+// you actually feel) and weakMagnitude -> the small high-frequency motors
+// (subtle). Every preset needs a real strong component, and rumble motors have
+// spin-up latency so pulses shorter than ~80ms barely register — durations are
+// floored accordingly.
+// Haptic feedback presets (duration in ms, weakMagnitude/strongMagnitude 0-1).
+// dual-rumble maps strongMagnitude -> the big low-frequency motor (the "thud"
+// you actually feel) and weakMagnitude -> the small high-frequency motors.
 const HAPTIC_PRESETS = {
-    light:      { duration: 50,  weak: 0.3, strong: 0.0 },
-    medium:     { duration: 100, weak: 0.5, strong: 0.3 },
-    heavy:      { duration: 150, weak: 0.7, strong: 0.6 },
-    damage:     { duration: 200, weak: 0.4, strong: 0.8 },
+    light:      { duration: 110, weak: 0.6, strong: 0.6 },
+    medium:     { duration: 130, weak: 0.6, strong: 0.75 },
+    heavy:      { duration: 180, weak: 0.9, strong: 0.95 },
+    damage:     { duration: 240, weak: 0.7, strong: 1.0 },
     death:      { duration: 1000, weak: 1.0, strong: 1.0 },
-    explosion:  { duration: 300, weak: 0.8, strong: 1.0 },
-    pickup:     { duration: 40,  weak: 0.2, strong: 0.0 },
-    attack:     { duration: 60,  weak: 0.2, strong: 0.4 },
-    jump:       { duration: 40,  weak: 0.2, strong: 0.0 },
+    explosion:  { duration: 340, weak: 1.0, strong: 1.0 },
+    pickup:     { duration: 120, weak: 0.6, strong: 0.65 },
+    attack:     { duration: 130, weak: 0.6, strong: 0.85 },
+    jump:       { duration: 120, weak: 0.6, strong: 0.7 },
 };
 
 // Game states from C++
@@ -81,15 +89,28 @@ function triggerDeviceVibration(durationMs) {
     }
 }
 
+// Resolve the gamepad to rumble. The requested index may be empty — in-game
+// haptics come from C++ with a hardcoded index 0, but the browser can place
+// the controller at any slot (e.g. a phantom null sits at 0 and the real Xbox
+// controller is at 1). Fall back to the first connected gamepad in that case.
+function resolveGamepad(gamepadIndex) {
+    const gamepads = navigator.getGamepads();
+    let gp = gamepads[gamepadIndex];
+    if (gp && gp.connected) return gp;
+    for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i] && gamepads[i].connected) return gamepads[i];
+    }
+    return null;
+}
+
 function triggerHapticCustom(gamepadIndex, durationMs, weakMagnitude, strongMagnitude) {
     if (!hapticEnabled) return false;
 
     // Touch device vibration, independent of any connected gamepad.
     const vibrated = triggerDeviceVibration(durationMs);
 
-    const gamepads = navigator.getGamepads();
-    const gp = gamepads[gamepadIndex];
-    if (!gp || !gp.connected) return vibrated;
+    const gp = resolveGamepad(gamepadIndex);
+    if (!gp) return vibrated;
 
     // Try vibrationActuator (standard Gamepad API)
     if (gp.vibrationActuator) {
