@@ -122,6 +122,9 @@
         display: block;
         image-rendering: pixelated;
         outline: none;
+        /* Suppress browser scroll/pinch/double-tap gestures so Pointer Events
+           reach the game unmodified. */
+        touch-action: none;
       }
 
       canvas:focus {
@@ -1122,6 +1125,9 @@
 
     <!-- Gamepad Bridge - polls browser Gamepad API and sends events to C++ -->
     <script src="gamepad-bridge.js"></script>
+
+    <!-- Pointer Bridge - forwards Pointer Events (mouse/touch/pen) to C++ -->
+    <script src="pointer-bridge.js"></script>
 
     <!-- Browser Support Check -->
     <script>

@@ -1059,10 +1059,15 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
     }
     else if (evt.type == SDL_MOUSEMOTION)
     {
-        // evt.motion.x/y are unreliable in Emscripten SDL2 (DPI/float issues).
-        // SDL_GetMouseState returns correct window-space coordinates.
+        // Cursor position comes from the engine-owned pointer state (fed by the
+        // Pointer Events bridge) in WASM; SDL_GetMouseState only tracks native mouse.
         int mouseX, mouseY;
+#ifdef __EMSCRIPTEN__
+        mouseX = g_pApp->GetPointerX();
+        mouseY = g_pApp->GetPointerY();
+#else
         SDL_GetMouseState(&mouseX, &mouseY);
+#endif
 
         if (mouseX != m_LastMouseX || mouseY != m_LastMouseY)
         {
@@ -1098,7 +1103,12 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
             m_bMouseMode = true;
 
             int mouseX, mouseY;
+#ifdef __EMSCRIPTEN__
+            mouseX = g_pApp->GetPointerX();
+            mouseY = g_pApp->GetPointerY();
+#else
             SDL_GetMouseState(&mouseX, &mouseY);
+#endif
 
             SDL_Rect clickPoint;
             clickPoint.x = (int)((mouseX - g_MenuOffset.x) / g_MenuScale.x);

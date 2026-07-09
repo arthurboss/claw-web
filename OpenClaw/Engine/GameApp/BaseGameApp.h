@@ -280,6 +280,13 @@ public:
   SDL_Window *GetWindow() const { return m_pWindow; }
   Point GetWindowSize() { return m_WindowSize; }
   void SetWindowSize(int width, int height, double scale);
+
+  // Engine-owned cursor position, in window (device-pixel canvas) space.
+  // Fed by the Pointer Events bridge so mouse/touch/pen share one source,
+  // replacing SDL_GetMouseState which only tracks real DOM mouse events.
+  void SetPointerPosition(int x, int y) { m_PointerX = x; m_PointerY = y; }
+  int GetPointerX() const { return m_PointerX; }
+  int GetPointerY() const { return m_PointerY; }
   Point GetWindowSizeScaled() {
     return Point(m_WindowSize.x / GetScale().x, m_WindowSize.y / GetScale().y);
   }
@@ -377,6 +384,9 @@ private:
   bool m_IsQuitting;
 
   Point m_WindowSize;
+
+  int m_PointerX = 0;
+  int m_PointerY = 0;
 
   GameCheats m_GameCheats;
   GlobalOptions m_GlobalOptions;

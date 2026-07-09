@@ -15,6 +15,13 @@ extern "C" {
   EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonDown(int index, int button, float value);
   EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonUp(int index, int button);
   EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value);
+
+  // Pointer Events bridge callbacks (called from pointer-bridge.js).
+  // Coordinates are in window (device-pixel canvas) space. ptype: 0=mouse,1=touch,2=pen.
+  EMSCRIPTEN_KEEPALIVE void OnJSPointerDown(int pointerId, int x, int y, int ptype, int button);
+  EMSCRIPTEN_KEEPALIVE void OnJSPointerMove(int pointerId, int x, int y, int ptype);
+  EMSCRIPTEN_KEEPALIVE void OnJSPointerUp(int pointerId, int x, int y, int ptype, int button);
+
   // Returns: 0=unknown, 1=menu, 2=in-game, 3=paused, 4=cutscene
   EMSCRIPTEN_KEEPALIVE int GetJSGameState();
   // Dynamic resolution support for fullscreen mode

@@ -136,7 +136,12 @@ void HumanView::VOnRender(uint32 msDiff)
         if (showCursor && !m_CursorFrames.empty())
         {
             int mouseX, mouseY;
+#ifdef __EMSCRIPTEN__
+            mouseX = g_pApp->GetPointerX();
+            mouseY = g_pApp->GetPointerY();
+#else
             SDL_GetMouseState(&mouseX, &mouseY);
+#endif
 
             shared_ptr<Image> pCursor = m_CursorFrames[m_CursorFrameIdx];
             SDL_Rect destRect = { mouseX, mouseY, pCursor->GetWidth(), pCursor->GetHeight() };
