@@ -30,6 +30,13 @@
     return 0;
   }
 
+  // Expose whether the most recent pointer was touch/pen (vs mouse) so the
+  // haptics layer can vibrate the device instead of a gamepad. Mirrors the
+  // C++-side WasLastInputTouch() used for the cursor.
+  function recordPointerType(e) {
+    window.__lastPointerWasTouch = e.pointerType !== "mouse";
+  }
+
   // Convert a PointerEvent to canvas backing-store coordinates.
   // The canvas element box is sized to exactly match the rendered bitmap
   // (see fitCanvasToContainer), so a simple rect-relative scale is correct.
@@ -81,6 +88,7 @@
 
     canvas.addEventListener("pointerdown", function (e) {
       if (!cppReady()) return;
+      recordPointerType(e);
       var p = toCanvasSpace(canvas, e);
       // Capture so we keep receiving move/up even if the pointer leaves the canvas.
       try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
@@ -91,6 +99,7 @@
 
     canvas.addEventListener("pointermove", function (e) {
       if (!cppReady()) return;
+      recordPointerType(e);
       var p = toCanvasSpace(canvas, e);
       Module._OnJSPointerMove(e.pointerId, p.x, p.y, pointerTypeCode(e));
       e.preventDefault();
@@ -98,6 +107,7 @@
 
     function onUp(e) {
       if (!cppReady()) return;
+      recordPointerType(e);
       var p = toCanvasSpace(canvas, e);
       try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
       Module._OnJSPointerUp(e.pointerId, p.x, p.y, pointerTypeCode(e), e.button);

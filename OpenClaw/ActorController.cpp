@@ -337,13 +337,16 @@ bool ActorController::OnTap(int id, const Touch_TapEvent &evt) {
             g_pApp->OnEvent(event);
             event.type = SDL_KEYUP;
             g_pApp->OnEvent(event);
+            HapticFeedback::Trigger(HapticPreset::Light);
             return true;
         }
         case WEAPON_TAP_RECOGNIZER:
             key = SDLK_LSHIFT;
+            HapticFeedback::Trigger(HapticPreset::Light);
             break;
         case ATTACK_TAP_RECOGNIZER:
             key = SDLK_LCTRL;
+            HapticFeedback::Trigger(HapticPreset::Attack);
             break;
         default:
             key = SDLK_UNKNOWN;
@@ -404,6 +407,7 @@ bool ActorController::OnJoystick(int id, const Touch_JoystickEvent &evt) {
 bool ActorController::OnSwipe(int id, const Touch_SwipeEvent &evt, bool start) {
     if (id == PROJECTILE_SWIPE_RECOGNIZER) {
         if (start) {
+            HapticFeedback::Trigger(HapticPreset::Attack); // fire, matches gamepad B
             return VOnKeyDown(SDLK_LALT);
         } else {
             return VOnKeyUp(SDLK_LALT);
@@ -415,6 +419,7 @@ bool ActorController::OnSwipe(int id, const Touch_SwipeEvent &evt, bool start) {
 bool ActorController::OnPress(int id, const Touch_PressEvent &evt, bool start) {
     if (id == JUMP_PRESS_RECOGNIZER) {
         if (start) {
+            HapticFeedback::Trigger(HapticPreset::Jump); // matches gamepad A
             return VOnKeyDown(SDLK_SPACE);
         } else {
             return VOnKeyUp(SDLK_SPACE);

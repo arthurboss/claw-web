@@ -4,6 +4,7 @@
 #include "../GameApp/BaseGameApp.h"
 #include "../GameApp/BaseGameLogic.h"
 #include "../GameApp/GameSaves.h"
+#include "../GameApp/HapticFeedback.h"
 #include "../Resource/Loaders/PcxLoader.h"
 #include "../Resource/Loaders/PngLoader.h"
 #include "../Resource/Loaders/PidLoader.h"
@@ -1090,6 +1091,11 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
                     if (i != activeMenuItemIdx)
                     {
                         FocusMenuItemAtIdx(i, true);
+#ifdef __EMSCRIPTEN__
+                        // Match gamepad menu-navigation haptic (light).
+                        if (g_pApp->WasLastInputTouch())
+                            HapticFeedback::Trigger(HapticPreset::Light);
+#endif
                     }
                     return true;
                 }
@@ -1124,6 +1130,11 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
                     if (pMenuItem->CanBeFocused())
                     {
                         DeactivateAllMenuItems();
+#ifdef __EMSCRIPTEN__
+                        // Match gamepad menu-select haptic (medium).
+                        if (g_pApp->WasLastInputTouch())
+                            HapticFeedback::Trigger(HapticPreset::Medium);
+#endif
                         pMenuItem->Press();
                         return true;
                     }

@@ -55,10 +55,6 @@ function log(msg) {
 function triggerHaptic(gamepadIndex, preset) {
     if (!hapticEnabled) return false;
 
-    const gamepads = navigator.getGamepads();
-    const gp = gamepads[gamepadIndex];
-    if (!gp || !gp.connected) return false;
-
     const config = HAPTIC_PRESETS[preset];
     if (!config) {
         log('Unknown haptic preset: ' + preset);
@@ -68,12 +64,32 @@ function triggerHaptic(gamepadIndex, preset) {
     return triggerHapticCustom(gamepadIndex, config.duration, config.weak, config.strong);
 }
 
+// Vibrate the touchscreen device via the Web Vibration API. This is the touch
+// equivalent of gamepad rumble; it only fires when the last input was touch so
+// a phone buzzes but a mouse/gamepad user is unaffected. The Vibration API has
+// no magnitude, so the preset duration carries the intensity (matching the
+// gamepad preset table).
+function triggerDeviceVibration(durationMs) {
+    if (!window.__lastPointerWasTouch) return false;
+    if (!('vibrate' in navigator)) return false;
+    try {
+        navigator.vibrate(Math.max(1, Math.round(durationMs)));
+        return true;
+    } catch (e) {
+        log('Vibration error: ' + e);
+        return false;
+    }
+}
+
 function triggerHapticCustom(gamepadIndex, durationMs, weakMagnitude, strongMagnitude) {
     if (!hapticEnabled) return false;
 
+    // Touch device vibration, independent of any connected gamepad.
+    const vibrated = triggerDeviceVibration(durationMs);
+
     const gamepads = navigator.getGamepads();
     const gp = gamepads[gamepadIndex];
-    if (!gp || !gp.connected) return false;
+    if (!gp || !gp.connected) return vibrated;
 
     // Try vibrationActuator (standard Gamepad API)
     if (gp.vibrationActuator) {
@@ -93,7 +109,7 @@ function triggerHapticCustom(gamepadIndex, durationMs, weakMagnitude, strongMagn
         return true;
     }
 
-    return false;
+    return vibrated;
 }
 
 function setHapticEnabled(enabled) {
