@@ -22,6 +22,9 @@ extern "C" {
   EMSCRIPTEN_KEEPALIVE void OnJSPointerMove(int pointerId, int x, int y, int ptype);
   EMSCRIPTEN_KEEPALIVE void OnJSPointerUp(int pointerId, int x, int y, int ptype, int button);
 
+  // Called once from pointer-bridge.js with navigator.maxTouchPoints > 0.
+  EMSCRIPTEN_KEEPALIVE void OnJSTouchCapability(int isTouchDevice);
+
   // Returns: 0=unknown, 1=menu, 2=in-game, 3=paused, 4=cutscene
   EMSCRIPTEN_KEEPALIVE int GetJSGameState();
   // Dynamic resolution support for fullscreen mode

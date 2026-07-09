@@ -239,7 +239,10 @@ EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value) {
 
 EMSCRIPTEN_KEEPALIVE void OnJSPointerDown(int pointerId, int x, int y,
                                           int ptype, int button) {
-  if (g_pApp) g_pApp->SetPointerPosition(x, y);
+  if (g_pApp) {
+    g_pApp->SetPointerPosition(x, y);
+    g_pApp->SetLastInputWasTouch(ptype != 0); // 0=mouse, 1=touch, 2=pen
+  }
   if (!g_jsGamepadEventQueue) return;
 
   AppEvent evt;
@@ -257,7 +260,10 @@ EMSCRIPTEN_KEEPALIVE void OnJSPointerDown(int pointerId, int x, int y,
 
 EMSCRIPTEN_KEEPALIVE void OnJSPointerMove(int pointerId, int x, int y,
                                           int ptype) {
-  if (g_pApp) g_pApp->SetPointerPosition(x, y);
+  if (g_pApp) {
+    g_pApp->SetPointerPosition(x, y);
+    g_pApp->SetLastInputWasTouch(ptype != 0); // 0=mouse, 1=touch, 2=pen
+  }
   if (!g_jsGamepadEventQueue) return;
 
   AppEvent evt;
@@ -274,7 +280,10 @@ EMSCRIPTEN_KEEPALIVE void OnJSPointerMove(int pointerId, int x, int y,
 
 EMSCRIPTEN_KEEPALIVE void OnJSPointerUp(int pointerId, int x, int y,
                                         int ptype, int button) {
-  if (g_pApp) g_pApp->SetPointerPosition(x, y);
+  if (g_pApp) {
+    g_pApp->SetPointerPosition(x, y);
+    g_pApp->SetLastInputWasTouch(ptype != 0); // 0=mouse, 1=touch, 2=pen
+  }
   if (!g_jsGamepadEventQueue) return;
 
   AppEvent evt;
@@ -288,6 +297,15 @@ EMSCRIPTEN_KEEPALIVE void OnJSPointerUp(int pointerId, int x, int y,
     evt.mouseButton.y = static_cast<float>(y);
   }
   g_jsGamepadEventQueue->Push(evt);
+}
+
+EMSCRIPTEN_KEEPALIVE void OnJSTouchCapability(int isTouchDevice) {
+  if (g_pApp) {
+    g_pApp->SetTouchDevice(isTouchDevice != 0);
+    // Seed the last-input state so a pure-touch device hides the cursor from
+    // the first frame; a real mouse event flips it back if one arrives.
+    g_pApp->SetLastInputWasTouch(isTouchDevice != 0);
+  }
 }
 
 // Returns game state for JS to determine input mode:

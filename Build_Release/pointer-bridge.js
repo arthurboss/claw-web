@@ -50,12 +50,34 @@
     );
   }
 
+  // Report touch capability to C++ once the module is ready. Uses
+  // navigator.maxTouchPoints (the canonical touch-capability check).
+  var touchCapabilityReported = false;
+  function reportTouchCapability() {
+    if (touchCapabilityReported) return;
+    if (typeof Module === "undefined" ||
+        typeof Module._OnJSTouchCapability !== "function") {
+      setTimeout(reportTouchCapability, 200);
+      return;
+    }
+    var isTouch =
+      (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+      "ontouchstart" in window
+        ? 1
+        : 0;
+    Module._OnJSTouchCapability(isTouch);
+    touchCapabilityReported = true;
+    log("touch capability reported: " + isTouch);
+  }
+
   function attach() {
     var canvas = document.getElementById("canvas");
     if (!canvas) {
       setTimeout(attach, 200);
       return;
     }
+
+    reportTouchCapability();
 
     canvas.addEventListener("pointerdown", function (e) {
       if (!cppReady()) return;

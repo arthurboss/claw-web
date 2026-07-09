@@ -287,6 +287,18 @@ public:
   void SetPointerPosition(int x, int y) { m_PointerX = x; m_PointerY = y; }
   int GetPointerX() const { return m_PointerX; }
   int GetPointerY() const { return m_PointerY; }
+
+  // True when the device is touch-capable (navigator.maxTouchPoints > 0),
+  // detected once at startup by the platform layer. Use for "does this device
+  // get touch UI at all" decisions (e.g. rendering a touch-only pause button).
+  void SetTouchDevice(bool isTouch) { m_IsTouchDevice = isTouch; }
+  bool IsTouchDevice() const { return m_IsTouchDevice; }
+
+  // Tracks whether the most recent pointer input was touch/pen (vs mouse).
+  // Use for "what is the user doing right now" decisions (e.g. hiding the
+  // cursor). Self-corrects on hybrid devices as the user switches input.
+  void SetLastInputWasTouch(bool wasTouch) { m_LastInputWasTouch = wasTouch; }
+  bool WasLastInputTouch() const { return m_LastInputWasTouch; }
   Point GetWindowSizeScaled() {
     return Point(m_WindowSize.x / GetScale().x, m_WindowSize.y / GetScale().y);
   }
@@ -387,6 +399,8 @@ private:
 
   int m_PointerX = 0;
   int m_PointerY = 0;
+  bool m_IsTouchDevice = false;
+  bool m_LastInputWasTouch = false;
 
   GameCheats m_GameCheats;
   GlobalOptions m_GlobalOptions;
