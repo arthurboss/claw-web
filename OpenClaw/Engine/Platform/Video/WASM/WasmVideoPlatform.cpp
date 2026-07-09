@@ -130,6 +130,44 @@ EM_BOOL OnResize(int /*eventType*/, const EmscriptenUiEvent * /*e*/,
   return EM_FALSE;
 }
 
+// --- Pointer Events bridge helpers (used by the OnJSPointer* callbacks) ---
+
+constexpr int kPointerTypeTouch = 1;
+
+// DOM/PointerEvent button (0=left,1=middle,2=right) -> SDL button (1,2,3).
+uint8_t PointerButtonToSDL(int button) {
+  if (button == 0) return 1;
+  if (button == 1) return 2;
+  if (button == 2) return 3;
+  return static_cast<uint8_t>(button + 1);
+}
+
+// A touch-type pointer drives the gameplay touch controls (joystick, jump,
+// attack, ...) only during active gameplay. In menus (including the in-game
+// quick menu) touch behaves like a cursor, so it stays on the mouse path.
+bool TouchDrivesGameplay(int ptype) {
+  if (ptype != kPointerTypeTouch) return false;
+  if (!g_pApp || !g_pApp->GetGameLogic()) return false;
+  if (g_pApp->GetGameLogic()->GetGameState() != GameState_IngameRunning)
+    return false;
+  HumanView *pView = g_pApp->GetHumanView();
+  if (pView) {
+    auto pMenu = pView->GetActiveMenu();
+    if (pMenu && pMenu->VIsVisible()) return false; // quick menu open
+  }
+  return true;
+}
+
+// Normalize window (device-pixel canvas) coords to 0..1 for the recognizers.
+AppTouchEvent MakeNormalizedTouch(int pointerId, int x, int y) {
+  AppTouchEvent t;
+  t.fingerId = pointerId;
+  Point size = g_pApp->GetWindowSize();
+  t.x = size.x > 0 ? static_cast<float>(x) / static_cast<float>(size.x) : 0.0f;
+  t.y = size.y > 0 ? static_cast<float>(y) / static_cast<float>(size.y) : 0.0f;
+  return t;
+}
+
 } // namespace
 
 // ============================================================================
@@ -196,53 +234,59 @@ EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value) {
 // Pointer Events Bridge Callbacks (called from pointer-bridge.js)
 // One unified stream for mouse, touch and pen. Coordinates arrive already
 // converted to window (device-pixel canvas) space by the JS shim.
+// Helpers live in the anonymous namespace above (C++ linkage).
 // ============================================================================
 
-namespace {
-// DOM/PointerEvent button (0=left,1=middle,2=right) -> SDL button (1,2,3).
-uint8_t PointerButtonToSDL(int button) {
-  if (button == 0) return 1;
-  if (button == 1) return 2;
-  if (button == 2) return 3;
-  return static_cast<uint8_t>(button + 1);
-}
-} // namespace
-
-EMSCRIPTEN_KEEPALIVE void OnJSPointerDown(int /*pointerId*/, int x, int y,
-                                          int /*ptype*/, int button) {
+EMSCRIPTEN_KEEPALIVE void OnJSPointerDown(int pointerId, int x, int y,
+                                          int ptype, int button) {
   if (g_pApp) g_pApp->SetPointerPosition(x, y);
   if (!g_jsGamepadEventQueue) return;
 
   AppEvent evt;
-  evt.type = AppEventType::MouseDown;
-  evt.mouseButton.button = PointerButtonToSDL(button);
-  evt.mouseButton.x = static_cast<float>(x);
-  evt.mouseButton.y = static_cast<float>(y);
+  if (TouchDrivesGameplay(ptype)) {
+    evt.type = AppEventType::TouchStart;
+    evt.touch = MakeNormalizedTouch(pointerId, x, y);
+  } else {
+    evt.type = AppEventType::MouseDown;
+    evt.mouseButton.button = PointerButtonToSDL(button);
+    evt.mouseButton.x = static_cast<float>(x);
+    evt.mouseButton.y = static_cast<float>(y);
+  }
   g_jsGamepadEventQueue->Push(evt);
 }
 
-EMSCRIPTEN_KEEPALIVE void OnJSPointerMove(int /*pointerId*/, int x, int y,
-                                          int /*ptype*/) {
+EMSCRIPTEN_KEEPALIVE void OnJSPointerMove(int pointerId, int x, int y,
+                                          int ptype) {
   if (g_pApp) g_pApp->SetPointerPosition(x, y);
   if (!g_jsGamepadEventQueue) return;
 
   AppEvent evt;
-  evt.type = AppEventType::MouseMove;
-  evt.mouseMove.x = static_cast<float>(x);
-  evt.mouseMove.y = static_cast<float>(y);
+  if (TouchDrivesGameplay(ptype)) {
+    evt.type = AppEventType::TouchMove;
+    evt.touch = MakeNormalizedTouch(pointerId, x, y);
+  } else {
+    evt.type = AppEventType::MouseMove;
+    evt.mouseMove.x = static_cast<float>(x);
+    evt.mouseMove.y = static_cast<float>(y);
+  }
   g_jsGamepadEventQueue->Push(evt);
 }
 
-EMSCRIPTEN_KEEPALIVE void OnJSPointerUp(int /*pointerId*/, int x, int y,
-                                        int /*ptype*/, int button) {
+EMSCRIPTEN_KEEPALIVE void OnJSPointerUp(int pointerId, int x, int y,
+                                        int ptype, int button) {
   if (g_pApp) g_pApp->SetPointerPosition(x, y);
   if (!g_jsGamepadEventQueue) return;
 
   AppEvent evt;
-  evt.type = AppEventType::MouseUp;
-  evt.mouseButton.button = PointerButtonToSDL(button);
-  evt.mouseButton.x = static_cast<float>(x);
-  evt.mouseButton.y = static_cast<float>(y);
+  if (TouchDrivesGameplay(ptype)) {
+    evt.type = AppEventType::TouchEnd;
+    evt.touch = MakeNormalizedTouch(pointerId, x, y);
+  } else {
+    evt.type = AppEventType::MouseUp;
+    evt.mouseButton.button = PointerButtonToSDL(button);
+    evt.mouseButton.x = static_cast<float>(x);
+    evt.mouseButton.y = static_cast<float>(y);
+  }
   g_jsGamepadEventQueue->Push(evt);
 }
 

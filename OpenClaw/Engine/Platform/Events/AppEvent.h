@@ -13,6 +13,12 @@ enum class AppEventType : uint8_t {
   MouseDown,
   MouseUp,
 
+  // Touch events (finger on touchscreen), coords normalized 0..1.
+  // Fed by the Pointer Events bridge for touch-type pointers during gameplay.
+  TouchStart,
+  TouchMove,
+  TouchEnd,
+
   Resize,
 
   // Gamepad events (using browser Gamepad API)
@@ -81,6 +87,12 @@ struct AppResizeEvent {
   float dpiScale = 1.0f;
 };
 
+struct AppTouchEvent {
+  int32_t fingerId = 0;
+  float x = 0.0f;   // normalized 0..1
+  float y = 0.0f;   // normalized 0..1
+};
+
 struct AppGamepadConnectionEvent {
   int32_t gamepadIndex = 0;  // Which gamepad (0-3)
 };
@@ -105,6 +117,7 @@ struct AppEvent {
   AppMouseMoveEvent mouseMove;
   AppMouseButtonEvent mouseButton;
   AppResizeEvent resize;
+  AppTouchEvent touch;
   AppGamepadConnectionEvent gamepadConnection;
   AppGamepadButtonEvent gamepadButton;
   AppGamepadAxisEvent gamepadAxis;

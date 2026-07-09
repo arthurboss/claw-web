@@ -324,16 +324,19 @@ bool ActorController::OnTap(int id, const Touch_TapEvent &evt) {
     switch (id) {
         case PAUSE_TAP_RECOGNIZER:
         {
-            // Little hack to open/close ingame menu
+            // Open/close the ingame menu by feeding Escape through the same
+            // dispatch path the engine uses. SDL_PushEvent is not read on the
+            // WASM build (the main loop drains a custom queue, not SDL's), so
+            // route directly via BaseGameApp::OnEvent instead.
             key = SDLK_ESCAPE;
 
             SDL_Event event{0};
             event.type = SDL_KEYDOWN;
             event.key.keysym.sym = key;
             event.key.keysym.scancode = SDL_GetScancodeFromKey(key);
-            SDL_PushEvent(&event);
+            g_pApp->OnEvent(event);
             event.type = SDL_KEYUP;
-            SDL_PushEvent(&event);
+            g_pApp->OnEvent(event);
             return true;
         }
         case WEAPON_TAP_RECOGNIZER:
