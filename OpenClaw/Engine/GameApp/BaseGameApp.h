@@ -294,11 +294,17 @@ public:
   void SetTouchDevice(bool isTouch) { m_IsTouchDevice = isTouch; }
   bool IsTouchDevice() const { return m_IsTouchDevice; }
 
-  // Tracks whether the most recent pointer input was touch/pen (vs mouse).
-  // Use for "what is the user doing right now" decisions (e.g. hiding the
-  // cursor). Self-corrects on hybrid devices as the user switches input.
-  void SetLastInputWasTouch(bool wasTouch) { m_LastInputWasTouch = wasTouch; }
-  bool WasLastInputTouch() const { return m_LastInputWasTouch; }
+  // Tracks the most recent input source, so "what is the user doing right now"
+  // decisions (e.g. the sword cursor) self-correct as input switches. The mouse
+  // cursor is shown only when the last input was the mouse; touch and gamepad
+  // hide it. 0=mouse, 1=touch/pen, 2=gamepad.
+  enum LastInputSource { LastInput_Mouse = 0, LastInput_Touch = 1, LastInput_Gamepad = 2 };
+  void SetLastInputSource(int src) { m_LastInputSource = src; }
+  void SetLastInputWasTouch(bool wasTouch) {
+    m_LastInputSource = wasTouch ? LastInput_Touch : LastInput_Mouse;
+  }
+  bool WasLastInputTouch() const { return m_LastInputSource == LastInput_Touch; }
+  bool WasLastInputMouse() const { return m_LastInputSource == LastInput_Mouse; }
   Point GetWindowSizeScaled() {
     return Point(m_WindowSize.x / GetScale().x, m_WindowSize.y / GetScale().y);
   }
@@ -400,7 +406,7 @@ private:
   int m_PointerX = 0;
   int m_PointerY = 0;
   bool m_IsTouchDevice = false;
-  bool m_LastInputWasTouch = false;
+  int m_LastInputSource = LastInput_Mouse;
 
   GameCheats m_GameCheats;
   GlobalOptions m_GlobalOptions;

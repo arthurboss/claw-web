@@ -225,8 +225,14 @@ function pollGamepads() {
                 if (pressed) log('Button ' + b + ' pressed (menu=' + inMenu + ', cpp=' + cppReady + ')');
 
                 // Gamepad is now the active input source — flag it so the touch
-                // overlay hides (mirrors pointer-bridge setting this true on touch).
-                if (pressed) window.__lastPointerWasTouch = false;
+                // overlay hides (mirrors pointer-bridge setting this true on touch)
+                // and tell C++ so the in-game/menu cursor hides too.
+                if (pressed) {
+                    window.__lastPointerWasTouch = false;
+                    if (typeof Module !== "undefined" && Module._OnJSGamepadActivity) {
+                        try { Module._OnJSGamepadActivity(); } catch (e) { /* ignore */ }
+                    }
+                }
 
                 // Video skip on A or Start
                 if (pressed && (b === 0 || b === 9)) {
@@ -264,7 +270,12 @@ function pollGamepads() {
             const prevValue = prev.axes[a] || 0;
 
             // Meaningful stick movement also marks the gamepad as active input.
-            if (value !== 0 && value !== prevValue) window.__lastPointerWasTouch = false;
+            if (value !== 0 && value !== prevValue) {
+                window.__lastPointerWasTouch = false;
+                if (typeof Module !== "undefined" && Module._OnJSGamepadActivity) {
+                    try { Module._OnJSGamepadActivity(); } catch (e) { /* ignore */ }
+                }
+            }
 
             if (inMenu) {
                 // Menu: single key press when crossing threshold

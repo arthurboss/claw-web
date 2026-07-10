@@ -15,6 +15,8 @@ extern "C" {
   EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonDown(int index, int button, float value);
   EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonUp(int index, int button);
   EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value);
+  // Marks gamepad as the active input source (covers menu nav handled JS-side).
+  EMSCRIPTEN_KEEPALIVE void OnJSGamepadActivity();
 
   // Pointer Events bridge callbacks (called from pointer-bridge.js).
   // Coordinates are in window (device-pixel canvas) space. ptype: 0=mouse,1=touch,2=pen.

@@ -134,10 +134,11 @@ void HumanView::VOnRender(uint32 msDiff)
                            cursorGameState == GameState_LoadingMenu ||
                            ingameMenuOpen);
 #ifdef __EMSCRIPTEN__
-        // When the last input was touch/pen there is no hovering pointer, so
-        // the sword cursor would be stuck at the last tap position. Hide it;
-        // it reappears as soon as the user moves a mouse (hybrid devices).
-        if (g_pApp->WasLastInputTouch()) showCursor = false;
+        // The mouse cursor only makes sense when the mouse is the active input.
+        // Touch has no hovering pointer (cursor would stick at the last tap) and
+        // gamepad navigates without one — so show the cursor only for mouse.
+        // Self-corrects: moving the mouse brings it back on hybrid setups.
+        if (!g_pApp->WasLastInputMouse()) showCursor = false;
 #endif
         if (showCursor && !m_CursorFrames.empty())
         {

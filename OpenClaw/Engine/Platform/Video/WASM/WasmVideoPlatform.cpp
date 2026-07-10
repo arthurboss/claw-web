@@ -183,6 +183,7 @@ EMSCRIPTEN_KEEPALIVE void OnJSGamepadDisconnected(int index) {
 }
 
 EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonDown(int index, int button, float value) {
+  if (g_pApp) g_pApp->SetLastInputSource(BaseGameApp::LastInput_Gamepad);
   if (!g_jsGamepadEventQueue) return;
 
   AppEvent evt;
@@ -205,6 +206,10 @@ EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonUp(int index, int button) {
 }
 
 EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value) {
+  // Meaningful stick deflection counts as gamepad activity (JS already applies
+  // a deadzone, but guard here too so idle drift doesn't grab the input focus).
+  if (g_pApp && (value > 0.2f || value < -0.2f))
+    g_pApp->SetLastInputSource(BaseGameApp::LastInput_Gamepad);
   if (!g_jsGamepadEventQueue) return;
 
   AppEvent evt;
@@ -213,6 +218,13 @@ EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value) {
   evt.gamepadAxis.axis = static_cast<GamepadAxis>(axis);
   evt.gamepadAxis.value = value;
   g_jsGamepadEventQueue->Push(evt);
+}
+
+// Marks the gamepad as the active input source. Called from gamepad-bridge.js
+// on any gamepad activity — including menu navigation, which is handled JS-side
+// via synthesized keyboard events and so never reaches OnJSGamepadButtonDown.
+EMSCRIPTEN_KEEPALIVE void OnJSGamepadActivity() {
+  if (g_pApp) g_pApp->SetLastInputSource(BaseGameApp::LastInput_Gamepad);
 }
 
 // ============================================================================
