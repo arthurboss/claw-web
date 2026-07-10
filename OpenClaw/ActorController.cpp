@@ -419,7 +419,8 @@ bool ActorController::OnSwipe(int id, const Touch_SwipeEvent &evt, bool start) {
 bool ActorController::OnPress(int id, const Touch_PressEvent &evt, bool start) {
     if (id == JUMP_PRESS_RECOGNIZER) {
         if (start) {
-            HapticFeedback::Trigger(HapticPreset::Jump); // matches gamepad A
+            // Jump haptic now fires in ClawControllableComponent::VOnStartJumping
+            // (covers every jump regardless of input), so none needed here.
             return VOnKeyDown(SDLK_SPACE);
         } else {
             return VOnKeyUp(SDLK_SPACE);

@@ -399,8 +399,9 @@ void ClawControllableComponent::VOnLandOnGround(float fromHeight)
 {
     if (fromHeight > g_pApp->GetGlobalOptions()->clawMinFallHeight)
     {
+        // High fall — Claw crouches on landing. Strong feedback.
         m_pClawAnimationComponent->SetAnimation("land");
-        HapticFeedback::Trigger(HapticPreset::Medium);
+        HapticFeedback::Trigger(HapticPreset::Heavy);
     }
     else
     {
@@ -411,7 +412,8 @@ void ClawControllableComponent::VOnLandOnGround(float fromHeight)
         IEventMgr::Get()->VTriggerEvent(IEventDataPtr(
             new EventData_Request_Play_Sound(soundInfo)));
 
-        HapticFeedback::Trigger(HapticPreset::Light);
+        // Regular landing — noticeably firmer than a footstep.
+        HapticFeedback::Trigger(HapticPreset::Medium);
     }
 
     m_State = ClawState_Standing;
@@ -428,6 +430,8 @@ void ClawControllableComponent::VOnStartJumping()
 
     m_pClawAnimationComponent->SetAnimation("jump");
     m_State = ClawState_Jumping;
+    // No takeoff haptic — feedback fires on landing (VOnLandOnGround), scaled
+    // Light/Medium by fall height.
 }
 
 bool ClawControllableComponent::VOnDirectionChange(Direction direction)
@@ -802,6 +806,23 @@ void ClawControllableComponent::SetCurrentPhysicsState()
 void ClawControllableComponent::VOnAnimationFrameChanged(Animation* pAnimation, AnimationFrame* pLastFrame, AnimationFrame* pNewFrame)
 {
     const std::string animName = pAnimation->GetName();
+
+    // Footstep feedback: a tiny buzz at the two foot-plant frames of the walk
+    // cycle (~1/4 and ~3/4 through), computed from the frame count so it works
+    // regardless of how many frames the walk animation has. Makes movement feel
+    // alive without a constant rumble.
+    if (animName == "walk")
+    {
+        uint32 total = pAnimation->GetAnimFramesSize();
+        if (total >= 4)
+        {
+            uint32 idx = pNewFrame->idx;
+            if (idx == total / 4 || idx == (total * 3) / 4)
+            {
+                HapticFeedback::Trigger(HapticPreset::Step);
+            }
+        }
+    }
 
     if (animName.find("predynamite") != std::string::npos && pAnimation->IsAtLastAnimFrame())
     {

@@ -34,6 +34,8 @@ const HAPTIC_PRESETS = {
     pickup:     { duration: 120, weak: 0.6, strong: 0.65 },
     attack:     { duration: 130, weak: 0.6, strong: 0.85 },
     jump:       { duration: 120, weak: 0.6, strong: 0.7 },
+    // Footsteps — same feel as a regular (low) landing.
+    step:       { duration: 110, weak: 0.6, strong: 0.6 },
 };
 
 // Game states from C++

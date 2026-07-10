@@ -23,6 +23,7 @@ void HapticFeedback::Trigger(HapticPreset preset, int gamepadIndex)
         case HapticPreset::Pickup:    presetName = "pickup"; break;
         case HapticPreset::Attack:    presetName = "attack"; break;
         case HapticPreset::Jump:      presetName = "jump"; break;
+        case HapticPreset::Step:      presetName = "step"; break;
         default: return;
     }
 
