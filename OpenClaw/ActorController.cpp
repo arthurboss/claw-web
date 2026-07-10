@@ -324,23 +324,29 @@ bool ActorController::OnTap(int id, const Touch_TapEvent &evt) {
     switch (id) {
         case PAUSE_TAP_RECOGNIZER:
         {
-            // Little hack to open/close ingame menu
+            // Open/close the ingame menu by feeding Escape through the same
+            // dispatch path the engine uses. SDL_PushEvent is not read on the
+            // WASM build (the main loop drains a custom queue, not SDL's), so
+            // route directly via BaseGameApp::OnEvent instead.
             key = SDLK_ESCAPE;
 
             SDL_Event event{0};
             event.type = SDL_KEYDOWN;
             event.key.keysym.sym = key;
             event.key.keysym.scancode = SDL_GetScancodeFromKey(key);
-            SDL_PushEvent(&event);
+            g_pApp->OnEvent(event);
             event.type = SDL_KEYUP;
-            SDL_PushEvent(&event);
+            g_pApp->OnEvent(event);
+            HapticFeedback::Trigger(HapticPreset::Light);
             return true;
         }
         case WEAPON_TAP_RECOGNIZER:
             key = SDLK_LSHIFT;
+            HapticFeedback::Trigger(HapticPreset::Light);
             break;
         case ATTACK_TAP_RECOGNIZER:
             key = SDLK_LCTRL;
+            HapticFeedback::Trigger(HapticPreset::Attack);
             break;
         default:
             key = SDLK_UNKNOWN;
@@ -401,6 +407,7 @@ bool ActorController::OnJoystick(int id, const Touch_JoystickEvent &evt) {
 bool ActorController::OnSwipe(int id, const Touch_SwipeEvent &evt, bool start) {
     if (id == PROJECTILE_SWIPE_RECOGNIZER) {
         if (start) {
+            HapticFeedback::Trigger(HapticPreset::Attack); // fire, matches gamepad B
             return VOnKeyDown(SDLK_LALT);
         } else {
             return VOnKeyUp(SDLK_LALT);
@@ -412,6 +419,8 @@ bool ActorController::OnSwipe(int id, const Touch_SwipeEvent &evt, bool start) {
 bool ActorController::OnPress(int id, const Touch_PressEvent &evt, bool start) {
     if (id == JUMP_PRESS_RECOGNIZER) {
         if (start) {
+            // Jump haptic now fires in ClawControllableComponent::VOnStartJumping
+            // (covers every jump regardless of input), so none needed here.
             return VOnKeyDown(SDLK_SPACE);
         } else {
             return VOnKeyUp(SDLK_SPACE);

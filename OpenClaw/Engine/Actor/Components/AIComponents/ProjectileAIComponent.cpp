@@ -1,6 +1,7 @@
 #include "ProjectileAIComponent.h"
 #include "../../../GameApp/BaseGameApp.h"
 #include "../../../GameApp/BaseGameLogic.h"
+#include "../../../GameApp/HapticFeedback.h"
 
 #include "../../../Graphics2D/Image.h"
 #include "../../../Physics/ClawPhysics.h"
@@ -159,6 +160,8 @@ void ProjectileAIComponent::Detonate()
 
     if (m_DamageType == DamageType_Explosion)
     {
+        HapticFeedback::Trigger(HapticPreset::Explosion);
+
         ActorTemplates::CreateSingleAnimation(m_pOwner->GetPositionComponent()->GetPosition(), AnimationType_Explosion);
 
         SoundInfo soundInfo(SOUND_LEVEL1_KEG_EXPLODE);

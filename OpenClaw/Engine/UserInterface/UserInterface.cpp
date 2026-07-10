@@ -4,6 +4,7 @@
 #include "../GameApp/BaseGameApp.h"
 #include "../GameApp/BaseGameLogic.h"
 #include "../GameApp/GameSaves.h"
+#include "../GameApp/HapticFeedback.h"
 #include "../Resource/Loaders/PcxLoader.h"
 #include "../Resource/Loaders/PngLoader.h"
 #include "../Resource/Loaders/PidLoader.h"
@@ -1059,10 +1060,15 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
     }
     else if (evt.type == SDL_MOUSEMOTION)
     {
-        // evt.motion.x/y are unreliable in Emscripten SDL2 (DPI/float issues).
-        // SDL_GetMouseState returns correct window-space coordinates.
+        // Cursor position comes from the engine-owned pointer state (fed by the
+        // Pointer Events bridge) in WASM; SDL_GetMouseState only tracks native mouse.
         int mouseX, mouseY;
+#ifdef __EMSCRIPTEN__
+        mouseX = g_pApp->GetPointerX();
+        mouseY = g_pApp->GetPointerY();
+#else
         SDL_GetMouseState(&mouseX, &mouseY);
+#endif
 
         if (mouseX != m_LastMouseX || mouseY != m_LastMouseY)
         {
@@ -1085,6 +1091,11 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
                     if (i != activeMenuItemIdx)
                     {
                         FocusMenuItemAtIdx(i, true);
+#ifdef __EMSCRIPTEN__
+                        // Match gamepad menu-navigation haptic (light).
+                        if (g_pApp->WasLastInputTouch())
+                            HapticFeedback::Trigger(HapticPreset::Light);
+#endif
                     }
                     return true;
                 }
@@ -1098,7 +1109,12 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
             m_bMouseMode = true;
 
             int mouseX, mouseY;
+#ifdef __EMSCRIPTEN__
+            mouseX = g_pApp->GetPointerX();
+            mouseY = g_pApp->GetPointerY();
+#else
             SDL_GetMouseState(&mouseX, &mouseY);
+#endif
 
             SDL_Rect clickPoint;
             clickPoint.x = (int)((mouseX - g_MenuOffset.x) / g_MenuScale.x);
@@ -1114,6 +1130,11 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
                     if (pMenuItem->CanBeFocused())
                     {
                         DeactivateAllMenuItems();
+#ifdef __EMSCRIPTEN__
+                        // Match gamepad menu-select haptic (medium).
+                        if (g_pApp->WasLastInputTouch())
+                            HapticFeedback::Trigger(HapticPreset::Medium);
+#endif
                         pMenuItem->Press();
                         return true;
                     }

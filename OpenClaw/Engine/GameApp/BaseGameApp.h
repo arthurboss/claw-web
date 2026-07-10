@@ -277,9 +277,40 @@ public:
   BaseGameLogic *GetGameLogic() const { return m_pGame; }
   HumanView *GetHumanView() const;
 
+  // Single source of truth for "is a menu currently active" — the main menu,
+  // the loading menu, or the in-game quick menu (which keeps the game state at
+  // IngameRunning while showing m_pIngameMenu). Used by the cursor gate, the
+  // JS overlay (via IsMenuVisibleJS), and anywhere else that must agree.
+  bool IsMenuActive() const;
+
   SDL_Window *GetWindow() const { return m_pWindow; }
   Point GetWindowSize() { return m_WindowSize; }
   void SetWindowSize(int width, int height, double scale);
+
+  // Engine-owned cursor position, in window (device-pixel canvas) space.
+  // Fed by the Pointer Events bridge so mouse/touch/pen share one source,
+  // replacing SDL_GetMouseState which only tracks real DOM mouse events.
+  void SetPointerPosition(int x, int y) { m_PointerX = x; m_PointerY = y; }
+  int GetPointerX() const { return m_PointerX; }
+  int GetPointerY() const { return m_PointerY; }
+
+  // True when the device is touch-capable (navigator.maxTouchPoints > 0),
+  // detected once at startup by the platform layer. Use for "does this device
+  // get touch UI at all" decisions (e.g. rendering a touch-only pause button).
+  void SetTouchDevice(bool isTouch) { m_IsTouchDevice = isTouch; }
+  bool IsTouchDevice() const { return m_IsTouchDevice; }
+
+  // Tracks the most recent input source, so "what is the user doing right now"
+  // decisions (e.g. the sword cursor) self-correct as input switches. The mouse
+  // cursor is shown only when the last input was the mouse; touch and gamepad
+  // hide it. 0=mouse, 1=touch/pen, 2=gamepad.
+  enum LastInputSource { LastInput_Mouse = 0, LastInput_Touch = 1, LastInput_Gamepad = 2 };
+  void SetLastInputSource(int src) { m_LastInputSource = src; }
+  void SetLastInputWasTouch(bool wasTouch) {
+    m_LastInputSource = wasTouch ? LastInput_Touch : LastInput_Mouse;
+  }
+  bool WasLastInputTouch() const { return m_LastInputSource == LastInput_Touch; }
+  bool WasLastInputMouse() const { return m_LastInputSource == LastInput_Mouse; }
   Point GetWindowSizeScaled() {
     return Point(m_WindowSize.x / GetScale().x, m_WindowSize.y / GetScale().y);
   }
@@ -377,6 +408,11 @@ private:
   bool m_IsQuitting;
 
   Point m_WindowSize;
+
+  int m_PointerX = 0;
+  int m_PointerY = 0;
+  bool m_IsTouchDevice = false;
+  int m_LastInputSource = LastInput_Mouse;
 
   GameCheats m_GameCheats;
   GlobalOptions m_GlobalOptions;

@@ -15,6 +15,23 @@ extern "C" {
   EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonDown(int index, int button, float value);
   EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonUp(int index, int button);
   EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value);
+  // Marks gamepad as the active input source (covers menu nav handled JS-side).
+  EMSCRIPTEN_KEEPALIVE void OnJSGamepadActivity();
+
+  // Pointer Events bridge callbacks (called from pointer-bridge.js).
+  // Coordinates are in window (device-pixel canvas) space. ptype: 0=mouse,1=touch,2=pen.
+  EMSCRIPTEN_KEEPALIVE void OnJSPointerDown(int pointerId, int x, int y, int ptype, int button);
+  EMSCRIPTEN_KEEPALIVE void OnJSPointerMove(int pointerId, int x, int y, int ptype);
+  EMSCRIPTEN_KEEPALIVE void OnJSPointerUp(int pointerId, int x, int y, int ptype, int button);
+
+  // Called once from pointer-bridge.js with navigator.maxTouchPoints > 0.
+  EMSCRIPTEN_KEEPALIVE void OnJSTouchCapability(int isTouchDevice);
+
+  // 1 if a menu is currently visible (main menu or the in-game quick menu).
+  // The quick menu keeps the game state at IngameRunning, so GetJSGameState
+  // alone can't tell "playing" from "quick menu open" — this can.
+  EMSCRIPTEN_KEEPALIVE int IsMenuVisibleJS();
+
   // Returns: 0=unknown, 1=menu, 2=in-game, 3=paused, 4=cutscene
   EMSCRIPTEN_KEEPALIVE int GetJSGameState();
   // Dynamic resolution support for fullscreen mode

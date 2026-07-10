@@ -137,6 +137,27 @@ void BaseGameApp::OnAppEvent(const AppEvent &event) {
     break;
   }
 
+  case AppEventType::TouchStart:
+  case AppEventType::TouchMove:
+  case AppEventType::TouchEnd: {
+    if (event.type == AppEventType::TouchStart)
+      sdlEvent.type = SDL_FINGERDOWN;
+    else if (event.type == AppEventType::TouchMove)
+      sdlEvent.type = SDL_FINGERMOTION;
+    else
+      sdlEvent.type = SDL_FINGERUP;
+    sdlEvent.tfinger.touchId = 0;
+    sdlEvent.tfinger.fingerId = static_cast<SDL_FingerID>(event.touch.fingerId);
+    sdlEvent.tfinger.x = event.touch.x;
+    sdlEvent.tfinger.y = event.touch.y;
+    sdlEvent.tfinger.dx = 0.0f;
+    sdlEvent.tfinger.dy = 0.0f;
+    sdlEvent.tfinger.pressure =
+        (event.type == AppEventType::TouchEnd) ? 0.0f : 1.0f;
+    OnEvent(sdlEvent);
+    break;
+  }
+
   // Gamepad events - route directly to game views (no SDL conversion needed)
   case AppEventType::GamepadConnected:
     LOG("Gamepad " + std::to_string(event.gamepadConnection.gamepadIndex) + " connected");
@@ -610,6 +631,19 @@ HumanView *BaseGameApp::GetHumanView() const {
   }
 
   return pView;
+}
+
+bool BaseGameApp::IsMenuActive() const {
+  if (!m_pGame) return false;
+  GameState state = m_pGame->GetGameState();
+  if (state == GameState_Menu || state == GameState_LoadingMenu) return true;
+  // Quick menu stays in IngameRunning but shows the in-game menu element.
+  HumanView *pView = GetHumanView();
+  if (pView) {
+    auto pMenu = pView->GetActiveMenu();
+    if (pMenu && pMenu->VIsVisible()) return true;
+  }
+  return false;
 }
 
 bool BaseGameApp::LoadGameOptions(const char *inConfigFile) {

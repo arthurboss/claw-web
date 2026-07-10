@@ -100,51 +100,6 @@ EM_BOOL OnKey(int eventType, const EmscriptenKeyboardEvent *e, void *userData) {
   return EM_FALSE;
 }
 
-EM_BOOL OnMouseMove(int /*eventType*/, const EmscriptenMouseEvent *e,
-                    void *userData) {
-  auto *self = static_cast<WasmVideoPlatform *>(userData);
-  if (!self || !self->GetEventQueue()) {
-    return EM_FALSE;
-  }
-
-  AppEvent evt;
-  evt.type = AppEventType::MouseMove;
-  evt.mouseMove.x = static_cast<float>(e->canvasX);
-  evt.mouseMove.y = static_cast<float>(e->canvasY);
-
-  self->GetEventQueue()->Push(evt);
-  return EM_FALSE;
-}
-
-EM_BOOL OnMouseButton(int eventType, const EmscriptenMouseEvent *e,
-                      void *userData) {
-  auto *self = static_cast<WasmVideoPlatform *>(userData);
-  if (!self || !self->GetEventQueue()) {
-    return EM_FALSE;
-  }
-
-  AppEvent evt;
-  evt.type = (eventType == EMSCRIPTEN_EVENT_MOUSEDOWN) ? AppEventType::MouseDown
-                                                       : AppEventType::MouseUp;
-  // Emscripten: 0=left,1=middle,2=right. SDL: 1=left,2=middle,3=right.
-  uint8_t sdlButton = 0;
-  if (e->button == 0)
-    sdlButton = 1;
-  else if (e->button == 1)
-    sdlButton = 2;
-  else if (e->button == 2)
-    sdlButton = 3;
-  else
-    sdlButton = static_cast<uint8_t>(e->button);
-
-  evt.mouseButton.button = sdlButton;
-  evt.mouseButton.x = static_cast<float>(e->canvasX);
-  evt.mouseButton.y = static_cast<float>(e->canvasY);
-
-  self->GetEventQueue()->Push(evt);
-  return EM_FALSE;
-}
-
 EM_BOOL OnResize(int /*eventType*/, const EmscriptenUiEvent * /*e*/,
                  void *userData) {
   auto *self = static_cast<WasmVideoPlatform *>(userData);
@@ -173,6 +128,29 @@ EM_BOOL OnResize(int /*eventType*/, const EmscriptenUiEvent * /*e*/,
 
   self->GetEventQueue()->Push(evt);
   return EM_FALSE;
+}
+
+// --- Pointer Events bridge helpers (used by the OnJSPointer* callbacks) ---
+
+constexpr int kPointerTypeMouse = 0; // pointer-bridge: 0=mouse, 1=touch, 2=pen
+
+// DOM/PointerEvent button (0=left,1=middle,2=right) -> SDL button (1,2,3).
+uint8_t PointerButtonToSDL(int button) {
+  if (button == 0) return 1;
+  if (button == 1) return 2;
+  if (button == 2) return 3;
+  return static_cast<uint8_t>(button + 1);
+}
+
+// The on-screen touch controls overlay (touch-controls.js) is the sole source
+// of touch input for BOTH gameplay and menus — it dispatches keyboard events
+// from its own DOM buttons. So raw canvas touch/pen must not generate any game
+// input: it neither feeds the legacy SDL_FINGER recognizers nor synthesizes
+// mouse events (which would otherwise let a tap select a menu item directly).
+// Only real mouse input produces game events. Touch still updates the cursor
+// position + last-input flag (handled in the callbacks below).
+bool PointerEmitsGameInput(int ptype) {
+  return ptype == kPointerTypeMouse;
 }
 
 } // namespace
@@ -205,6 +183,7 @@ EMSCRIPTEN_KEEPALIVE void OnJSGamepadDisconnected(int index) {
 }
 
 EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonDown(int index, int button, float value) {
+  if (g_pApp) g_pApp->SetLastInputSource(BaseGameApp::LastInput_Gamepad);
   if (!g_jsGamepadEventQueue) return;
 
   AppEvent evt;
@@ -227,6 +206,10 @@ EMSCRIPTEN_KEEPALIVE void OnJSGamepadButtonUp(int index, int button) {
 }
 
 EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value) {
+  // Meaningful stick deflection counts as gamepad activity (JS already applies
+  // a deadzone, but guard here too so idle drift doesn't grab the input focus).
+  if (g_pApp && (value > 0.2f || value < -0.2f))
+    g_pApp->SetLastInputSource(BaseGameApp::LastInput_Gamepad);
   if (!g_jsGamepadEventQueue) return;
 
   AppEvent evt;
@@ -235,6 +218,78 @@ EMSCRIPTEN_KEEPALIVE void OnJSGamepadAxis(int index, int axis, float value) {
   evt.gamepadAxis.axis = static_cast<GamepadAxis>(axis);
   evt.gamepadAxis.value = value;
   g_jsGamepadEventQueue->Push(evt);
+}
+
+// Marks the gamepad as the active input source. Called from gamepad-bridge.js
+// on any gamepad activity — including menu navigation, which is handled JS-side
+// via synthesized keyboard events and so never reaches OnJSGamepadButtonDown.
+EMSCRIPTEN_KEEPALIVE void OnJSGamepadActivity() {
+  if (g_pApp) g_pApp->SetLastInputSource(BaseGameApp::LastInput_Gamepad);
+}
+
+// ============================================================================
+// Pointer Events Bridge Callbacks (called from pointer-bridge.js)
+// One unified stream for mouse, touch and pen. Coordinates arrive already
+// converted to window (device-pixel canvas) space by the JS shim.
+// Helpers live in the anonymous namespace above (C++ linkage).
+// ============================================================================
+
+EMSCRIPTEN_KEEPALIVE void OnJSPointerDown(int /*pointerId*/, int x, int y,
+                                          int ptype, int button) {
+  if (g_pApp) {
+    g_pApp->SetPointerPosition(x, y);
+    g_pApp->SetLastInputWasTouch(ptype != 0); // 0=mouse, 1=touch, 2=pen
+  }
+  // Touch/pen: cursor position updated above, but no game event — the overlay
+  // is the sole touch input source. Only mouse produces menu/game input.
+  if (!g_jsGamepadEventQueue || !PointerEmitsGameInput(ptype)) return;
+
+  AppEvent evt;
+  evt.type = AppEventType::MouseDown;
+  evt.mouseButton.button = PointerButtonToSDL(button);
+  evt.mouseButton.x = static_cast<float>(x);
+  evt.mouseButton.y = static_cast<float>(y);
+  g_jsGamepadEventQueue->Push(evt);
+}
+
+EMSCRIPTEN_KEEPALIVE void OnJSPointerMove(int /*pointerId*/, int x, int y,
+                                          int ptype) {
+  if (g_pApp) {
+    g_pApp->SetPointerPosition(x, y);
+    g_pApp->SetLastInputWasTouch(ptype != 0); // 0=mouse, 1=touch, 2=pen
+  }
+  if (!g_jsGamepadEventQueue || !PointerEmitsGameInput(ptype)) return;
+
+  AppEvent evt;
+  evt.type = AppEventType::MouseMove;
+  evt.mouseMove.x = static_cast<float>(x);
+  evt.mouseMove.y = static_cast<float>(y);
+  g_jsGamepadEventQueue->Push(evt);
+}
+
+EMSCRIPTEN_KEEPALIVE void OnJSPointerUp(int /*pointerId*/, int x, int y,
+                                        int ptype, int button) {
+  if (g_pApp) {
+    g_pApp->SetPointerPosition(x, y);
+    g_pApp->SetLastInputWasTouch(ptype != 0); // 0=mouse, 1=touch, 2=pen
+  }
+  if (!g_jsGamepadEventQueue || !PointerEmitsGameInput(ptype)) return;
+
+  AppEvent evt;
+  evt.type = AppEventType::MouseUp;
+  evt.mouseButton.button = PointerButtonToSDL(button);
+  evt.mouseButton.x = static_cast<float>(x);
+  evt.mouseButton.y = static_cast<float>(y);
+  g_jsGamepadEventQueue->Push(evt);
+}
+
+EMSCRIPTEN_KEEPALIVE void OnJSTouchCapability(int isTouchDevice) {
+  if (g_pApp) {
+    g_pApp->SetTouchDevice(isTouchDevice != 0);
+    // Seed the last-input state so a pure-touch device hides the cursor from
+    // the first frame; a real mouse event flips it back if one arrives.
+    g_pApp->SetLastInputWasTouch(isTouchDevice != 0);
+  }
 }
 
 // Returns game state for JS to determine input mode:
@@ -256,6 +311,13 @@ EMSCRIPTEN_KEEPALIVE int GetJSGameState() {
     default:
       return 0; // Loading or other
   }
+}
+
+// 1 if a menu (main menu or in-game quick menu) is currently visible. Lets JS
+// tell "playing" from "quick menu open", which GetJSGameState can't (both are
+// IngameRunning). Mirrors the check used by TouchDrivesGameplay.
+EMSCRIPTEN_KEEPALIVE int IsMenuVisibleJS() {
+  return (g_pApp && g_pApp->IsMenuActive()) ? 1 : 0;
 }
 
 // Called from JavaScript when entering/exiting fullscreen to adjust game resolution
@@ -310,9 +372,8 @@ bool WasmVideoPlatform::Init(int32_t /*initialWidth*/,
   emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, true,
                                 OnKey);
 
-  emscripten_set_mousemove_callback("#canvas", this, true, OnMouseMove);
-  emscripten_set_mousedown_callback("#canvas", this, true, OnMouseButton);
-  emscripten_set_mouseup_callback("#canvas", this, true, OnMouseButton);
+  // Mouse/touch/pen input arrives via the Pointer Events bridge
+  // (pointer-bridge.js -> OnJSPointer*), so no html5 mouse callbacks here.
 
   emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, this, true,
                                  OnResize);
@@ -334,9 +395,6 @@ void WasmVideoPlatform::Shutdown() {
                                   nullptr);
   emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, true,
                                 nullptr);
-  emscripten_set_mousemove_callback("#canvas", nullptr, true, nullptr);
-  emscripten_set_mousedown_callback("#canvas", nullptr, true, nullptr);
-  emscripten_set_mouseup_callback("#canvas", nullptr, true, nullptr);
   emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, nullptr, true,
                                  nullptr);
 

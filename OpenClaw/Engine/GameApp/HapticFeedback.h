@@ -13,7 +13,8 @@ enum class HapticPreset : uint8_t
     Explosion,
     Pickup,
     Attack,
-    Jump
+    Jump,
+    Step
 };
 
 class HapticFeedback

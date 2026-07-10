@@ -126,17 +126,26 @@ void HumanView::VOnRender(uint32 msDiff)
             }
         }
 
-        // Draw custom cursor in menus only — GameState_IngamePaused is never set in practice;
-        // the quick menu stays in IngameRunning but sets m_pIngameMenu visible.
-        GameState cursorGameState = g_pApp->GetGameLogic()->GetGameState();
-        bool ingameMenuOpen = m_pIngameMenu && m_pIngameMenu->VIsVisible();
-        bool showCursor = (cursorGameState == GameState_Menu ||
-                           cursorGameState == GameState_LoadingMenu ||
-                           ingameMenuOpen);
+        // Draw the custom cursor only when a menu is active (main/loading menu
+        // or the in-game quick menu) — IsMenuActive() is the shared source of
+        // truth for that condition.
+        bool showCursor = g_pApp->IsMenuActive();
+#ifdef __EMSCRIPTEN__
+        // The mouse cursor only makes sense when the mouse is the active input.
+        // Touch has no hovering pointer (cursor would stick at the last tap) and
+        // gamepad navigates without one — so show the cursor only for mouse.
+        // Self-corrects: moving the mouse brings it back on hybrid setups.
+        if (!g_pApp->WasLastInputMouse()) showCursor = false;
+#endif
         if (showCursor && !m_CursorFrames.empty())
         {
             int mouseX, mouseY;
+#ifdef __EMSCRIPTEN__
+            mouseX = g_pApp->GetPointerX();
+            mouseY = g_pApp->GetPointerY();
+#else
             SDL_GetMouseState(&mouseX, &mouseY);
+#endif
 
             shared_ptr<Image> pCursor = m_CursorFrames[m_CursorFrameIdx];
             SDL_Rect destRect = { mouseX, mouseY, pCursor->GetWidth(), pCursor->GetHeight() };
