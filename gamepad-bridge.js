@@ -15,17 +15,27 @@ let pollingActive = false;
 let debugMode = false;
 let hapticEnabled = true;
 
-// Haptic feedback presets (duration in ms, weakMagnitude/strongMagnitude 0-1)
+// Haptic feedback presets (duration in ms, weakMagnitude/strongMagnitude 0-1).
+// dual-rumble maps strongMagnitude -> the big low-frequency motor (the "thud"
+// you actually feel) and weakMagnitude -> the small high-frequency motors
+// (subtle). Every preset needs a real strong component, and rumble motors have
+// spin-up latency so pulses shorter than ~80ms barely register — durations are
+// floored accordingly.
+// Haptic feedback presets (duration in ms, weakMagnitude/strongMagnitude 0-1).
+// dual-rumble maps strongMagnitude -> the big low-frequency motor (the "thud"
+// you actually feel) and weakMagnitude -> the small high-frequency motors.
 const HAPTIC_PRESETS = {
-    light:      { duration: 50,  weak: 0.3, strong: 0.0 },
-    medium:     { duration: 100, weak: 0.5, strong: 0.3 },
-    heavy:      { duration: 150, weak: 0.7, strong: 0.6 },
-    damage:     { duration: 200, weak: 0.4, strong: 0.8 },
+    light:      { duration: 110, weak: 0.6, strong: 0.6 },
+    medium:     { duration: 130, weak: 0.6, strong: 0.75 },
+    heavy:      { duration: 180, weak: 0.9, strong: 0.95 },
+    damage:     { duration: 240, weak: 0.7, strong: 1.0 },
     death:      { duration: 1000, weak: 1.0, strong: 1.0 },
-    explosion:  { duration: 300, weak: 0.8, strong: 1.0 },
-    pickup:     { duration: 40,  weak: 0.2, strong: 0.0 },
-    attack:     { duration: 60,  weak: 0.2, strong: 0.4 },
-    jump:       { duration: 40,  weak: 0.2, strong: 0.0 },
+    explosion:  { duration: 340, weak: 1.0, strong: 1.0 },
+    pickup:     { duration: 120, weak: 0.6, strong: 0.65 },
+    attack:     { duration: 130, weak: 0.6, strong: 0.85 },
+    jump:       { duration: 120, weak: 0.6, strong: 0.7 },
+    // Footsteps — same feel as a regular (low) landing.
+    step:       { duration: 110, weak: 0.6, strong: 0.6 },
 };
 
 // Game states from C++
@@ -55,10 +65,6 @@ function log(msg) {
 function triggerHaptic(gamepadIndex, preset) {
     if (!hapticEnabled) return false;
 
-    const gamepads = navigator.getGamepads();
-    const gp = gamepads[gamepadIndex];
-    if (!gp || !gp.connected) return false;
-
     const config = HAPTIC_PRESETS[preset];
     if (!config) {
         log('Unknown haptic preset: ' + preset);
@@ -68,12 +74,45 @@ function triggerHaptic(gamepadIndex, preset) {
     return triggerHapticCustom(gamepadIndex, config.duration, config.weak, config.strong);
 }
 
+// Vibrate the touchscreen device via the Web Vibration API. This is the touch
+// equivalent of gamepad rumble; it only fires when the last input was touch so
+// a phone buzzes but a mouse/gamepad user is unaffected. The Vibration API has
+// no magnitude, so the preset duration carries the intensity (matching the
+// gamepad preset table).
+function triggerDeviceVibration(durationMs) {
+    if (!window.__lastPointerWasTouch) return false;
+    if (!('vibrate' in navigator)) return false;
+    try {
+        navigator.vibrate(Math.max(1, Math.round(durationMs)));
+        return true;
+    } catch (e) {
+        log('Vibration error: ' + e);
+        return false;
+    }
+}
+
+// Resolve the gamepad to rumble. The requested index may be empty — in-game
+// haptics come from C++ with a hardcoded index 0, but the browser can place
+// the controller at any slot (e.g. a phantom null sits at 0 and the real Xbox
+// controller is at 1). Fall back to the first connected gamepad in that case.
+function resolveGamepad(gamepadIndex) {
+    const gamepads = navigator.getGamepads();
+    let gp = gamepads[gamepadIndex];
+    if (gp && gp.connected) return gp;
+    for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i] && gamepads[i].connected) return gamepads[i];
+    }
+    return null;
+}
+
 function triggerHapticCustom(gamepadIndex, durationMs, weakMagnitude, strongMagnitude) {
     if (!hapticEnabled) return false;
 
-    const gamepads = navigator.getGamepads();
-    const gp = gamepads[gamepadIndex];
-    if (!gp || !gp.connected) return false;
+    // Touch device vibration, independent of any connected gamepad.
+    const vibrated = triggerDeviceVibration(durationMs);
+
+    const gp = resolveGamepad(gamepadIndex);
+    if (!gp) return vibrated;
 
     // Try vibrationActuator (standard Gamepad API)
     if (gp.vibrationActuator) {
@@ -93,7 +132,7 @@ function triggerHapticCustom(gamepadIndex, durationMs, weakMagnitude, strongMagn
         return true;
     }
 
-    return false;
+    return vibrated;
 }
 
 function setHapticEnabled(enabled) {
@@ -185,6 +224,16 @@ function pollGamepads() {
             if (pressed !== wasPressed) {
                 if (pressed) log('Button ' + b + ' pressed (menu=' + inMenu + ', cpp=' + cppReady + ')');
 
+                // Gamepad is now the active input source — flag it so the touch
+                // overlay hides (mirrors pointer-bridge setting this true on touch)
+                // and tell C++ so the in-game/menu cursor hides too.
+                if (pressed) {
+                    window.__lastPointerWasTouch = false;
+                    if (typeof Module !== "undefined" && Module._OnJSGamepadActivity) {
+                        try { Module._OnJSGamepadActivity(); } catch (e) { /* ignore */ }
+                    }
+                }
+
                 // Video skip on A or Start
                 if (pressed && (b === 0 || b === 9)) {
                     skipVideoIfPlaying();
@@ -219,6 +268,14 @@ function pollGamepads() {
             if (Math.abs(value) < 0.15) value = 0;
 
             const prevValue = prev.axes[a] || 0;
+
+            // Meaningful stick movement also marks the gamepad as active input.
+            if (value !== 0 && value !== prevValue) {
+                window.__lastPointerWasTouch = false;
+                if (typeof Module !== "undefined" && Module._OnJSGamepadActivity) {
+                    try { Module._OnJSGamepadActivity(); } catch (e) { /* ignore */ }
+                }
+            }
 
             if (inMenu) {
                 // Menu: single key press when crossing threshold

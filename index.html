@@ -122,6 +122,9 @@
         display: block;
         image-rendering: pixelated;
         outline: none;
+        /* Suppress browser scroll/pinch/double-tap gestures so Pointer Events
+           reach the game unmodified. */
+        touch-action: none;
       }
 
       canvas:focus {
@@ -142,6 +145,14 @@
       body:has(video) .bottom-controls {
         opacity: 0;
         animation: fadeInControls 0.3s ease-in 3.5s forwards;
+      }
+
+      /* On touch devices the fullscreen + FPS buttons and the FPS overlay are
+         hidden — they're desktop chrome, and the same settings are reachable
+         through the in-game menu. (Class set from JS via maxTouchPoints.) */
+      body.touch-device .bottom-controls,
+      body.touch-device #fpsOverlay {
+        display: none !important;
       }
 
       @keyframes fadeInControls {
@@ -438,6 +449,15 @@
     </style>
   </head>
   <body>
+    <script>
+      // Tag touch devices so desktop-only chrome (fullscreen + FPS buttons,
+      // FPS overlay) can be hidden via CSS. maxTouchPoints is the canonical
+      // touch-capability check.
+      if ((navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+          "ontouchstart" in window) {
+        document.body.classList.add("touch-device");
+      }
+    </script>
     <!-- Asset Upload UI (shown on first run) -->
     <section id="assetUpload" style="display: none;">
       <h2>First Time Setup</h2>
@@ -1122,6 +1142,12 @@
 
     <!-- Gamepad Bridge - polls browser Gamepad API and sends events to C++ -->
     <script src="gamepad-bridge.js"></script>
+
+    <!-- Pointer Bridge - forwards Pointer Events (mouse/touch/pen) to C++ -->
+    <script src="pointer-bridge.js"></script>
+
+    <!-- On-screen touch controls (joystick + buttons), shown during gameplay on touch -->
+    <script src="touch-controls.js"></script>
 
     <!-- Browser Support Check -->
     <script>
