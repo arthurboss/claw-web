@@ -36,13 +36,16 @@
   var STATE_INGAME = 2;
   var STATE_MENU = 1;
 
-  // Haptic durations mirror the gamepad HAPTIC_PRESETS (see gamepad-bridge.js):
-  // light=action/nav, medium=select. Vibrate the device directly so overlay
-  // buttons buzz the same as gamepad/gameplay haptics.
-  var HAPTIC = { light: 80, medium: 110, attack: 110, jump: 90 };
-  function vibrate(ms) {
-    if ("vibrate" in navigator) {
-      try { navigator.vibrate(ms); } catch (e) {}
+  // Reuse gamepad-bridge's HAPTIC_PRESETS via the exposed window.triggerHaptic
+  // so touch buttons always match the gamepad timings/strength (single source
+  // of truth — no duplicated numbers to drift). Preset names map to actions:
+  // light=nav/weapon/back, medium=select, attack=attack/fire, jump=jump.
+  var HAPTIC = { light: "light", medium: "medium", attack: "attack", jump: "jump" };
+  function vibrate(preset) {
+    if (typeof window.triggerHaptic === "function") {
+      window.triggerHaptic(0, preset);
+    } else if ("vibrate" in navigator) {
+      try { navigator.vibrate(80); } catch (e) {}
     }
   }
 
