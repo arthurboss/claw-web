@@ -187,11 +187,51 @@
       "#tcBack{right:6px;bottom:60px;}",     // E (same slot as ATK)
       "#tcSelect{right:60px;bottom:6px;}",   // S (same slot as JUMP)
       // Mode-based visibility: gameplay shows action buttons + pause; menu shows
-      // Select/Back only. Joystick shows in both.
+      // Select/Back only. Movement control (joystick/d-pad) shows in both.
       "#touchControls.mode-gameplay #tcSelect,#touchControls.mode-gameplay #tcBack{display:none;}",
       "#touchControls.mode-menu #tcJump,#touchControls.mode-menu #tcAttack,",
       "#touchControls.mode-menu #tcFire,#touchControls.mode-menu #tcWeapon,",
       "#touchControls.mode-menu #tcPause{display:none;}",
+      // D-pad — plus layout, 4 directions only (no diagonals), same footprint
+      // as the joystick base. Each key is a 46px rounded button.
+      "#tcDpad{position:absolute;left:24px;bottom:24px;width:140px;height:140px;",
+      "  pointer-events:none;}",
+      ".tcDbtn{position:absolute;width:46px;height:46px;border-radius:8px;border:2px solid #000;",
+      "  background:linear-gradient(to bottom,",
+      "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
+      "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
+      "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
+      "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
+      "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
+      "  color:#fff;font:bold 18px monospace;",
+      "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
+      "  display:flex;align-items:center;justify-content:center;pointer-events:auto;",
+      "  touch-action:none;}",
+      ".tcDbtn.active{background:linear-gradient(to bottom,",
+      "    rgb(252,239,82) 0 10%,rgb(248,232,110) 10% 20%,",
+      "    rgb(253,253,183) 20% 30%,rgb(251,244,214) 30% 40%,",
+      "    rgb(172,120,53) 40% 50%,rgb(208,170,62) 50% 60%,",
+      "    rgb(242,204,77) 60% 70%,rgb(244,219,99) 70% 80%,",
+      "    rgb(249,237,146) 80% 90%,rgb(239,216,112) 90% 100%);}",
+      "#tcDup{left:47px;top:0;}",
+      "#tcDdown{left:47px;top:94px;}",
+      "#tcDleft{left:0;top:47px;}",
+      "#tcDright{left:94px;top:47px;}",
+      // Movement-mode toggle — small button above the movement control.
+      "#tcMoveToggle{position:absolute;left:24px;bottom:172px;width:48px;height:48px;",
+      "  border-radius:50%;border:2px solid #000;",
+      "  background:linear-gradient(to bottom,",
+      "    rgba(252,239,82,0.25) 0 10%,rgba(248,232,110,0.25) 10% 20%,",
+      "    rgba(253,253,183,0.25) 20% 30%,rgba(251,244,214,0.25) 30% 40%,",
+      "    rgba(172,120,53,0.25) 40% 50%,rgba(208,170,62,0.25) 50% 60%,",
+      "    rgba(242,204,77,0.25) 60% 70%,rgba(244,219,99,0.25) 70% 80%,",
+      "    rgba(249,237,146,0.25) 80% 90%,rgba(239,216,112,0.25) 90% 100%);",
+      "  color:#fff;font:bold 10px monospace;",
+      "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
+      "  display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;}",
+      // Show joystick OR d-pad based on the movement mode class on the root.
+      "#touchControls.move-joystick #tcDpad{display:none;}",
+      "#touchControls.move-dpad #tcJoyBase{display:none;}",
     ].join("");
     var style = document.createElement("style");
     style.id = "touchControlsStyles";
@@ -204,6 +244,13 @@
     root.id = "touchControls";
     root.innerHTML =
       '<div id="tcJoyBase"><div id="tcJoyThumb"></div></div>' +
+      '<div id="tcDpad">' +
+      '  <div class="tcDbtn" id="tcDup">▲</div>' +
+      '  <div class="tcDbtn" id="tcDdown">▼</div>' +
+      '  <div class="tcDbtn" id="tcDleft">◀</div>' +
+      '  <div class="tcDbtn" id="tcDright">▶</div>' +
+      "</div>" +
+      '<div id="tcMoveToggle">STICK</div>' +
       '<div id="tcButtons">' +
       '  <div class="tcBtn" id="tcJump">JUMP</div>' +
       '  <div class="tcBtn" id="tcAttack">ATK</div>' +
@@ -383,6 +430,41 @@
     tick();
   }
 
+  // ---- Movement mode toggle (joystick <-> d-pad) ----------------------------
+
+  var MOVE_STORAGE_KEY = "openclaw.touchMoveMode";
+  function loadMoveMode() {
+    try {
+      var v = localStorage.getItem(MOVE_STORAGE_KEY);
+      if (v === "joystick" || v === "dpad") return v;
+    } catch (e) {}
+    return "dpad"; // default
+  }
+  function saveMoveMode(mode) {
+    try { localStorage.setItem(MOVE_STORAGE_KEY, mode); } catch (e) {}
+  }
+
+  function setupMoveToggle(root, toggleEl) {
+    function apply(mode) {
+      root.classList.toggle("move-dpad", mode === "dpad");
+      root.classList.toggle("move-joystick", mode === "joystick");
+      // Label shows the mode you'll switch TO (the opposite of current).
+      toggleEl.textContent = mode === "dpad" ? "STICK" : "D-PAD";
+    }
+    var mode = loadMoveMode();
+    apply(mode);
+
+    toggleEl.addEventListener("pointerdown", function (e) {
+      markTouchInput(e);
+      releaseAll(); // drop any held direction before switching
+      mode = mode === "dpad" ? "joystick" : "dpad";
+      saveMoveMode(mode);
+      apply(mode);
+      vibrate(HAPTIC.light);
+      e.preventDefault();
+    });
+  }
+
   // ---- Init -----------------------------------------------------------------
 
   function init() {
@@ -393,6 +475,12 @@
     injectStyles();
     var root = buildDom();
     setupJoystick(document.getElementById("tcJoyBase"), document.getElementById("tcJoyThumb"));
+    // D-pad direction buttons (hold-style, 4 directions only, no diagonals)
+    setupHoldButton(document.getElementById("tcDup"), KEY.up, HAPTIC.light);
+    setupHoldButton(document.getElementById("tcDdown"), KEY.down, HAPTIC.light);
+    setupHoldButton(document.getElementById("tcDleft"), KEY.left, HAPTIC.light);
+    setupHoldButton(document.getElementById("tcDright"), KEY.right, HAPTIC.light);
+    setupMoveToggle(root, document.getElementById("tcMoveToggle"));
     // Gameplay buttons
     setupHoldButton(document.getElementById("tcJump"), KEY.jump, HAPTIC.jump);
     setupHoldButton(document.getElementById("tcFire"), KEY.fire, HAPTIC.attack);
@@ -403,7 +491,7 @@
     setupTapButton(document.getElementById("tcSelect"), KEY.select, HAPTIC.medium);
     setupTapButton(document.getElementById("tcBack"), KEY.back, HAPTIC.light);
     setupVisibility(root);
-    console.log("[TouchControls] joystick overlay initialized");
+    console.log("[TouchControls] overlay initialized");
   }
 
   if (document.readyState === "loading") {
