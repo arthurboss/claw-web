@@ -224,6 +224,10 @@ function pollGamepads() {
             if (pressed !== wasPressed) {
                 if (pressed) log('Button ' + b + ' pressed (menu=' + inMenu + ', cpp=' + cppReady + ')');
 
+                // Gamepad is now the active input source — flag it so the touch
+                // overlay hides (mirrors pointer-bridge setting this true on touch).
+                if (pressed) window.__lastPointerWasTouch = false;
+
                 // Video skip on A or Start
                 if (pressed && (b === 0 || b === 9)) {
                     skipVideoIfPlaying();
@@ -258,6 +262,9 @@ function pollGamepads() {
             if (Math.abs(value) < 0.15) value = 0;
 
             const prevValue = prev.axes[a] || 0;
+
+            // Meaningful stick movement also marks the gamepad as active input.
+            if (value !== 0 && value !== prevValue) window.__lastPointerWasTouch = false;
 
             if (inMenu) {
                 // Menu: single key press when crossing threshold
