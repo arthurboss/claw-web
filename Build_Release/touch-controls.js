@@ -142,10 +142,12 @@
       ".tcBtn.active{background:linear-gradient(to bottom,",
       "    rgba(255,255,240,0.6) 0 22%,rgba(253,228,107,0.55) 22% 48%,",
       "    rgba(164,112,56,0.55) 48% 72%,rgba(107,74,63,0.55) 72% 100%);}",
-      "#tcJump{right:0;bottom:52px;}",
-      "#tcAttack{right:66px;bottom:14px;}",
-      "#tcFire{right:66px;bottom:80px;}",
-      "#tcWeapon{right:6px;bottom:128px;width:46px;height:46px;font-size:11px;}",
+      // Diamond layout: 4 buttons at N/E/S/W of the cluster, each 54px from
+      // center so every adjacent gap equals the JUMP-ATK spacing (~76px).
+      "#tcFire{right:6px;bottom:60px;}",     // E (outer right)
+      "#tcJump{right:60px;bottom:6px;}",     // S (bottom)
+      "#tcWeapon{right:60px;bottom:114px;}", // N (top)
+      "#tcAttack{right:114px;bottom:60px;}", // W (inner left)
       // Pause (top-center)
       "#tcPause{position:absolute;left:50%;top:12px;transform:translateX(-50%);",
       "  width:42px;height:30px;border-radius:4px;border:3px solid #000;",
@@ -160,8 +162,8 @@
       "    rgba(164,112,56,0.55) 48% 72%,rgba(107,74,63,0.55) 72% 100%);}",
       // Menu buttons (Select / Back) — reuse the JUMP / ATK slots so switching
       // modes doesn't shift button positions.
-      "#tcSelect{right:0;bottom:52px;}",
-      "#tcBack{right:66px;bottom:14px;}",
+      "#tcBack{right:6px;bottom:60px;}",     // E (same slot as ATK)
+      "#tcSelect{right:60px;bottom:6px;}",   // S (same slot as JUMP)
       // Mode-based visibility: gameplay shows action buttons + pause; menu shows
       // Select/Back only. Joystick shows in both.
       "#touchControls.mode-gameplay #tcSelect,#touchControls.mode-gameplay #tcBack{display:none;}",
