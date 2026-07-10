@@ -117,31 +117,47 @@
       // BAND = repeated as a reusable 5-step hard-stop gradient (fill, translucent):
       //   pale (255,255,240) / gold (253,228,107) / (223,207,94) / (198,183,80) / amber (147,136,59)
       // FILL alpha kept low (~0.4) for transparency; borders are solid black.
-      // Joystick base (bottom-left) — kept subtler as it covers more play area
+      // Joystick base (bottom-left) — same score-system bands, kept subtler
+      // (lower alpha) as it covers more play area.
       "#tcJoyBase{position:absolute;left:24px;bottom:24px;width:140px;height:140px;",
-      "  border-radius:50%;border:3px solid #000;box-shadow:0 0 0 1px rgba(0,0,0,0.5);",
+      "  border-radius:50%;border:2px solid #000;box-shadow:0 0 0 1px rgba(0,0,0,0.5);",
       "  background:linear-gradient(to bottom,",
-      "    rgba(255,255,240,0.22) 0 20%,rgba(253,228,107,0.18) 20% 45%,",
-      "    rgba(198,183,80,0.16) 45% 72%,rgba(147,136,59,0.16) 72% 100%);",
+      "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
+      "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
+      "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
+      "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
+      "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
       "  pointer-events:auto;touch-action:none;}",
       "#tcJoyThumb{position:absolute;left:50%;top:50%;width:60px;height:60px;",
-      "  margin:-30px 0 0 -30px;border-radius:50%;border:3px solid #000;",
+      "  margin:-30px 0 0 -30px;border-radius:50%;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
-      "    rgba(255,255,240,0.55) 0 22%,rgba(253,228,107,0.5) 22% 48%,",
-      "    rgba(223,207,94,0.45) 48% 72%,rgba(164,151,65,0.45) 72% 100%);}",
+      "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
+      "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
+      "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
+      "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
+      "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);}",
       // Action buttons (bottom-right cluster)
       "#tcButtons{position:absolute;right:24px;bottom:24px;width:180px;height:180px;pointer-events:none;}",
-      ".tcBtn{position:absolute;width:60px;height:60px;border-radius:50%;border:3px solid #000;",
+      // 10-band hard-stop gradient sampled from the score display (top->bottom),
+      // slightly translucent so gameplay still reads through. Black border.
+      ".tcBtn{position:absolute;width:60px;height:60px;border-radius:50%;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
-      "    rgba(255,255,240,0.4) 0 22%,rgba(253,228,107,0.34) 22% 48%,",
-      "    rgba(223,207,94,0.3) 48% 72%,rgba(164,151,65,0.3) 72% 100%);",
+      "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
+      "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
+      "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
+      "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
+      "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
       "  color:#fff;font:bold 13px monospace;letter-spacing:0.5px;",
       "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;",
       "  touch-action:none;text-align:center;}",
+      // Pressed: same score-system bands, fully opaque (lights up solid).
       ".tcBtn.active{background:linear-gradient(to bottom,",
-      "    rgba(255,255,240,0.6) 0 22%,rgba(253,228,107,0.55) 22% 48%,",
-      "    rgba(164,112,56,0.55) 48% 72%,rgba(107,74,63,0.55) 72% 100%);}",
+      "    rgb(252,239,82) 0 10%,rgb(248,232,110) 10% 20%,",
+      "    rgb(253,253,183) 20% 30%,rgb(251,244,214) 30% 40%,",
+      "    rgb(172,120,53) 40% 50%,rgb(208,170,62) 50% 60%,",
+      "    rgb(242,204,77) 60% 70%,rgb(244,219,99) 70% 80%,",
+      "    rgb(249,237,146) 80% 90%,rgb(239,216,112) 90% 100%);}",
       // Diamond layout: 4 buttons at N/E/S/W of the cluster, each 54px from
       // center so every adjacent gap equals the JUMP-ATK spacing (~76px).
       "#tcFire{right:6px;bottom:60px;}",     // E (outer right)
@@ -150,16 +166,22 @@
       "#tcAttack{right:114px;bottom:60px;}", // W (inner left)
       // Pause (top-center)
       "#tcPause{position:absolute;left:50%;top:12px;transform:translateX(-50%);",
-      "  width:42px;height:30px;border-radius:4px;border:3px solid #000;",
+      "  width:42px;height:30px;border-radius:4px;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
-      "    rgba(255,255,240,0.4) 0 22%,rgba(253,228,107,0.34) 22% 48%,",
-      "    rgba(223,207,94,0.3) 48% 72%,rgba(164,151,65,0.3) 72% 100%);",
+      "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
+      "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
+      "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
+      "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
+      "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
       "  color:#fff;font:bold 13px monospace;",
       "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;}",
       "#tcPause.active{background:linear-gradient(to bottom,",
-      "    rgba(255,255,240,0.6) 0 22%,rgba(253,228,107,0.55) 22% 48%,",
-      "    rgba(164,112,56,0.55) 48% 72%,rgba(107,74,63,0.55) 72% 100%);}",
+      "    rgb(252,239,82) 0 10%,rgb(248,232,110) 10% 20%,",
+      "    rgb(253,253,183) 20% 30%,rgb(251,244,214) 30% 40%,",
+      "    rgb(172,120,53) 40% 50%,rgb(208,170,62) 50% 60%,",
+      "    rgb(242,204,77) 60% 70%,rgb(244,219,99) 70% 80%,",
+      "    rgb(249,237,146) 80% 90%,rgb(239,216,112) 90% 100%);}",
       // Menu buttons (Select / Back) — reuse the JUMP / ATK slots so switching
       // modes doesn't shift button positions.
       "#tcBack{right:6px;bottom:60px;}",     // E (same slot as ATK)
