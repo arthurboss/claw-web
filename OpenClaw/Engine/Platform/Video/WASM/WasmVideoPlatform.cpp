@@ -317,11 +317,7 @@ EMSCRIPTEN_KEEPALIVE int GetJSGameState() {
 // tell "playing" from "quick menu open", which GetJSGameState can't (both are
 // IngameRunning). Mirrors the check used by TouchDrivesGameplay.
 EMSCRIPTEN_KEEPALIVE int IsMenuVisibleJS() {
-  if (!g_pApp) return 0;
-  HumanView *pView = g_pApp->GetHumanView();
-  if (!pView) return 0;
-  auto pMenu = pView->GetActiveMenu();
-  return (pMenu && pMenu->VIsVisible()) ? 1 : 0;
+  return (g_pApp && g_pApp->IsMenuActive()) ? 1 : 0;
 }
 
 // Called from JavaScript when entering/exiting fullscreen to adjust game resolution

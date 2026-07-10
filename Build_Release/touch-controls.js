@@ -408,9 +408,10 @@
   //   ""         — hidden
   function computeMode() {
     if (!isTouchDevice() || !lastInputWasTouch()) return "";
-    var state = getGameState();
-    if (state === STATE_MENU || isMenuVisible()) return "menu";
-    if (state === STATE_INGAME) return "gameplay";
+    // isMenuVisible() (C++ IsMenuActive) is the source of truth for "menu";
+    // STATE_MENU is a fallback only if that export isn't available yet.
+    if (isMenuVisible() || getGameState() === STATE_MENU) return "menu";
+    if (getGameState() === STATE_INGAME) return "gameplay";
     return "";
   }
 

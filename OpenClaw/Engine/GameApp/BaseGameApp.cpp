@@ -633,6 +633,19 @@ HumanView *BaseGameApp::GetHumanView() const {
   return pView;
 }
 
+bool BaseGameApp::IsMenuActive() const {
+  if (!m_pGame) return false;
+  GameState state = m_pGame->GetGameState();
+  if (state == GameState_Menu || state == GameState_LoadingMenu) return true;
+  // Quick menu stays in IngameRunning but shows the in-game menu element.
+  HumanView *pView = GetHumanView();
+  if (pView) {
+    auto pMenu = pView->GetActiveMenu();
+    if (pMenu && pMenu->VIsVisible()) return true;
+  }
+  return false;
+}
+
 bool BaseGameApp::LoadGameOptions(const char *inConfigFile) {
   TiXmlDocument m_XmlConfiguration;
   if (!m_XmlConfiguration.LoadFile(inConfigFile)) {

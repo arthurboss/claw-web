@@ -277,6 +277,12 @@ public:
   BaseGameLogic *GetGameLogic() const { return m_pGame; }
   HumanView *GetHumanView() const;
 
+  // Single source of truth for "is a menu currently active" — the main menu,
+  // the loading menu, or the in-game quick menu (which keeps the game state at
+  // IngameRunning while showing m_pIngameMenu). Used by the cursor gate, the
+  // JS overlay (via IsMenuVisibleJS), and anywhere else that must agree.
+  bool IsMenuActive() const;
+
   SDL_Window *GetWindow() const { return m_pWindow; }
   Point GetWindowSize() { return m_WindowSize; }
   void SetWindowSize(int width, int height, double scale);
