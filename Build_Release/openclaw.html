@@ -147,6 +147,14 @@
         animation: fadeInControls 0.3s ease-in 3.5s forwards;
       }
 
+      /* On touch devices the fullscreen + FPS buttons and the FPS overlay are
+         hidden — they're desktop chrome, and the same settings are reachable
+         through the in-game menu. (Class set from JS via maxTouchPoints.) */
+      body.touch-device .bottom-controls,
+      body.touch-device #fpsOverlay {
+        display: none !important;
+      }
+
       @keyframes fadeInControls {
         to {
           opacity: 1;
@@ -441,6 +449,15 @@
     </style>
   </head>
   <body>
+    <script>
+      // Tag touch devices so desktop-only chrome (fullscreen + FPS buttons,
+      // FPS overlay) can be hidden via CSS. maxTouchPoints is the canonical
+      // touch-capability check.
+      if ((navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+          "ontouchstart" in window) {
+        document.body.classList.add("touch-device");
+      }
+    </script>
     <!-- Asset Upload UI (shown on first run) -->
     <section id="assetUpload" style="display: none;">
       <h2>First Time Setup</h2>
