@@ -245,10 +245,13 @@
     root.innerHTML =
       '<div id="tcJoyBase"><div id="tcJoyThumb"></div></div>' +
       '<div id="tcDpad">' +
+      // Use U+25C4/25BA (◄ ►) not U+25C0/25B6 (◀ ▶): the latter have emoji
+      // presentation and render as coloured OS emoji on mobile. These match the
+      // text-default ▲ ▼ family.
       '  <div class="tcDbtn" id="tcDup">▲</div>' +
       '  <div class="tcDbtn" id="tcDdown">▼</div>' +
-      '  <div class="tcDbtn" id="tcDleft">◀</div>' +
-      '  <div class="tcDbtn" id="tcDright">▶</div>' +
+      '  <div class="tcDbtn" id="tcDleft">◄</div>' +
+      '  <div class="tcDbtn" id="tcDright">►</div>' +
       "</div>" +
       '<div id="tcMoveToggle">STICK</div>' +
       '<div id="tcButtons">' +
