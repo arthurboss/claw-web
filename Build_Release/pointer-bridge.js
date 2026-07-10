@@ -117,6 +117,17 @@
     canvas.addEventListener("pointerup", onUp);
     canvas.addEventListener("pointercancel", onUp);
 
+    // iOS/WebKit ignores `touch-action: none` for drags: it interprets a moving
+    // touch as a system gesture and fires pointercancel, killing the pointermove
+    // stream mid-drag (so taps work but the movement joystick doesn't). Actively
+    // preventDefault on non-passive touch listeners to suppress the gesture and
+    // keep pointer events flowing. Harmless on other platforms.
+    var swallowTouch = function (e) {
+      if (e.cancelable) e.preventDefault();
+    };
+    canvas.addEventListener("touchstart", swallowTouch, { passive: false });
+    canvas.addEventListener("touchmove", swallowTouch, { passive: false });
+
     log("attached to canvas");
   }
 
