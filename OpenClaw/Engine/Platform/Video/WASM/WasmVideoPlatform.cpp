@@ -142,20 +142,13 @@ uint8_t PointerButtonToSDL(int button) {
   return static_cast<uint8_t>(button + 1);
 }
 
-// A touch-type pointer drives the gameplay touch controls (joystick, jump,
-// attack, ...) only during active gameplay. In menus (including the in-game
-// quick menu) touch behaves like a cursor, so it stays on the mouse path.
-bool TouchDrivesGameplay(int ptype) {
-  if (ptype != kPointerTypeTouch) return false;
-  if (!g_pApp || !g_pApp->GetGameLogic()) return false;
-  if (g_pApp->GetGameLogic()->GetGameState() != GameState_IngameRunning)
-    return false;
-  HumanView *pView = g_pApp->GetHumanView();
-  if (pView) {
-    auto pMenu = pView->GetActiveMenu();
-    if (pMenu && pMenu->VIsVisible()) return false; // quick menu open
-  }
-  return true;
+// The on-screen touch controls overlay (touch-controls.js) is now the sole
+// source of gameplay touch input — it dispatches keyboard events. So raw canvas
+// touches must NOT feed the legacy SDL_FINGER recognizers (right-side jump,
+// corner taps, swipe-to-fire) anymore; always route touch to the mouse/cursor
+// path instead. Kept as a function so re-enabling is a one-line change.
+bool TouchDrivesGameplay(int /*ptype*/) {
+  return false;
 }
 
 // Normalize window (device-pixel canvas) coords to 0..1 for the recognizers.
@@ -327,6 +320,17 @@ EMSCRIPTEN_KEEPALIVE int GetJSGameState() {
     default:
       return 0; // Loading or other
   }
+}
+
+// 1 if a menu (main menu or in-game quick menu) is currently visible. Lets JS
+// tell "playing" from "quick menu open", which GetJSGameState can't (both are
+// IngameRunning). Mirrors the check used by TouchDrivesGameplay.
+EMSCRIPTEN_KEEPALIVE int IsMenuVisibleJS() {
+  if (!g_pApp) return 0;
+  HumanView *pView = g_pApp->GetHumanView();
+  if (!pView) return 0;
+  auto pMenu = pView->GetActiveMenu();
+  return (pMenu && pMenu->VIsVisible()) ? 1 : 0;
 }
 
 // Called from JavaScript when entering/exiting fullscreen to adjust game resolution

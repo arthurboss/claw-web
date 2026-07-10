@@ -24,14 +24,27 @@
     fire: "AltLeft",
     weapon: "ShiftLeft",
     pause: "Escape",
+    select: "Enter",
+    back: "Escape",
   };
   var KEYCODE = {
     ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40,
-    Space: 32, ControlLeft: 17, AltLeft: 18, ShiftLeft: 16, Escape: 27,
+    Space: 32, ControlLeft: 17, AltLeft: 18, ShiftLeft: 16, Escape: 27, Enter: 13,
   };
 
   // GAME_STATE mirrors gamepad-bridge / GetJSGameState. 2 = in-game running.
   var STATE_INGAME = 2;
+  var STATE_MENU = 1;
+
+  // Haptic durations mirror the gamepad HAPTIC_PRESETS (see gamepad-bridge.js):
+  // light=action/nav, medium=select. Vibrate the device directly so overlay
+  // buttons buzz the same as gamepad/gameplay haptics.
+  var HAPTIC = { light: 80, medium: 110, attack: 110, jump: 90 };
+  function vibrate(ms) {
+    if ("vibrate" in navigator) {
+      try { navigator.vibrate(ms); } catch (e) {}
+    }
+  }
 
   var heldKeys = {}; // code -> true while pressed
 
@@ -142,6 +155,16 @@
       "#tcPause.active{background:linear-gradient(to bottom,",
       "    rgba(255,255,240,0.6) 0 22%,rgba(253,228,107,0.55) 22% 48%,",
       "    rgba(164,112,56,0.55) 48% 72%,rgba(107,74,63,0.55) 72% 100%);}",
+      // Menu buttons (Select / Back) — reuse the JUMP / ATK slots so switching
+      // modes doesn't shift button positions.
+      "#tcSelect{right:0;bottom:52px;}",
+      "#tcBack{right:66px;bottom:14px;}",
+      // Mode-based visibility: gameplay shows action buttons + pause; menu shows
+      // Select/Back only. Joystick shows in both.
+      "#touchControls.mode-gameplay #tcSelect,#touchControls.mode-gameplay #tcBack{display:none;}",
+      "#touchControls.mode-menu #tcJump,#touchControls.mode-menu #tcAttack,",
+      "#touchControls.mode-menu #tcFire,#touchControls.mode-menu #tcWeapon,",
+      "#touchControls.mode-menu #tcPause{display:none;}",
     ].join("");
     var style = document.createElement("style");
     style.id = "touchControlsStyles";
@@ -159,6 +182,8 @@
       '  <div class="tcBtn" id="tcAttack">ATK</div>' +
       '  <div class="tcBtn" id="tcFire">FIRE</div>' +
       '  <div class="tcBtn" id="tcWeapon">WEAP</div>' +
+      '  <div class="tcBtn" id="tcSelect">OK</div>' +
+      '  <div class="tcBtn" id="tcBack">BACK</div>' +
       "</div>" +
       '<div id="tcPause">II</div>';
     document.body.appendChild(root);
@@ -258,11 +283,12 @@
   // ---- Buttons --------------------------------------------------------------
 
   // Hold-style button: key held while pressed (jump, fire).
-  function setupHoldButton(el, code) {
+  function setupHoldButton(el, code, hapticMs) {
     el.addEventListener("pointerdown", function (e) {
       markTouchInput(e);
       el.classList.add("active");
       pressKey(code);
+      vibrate(hapticMs || HAPTIC.light);
       try { el.setPointerCapture(e.pointerId); } catch (err) {}
       e.preventDefault();
     });
@@ -275,12 +301,13 @@
     el.addEventListener("pointercancel", up);
   }
 
-  // Tap-style button: quick down+up (attack, weapon, pause).
-  function setupTapButton(el, code) {
+  // Tap-style button: quick down+up (attack, weapon, pause, select, back).
+  function setupTapButton(el, code, hapticMs) {
     el.addEventListener("pointerdown", function (e) {
       markTouchInput(e);
       el.classList.add("active");
       pressKey(code);
+      vibrate(hapticMs || HAPTIC.light);
       e.preventDefault();
     });
     function up(e) {
@@ -294,17 +321,37 @@
 
   // ---- Visibility -----------------------------------------------------------
 
+  function isMenuVisible() {
+    if (typeof Module !== "undefined" && typeof Module._IsMenuVisibleJS === "function") {
+      try { return Module._IsMenuVisibleJS() === 1; } catch (e) { return false; }
+    }
+    return false;
+  }
+
+  // Determine which control set to show:
+  //   "gameplay" — playing (INGAME and no menu visible): joystick + actions
+  //   "menu"     — main menu OR in-game quick menu: joystick + Select/Back
+  //   ""         — hidden
+  function computeMode() {
+    if (!isTouchDevice() || !lastInputWasTouch()) return "";
+    var state = getGameState();
+    if (state === STATE_MENU || isMenuVisible()) return "menu";
+    if (state === STATE_INGAME) return "gameplay";
+    return "";
+  }
+
   function setupVisibility(root) {
-    var visible = false;
+    var mode = null;
     function tick() {
-      var show = isTouchDevice() && lastInputWasTouch() &&
-        getGameState() === STATE_INGAME;
-      if (show !== visible) {
-        visible = show;
-        root.classList.toggle("visible", show);
-        if (!show) releaseAll(); // don't leave keys stuck when leaving gameplay
+      var next = computeMode();
+      if (next !== mode) {
+        mode = next;
+        releaseAll(); // never carry held keys across a mode change
+        root.classList.toggle("visible", next !== "");
+        root.classList.toggle("mode-gameplay", next === "gameplay");
+        root.classList.toggle("mode-menu", next === "menu");
       }
-      setTimeout(tick, 250);
+      setTimeout(tick, 200);
     }
     tick();
   }
@@ -319,11 +366,15 @@
     injectStyles();
     var root = buildDom();
     setupJoystick(document.getElementById("tcJoyBase"), document.getElementById("tcJoyThumb"));
-    setupHoldButton(document.getElementById("tcJump"), KEY.jump);
-    setupHoldButton(document.getElementById("tcFire"), KEY.fire);
-    setupTapButton(document.getElementById("tcAttack"), KEY.attack);
-    setupTapButton(document.getElementById("tcWeapon"), KEY.weapon);
-    setupTapButton(document.getElementById("tcPause"), KEY.pause);
+    // Gameplay buttons
+    setupHoldButton(document.getElementById("tcJump"), KEY.jump, HAPTIC.jump);
+    setupHoldButton(document.getElementById("tcFire"), KEY.fire, HAPTIC.attack);
+    setupTapButton(document.getElementById("tcAttack"), KEY.attack, HAPTIC.attack);
+    setupTapButton(document.getElementById("tcWeapon"), KEY.weapon, HAPTIC.light);
+    setupTapButton(document.getElementById("tcPause"), KEY.pause, HAPTIC.light);
+    // Menu buttons
+    setupTapButton(document.getElementById("tcSelect"), KEY.select, HAPTIC.medium);
+    setupTapButton(document.getElementById("tcBack"), KEY.back, HAPTIC.light);
     setupVisibility(root);
     console.log("[TouchControls] joystick overlay initialized");
   }

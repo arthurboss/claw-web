@@ -25,6 +25,11 @@ extern "C" {
   // Called once from pointer-bridge.js with navigator.maxTouchPoints > 0.
   EMSCRIPTEN_KEEPALIVE void OnJSTouchCapability(int isTouchDevice);
 
+  // 1 if a menu is currently visible (main menu or the in-game quick menu).
+  // The quick menu keeps the game state at IngameRunning, so GetJSGameState
+  // alone can't tell "playing" from "quick menu open" — this can.
+  EMSCRIPTEN_KEEPALIVE int IsMenuVisibleJS();
+
   // Returns: 0=unknown, 1=menu, 2=in-game, 3=paused, 4=cutscene
   EMSCRIPTEN_KEEPALIVE int GetJSGameState();
   // Dynamic resolution support for fullscreen mode
