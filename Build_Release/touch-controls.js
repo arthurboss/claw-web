@@ -119,7 +119,7 @@
       // FILL alpha kept low (~0.4) for transparency; borders are solid black.
       // Joystick base (bottom-left) — same score-system bands, kept subtler
       // (lower alpha) as it covers more play area.
-      "#tcJoyBase{position:absolute;left:24px;bottom:24px;width:140px;height:140px;",
+      "#tcJoyBase{position:absolute;left:30px;bottom:30px;width:140px;height:140px;",
       "  border-radius:50%;border:2px solid #000;box-shadow:0 0 0 1px rgba(0,0,0,0.5);",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
@@ -147,7 +147,7 @@
       "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
       "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
       "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
-      "  color:#fff;font:bold 13px monospace;letter-spacing:0.5px;",
+      "  color:#fff;font:bold 13px sans-serif;letter-spacing:0.5px;",
       "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;",
       "  touch-action:none;text-align:center;}",
@@ -165,15 +165,15 @@
       "#tcWeapon{right:60px;bottom:114px;}", // N (top)
       "#tcAttack{right:114px;bottom:60px;}", // W (inner left)
       // Pause (top-center)
-      "#tcPause{position:absolute;left:50%;top:12px;transform:translateX(-50%);",
+      "#tcPause{position:absolute;left:50%;top:6px;transform:translateX(-50%);",
       "  width:42px;height:30px;border-radius:4px;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
-      "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
-      "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
-      "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
-      "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
-      "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
-      "  color:#fff;font:bold 13px monospace;",
+      "    rgba(252,239,82,0.8) 0 10%,rgba(248,232,110,0.8) 10% 20%,",
+      "    rgba(253,253,183,0.8) 20% 30%,rgba(251,244,214,0.8) 30% 40%,",
+      "    rgba(172,120,53,0.8) 40% 50%,rgba(208,170,62,0.8) 50% 60%,",
+      "    rgba(242,204,77,0.8) 60% 70%,rgba(244,219,99,0.8) 70% 80%,",
+      "    rgba(249,237,146,0.8) 80% 90%,rgba(239,216,112,0.8) 90% 100%);",
+      "  color:#fff;font:bold 16px sans-serif;",
       "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;}",
       "#tcPause.active{background:linear-gradient(to bottom,",
@@ -194,7 +194,7 @@
       "#touchControls.mode-menu #tcPause{display:none;}",
       // D-pad — plus layout, 4 directions only (no diagonals), same footprint
       // as the joystick base. Each key is a 46px rounded button.
-      "#tcDpad{position:absolute;left:24px;bottom:24px;width:140px;height:140px;",
+      "#tcDpad{position:absolute;left:30px;bottom:30px;width:140px;height:140px;",
       "  pointer-events:none;}",
       ".tcDbtn{position:absolute;width:46px;height:46px;border-radius:8px;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
@@ -203,7 +203,7 @@
       "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
       "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
       "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
-      "  color:#fff;font:bold 18px monospace;",
+      "  color:#fff;font:bold 18px sans-serif;",
       "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;",
       "  touch-action:none;}",
@@ -218,7 +218,7 @@
       "#tcDleft{left:0;top:47px;}",
       "#tcDright{left:94px;top:47px;}",
       // Movement-mode toggle — small button above the movement control.
-      "#tcMoveToggle{position:absolute;left:24px;bottom:172px;width:48px;height:48px;",
+      "#tcMoveToggle{position:absolute;left:30px;bottom:178px;width:48px;height:48px;",
       "  border-radius:50%;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.25) 0 10%,rgba(248,232,110,0.25) 10% 20%,",
@@ -226,7 +226,7 @@
       "    rgba(172,120,53,0.25) 40% 50%,rgba(208,170,62,0.25) 50% 60%,",
       "    rgba(242,204,77,0.25) 60% 70%,rgba(244,219,99,0.25) 70% 80%,",
       "    rgba(249,237,146,0.25) 80% 90%,rgba(239,216,112,0.25) 90% 100%);",
-      "  color:#fff;font:bold 10px monospace;",
+      "  color:#fff;font:bold 10px sans-serif;",
       "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;}",
       // Show joystick OR d-pad based on the movement mode class on the root.
