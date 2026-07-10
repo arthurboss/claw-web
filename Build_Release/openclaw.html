@@ -125,6 +125,11 @@
         /* Suppress browser scroll/pinch/double-tap gestures so Pointer Events
            reach the game unmodified. */
         touch-action: none;
+        /* Repeatedly tapping the touch buttons was selecting the canvas on
+           mobile — disable text selection and the iOS callout on it. */
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
       }
 
       canvas:focus {
