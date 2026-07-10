@@ -20,6 +20,13 @@
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="manifest" href="site.webmanifest" />
 
+    <!-- iOS PWA: standalone fullscreen mode, hides Safari chrome when added to Home Screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="OpenClaw" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#000000" />
+
     <!-- Viewport adapts to device width, allowing responsive scaling -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
@@ -484,6 +491,39 @@
       #startOverlay:hover svg {
         opacity: 1;
       }
+
+      /* PWA install banner — shown on mobile when game is not running as installed PWA */
+      #pwa-install-banner {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.92);
+        color: #fff;
+        padding: 12px 16px;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        border-top: 1px solid rgba(255,255,255,0.15);
+      }
+      #pwa-install-banner.visible { display: flex; }
+      #pwa-install-banner .pwa-icon { font-size: 28px; flex-shrink: 0; }
+      #pwa-install-banner .pwa-text { flex: 1; line-height: 1.4; }
+      #pwa-install-banner .pwa-text strong { display: block; }
+      #pwa-install-banner .pwa-text small { color: #aaa; }
+      #pwa-install-banner .pwa-actions { display: flex; gap: 8px; flex-shrink: 0; }
+      #pwa-install-banner button {
+        border: none; border-radius: 6px; padding: 8px 14px;
+        font-size: 13px; cursor: pointer; font-weight: 600;
+      }
+      #pwa-install-banner .btn-install {
+        background: var(--primary-color); color: #fff;
+      }
+      #pwa-install-banner .btn-dismiss {
+        background: rgba(255,255,255,0.12); color: #ccc;
+      }
     </style>
   </head>
   <body>
@@ -578,6 +618,18 @@
             </button>
           </div>
         </div>
+      </div>
+    </div>
+    <!-- PWA install banner — shown to mobile users not yet running in standalone mode -->
+    <div id="pwa-install-banner" role="banner" aria-label="Install OpenClaw">
+      <span class="pwa-icon">🎮</span>
+      <div class="pwa-text">
+        <strong>Add OpenClaw to your Home Screen</strong>
+        <small>Play fullscreen, no browser chrome</small>
+      </div>
+      <div class="pwa-actions">
+        <button class="btn-install" id="pwa-install-btn">Install</button>
+        <button class="btn-dismiss" id="pwa-dismiss-btn">Later</button>
       </div>
     </div>
     <div class="debug_panel" style="display: none">
@@ -1153,6 +1205,89 @@
       if (!checkBrowserSupport()) {
         document.getElementById('loading').textContent = 'Browser not supported';
         throw new Error('Browser not supported');
+      }
+    </script>
+    <!-- PWA install prompt logic -->
+    <script>
+      (function () {
+        var banner = document.getElementById('pwa-install-banner');
+        var installBtn = document.getElementById('pwa-install-btn');
+        var dismissBtn = document.getElementById('pwa-dismiss-btn');
+        var deferredPrompt = null;
+        var DISMISS_KEY = 'pwa_install_dismissed';
+
+        // Don't show if already running as PWA or user dismissed
+        var isStandalone =
+          window.matchMedia('(display-mode: fullscreen)').matches ||
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone === true;
+
+        if (isStandalone || localStorage.getItem(DISMISS_KEY)) return;
+
+        // Android Chrome: capture the native install prompt
+        window.addEventListener('beforeinstallprompt', function (e) {
+          e.preventDefault();
+          deferredPrompt = e;
+          // Only show on mobile
+          if (window.innerWidth <= 1024) {
+            banner.classList.add('visible');
+          }
+        });
+
+        // iOS: show manual instructions (no beforeinstallprompt support)
+        var isIOS =
+          /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        var isIOSSafari =
+          isIOS && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS/.test(navigator.userAgent);
+        if (isIOSSafari && !isStandalone) {
+          // Show banner with iOS-specific text
+          var textEl = banner.querySelector('.pwa-text small');
+          if (textEl) {
+            textEl.textContent = 'Tap Share ↓ then “Add to Home Screen”';
+          }
+          installBtn.textContent = 'How?';
+          installBtn.addEventListener('click', function () {
+            alert(
+              'To install OpenClaw on iOS:
+
+' +
+              '1. Tap the Share button (↑) in Safari
+' +
+              '2. Scroll down and tap “Add to Home Screen”
+' +
+              '3. Tap “Add” — the game will open fullscreen!'
+            );
+          });
+          banner.classList.add('visible');
+        }
+
+        installBtn.addEventListener('click', function () {
+          if (!deferredPrompt) return;
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then(function (result) {
+            deferredPrompt = null;
+            banner.classList.remove('visible');
+            if (result.outcome === 'accepted') {
+              localStorage.setItem(DISMISS_KEY, '1');
+            }
+          });
+        });
+
+        dismissBtn.addEventListener('click', function () {
+          banner.classList.remove('visible');
+          localStorage.setItem(DISMISS_KEY, '1');
+        });
+      })();
+    </script>
+
+    <!-- Service Worker: enables PWA installability and offline shell caching -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('./sw.js').catch(function (err) {
+            console.warn('[SW] Registration failed:', err);
+          });
+        });
       }
     </script>
   </body>
