@@ -1,4 +1,3 @@
 {
-  "outputDirectory": "Build_Release",
-  "public": false
+  "outputDirectory": "Build_Release"
 }
