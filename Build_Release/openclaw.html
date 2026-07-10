@@ -93,6 +93,23 @@
         container-type: size;
       }
 
+      /* Mobile only (body.mobile set from JS via user-agent) — desktop looks
+         fine and is left untouched.
+         - dvw/dvh: track the visible viewport (100vw/vh extend under the mobile
+           browser UI + safe-area insets with viewport-fit=cover, which cut the
+           canvas off in landscape and shifted it horizontally).
+         - Portrait: pin the canvas to the top instead of vertically centering;
+           landscape keeps it centered. */
+      body.mobile {
+        width: 100dvw;
+        height: 100dvh;
+      }
+      @media (orientation: portrait) {
+        body.mobile .canvas-wrapper {
+          align-items: flex-start;
+        }
+      }
+
       #loading {
         position: absolute;
         top: 50%;
@@ -125,6 +142,11 @@
         /* Suppress browser scroll/pinch/double-tap gestures so Pointer Events
            reach the game unmodified. */
         touch-action: none;
+        /* Repeatedly tapping the touch buttons was selecting the canvas on
+           mobile — disable text selection and the iOS callout on it. */
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
       }
 
       canvas:focus {
@@ -456,6 +478,17 @@
       if ((navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
           "ontouchstart" in window) {
         document.body.classList.add("touch-device");
+      }
+      // Tag real mobile browsers (user-agent) so the viewport/centering fixes
+      // (dvw/dvh, portrait-top) apply ONLY on mobile — desktop layout is fine
+      // and must stay untouched. iPadOS reports as desktop Safari, so also
+      // treat touch + coarse pointer as mobile.
+      var isMobileUA = /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini/i
+        .test(navigator.userAgent);
+      var isTouchCoarse = (navigator.maxTouchPoints > 0) &&
+        window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+      if (isMobileUA || isTouchCoarse) {
+        document.body.classList.add("mobile");
       }
     </script>
     <!-- Asset Upload UI (shown on first run) -->
