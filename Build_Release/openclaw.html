@@ -105,7 +105,11 @@
         height: 100dvh;
       }
       @media (orientation: portrait) {
-        body.mobile .canvas-wrapper {
+        /* Pin the canvas to the top. Both the wrapper AND #canvasContainer are
+           full-height flex boxes that vertically center by default, so the
+           inner one must also align to the start or it re-centers the canvas. */
+        body.mobile .canvas-wrapper,
+        body.mobile #canvasContainer {
           align-items: flex-start;
         }
       }
