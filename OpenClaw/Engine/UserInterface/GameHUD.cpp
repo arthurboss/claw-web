@@ -378,7 +378,7 @@ void ScreenElementHUD::BossHealthChangedDelegate(IEventDataPtr pEvent)
 
 void ScreenElementHUD::BossFightEndedDelegate(IEventDataPtr pEvent)
 {
-    LOG("GOTIT!")
+    LOG("GOTIT!");
     if (m_pBossBarTexture)
     {
         SDL_DestroyTexture(m_pBossBarTexture);
