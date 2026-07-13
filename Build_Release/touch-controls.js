@@ -90,15 +90,34 @@
       "ontouchstart" in window;
   }
 
+  function isRealMobileDevice() {
+    // Detect actual mobile/tablet devices, not desktop browser emulation.
+    // Desktop browsers with responsive mode enabled report maxTouchPoints but have
+    // mobile-like user agents only if explicitly emulated.
+    if (!isTouchDevice()) return false;
+    var ua = navigator.userAgent;
+    // Check for real mobile/tablet device markers
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone/i.test(ua);
+  }
+
   // Show the overlay only when the last input was touch/pen (mirrors the
   // cursor-hiding logic). window.__lastPointerWasTouch is set by pointer-bridge
   // on canvas pointer events; the overlay's own touches keep it true (see
   // markTouchInput). A mouse move flips it false and hides the overlay again.
+  // Track which input is actually being used (touch/gamepad/mouse).
+  // pointer-bridge sets __lastPointerWasTouch on actual touch/pen input.
+  // gamepad-bridge sets __lastPointerWasTouch = false on actual gamepad/mouse input.
+  // Default to true (touch) at startup so controls show by default.
+
   function lastInputWasTouch() {
-    return window.__lastPointerWasTouch === true;
+    // If explicitly set, use that value. Otherwise default to touch (controls on).
+    return window.__lastPointerWasTouch !== false;
   }
+
   function markTouchInput(e) {
-    if (!e || e.pointerType !== "mouse") window.__lastPointerWasTouch = true;
+    if (!e || e.pointerType !== "mouse") {
+      window.__lastPointerWasTouch = true;
+    }
   }
 
   // ---- DOM / CSS ------------------------------------------------------------
@@ -206,7 +225,8 @@
       "  color:#fff;font:bold 18px sans-serif;",
       "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;",
-      "  touch-action:none;}",
+      "  touch-action:none;padding:0;}",
+      ".tcDbtn svg{width:24px;height:24px;flex-shrink:0;}",
       ".tcDbtn.active{background:linear-gradient(to bottom,",
       "    rgb(252,239,82) 0 10%,rgb(248,232,110) 10% 20%,",
       "    rgb(253,253,183) 20% 30%,rgb(251,244,214) 30% 40%,",
@@ -261,16 +281,37 @@
   function buildDom() {
     var root = document.createElement("div");
     root.id = "touchControls";
+
+    // Helper to create an SVG arrow with stroke border (consistent across all platforms).
+    function createArrow(direction) {
+      var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 30 30");
+      svg.setAttribute("width", "30");
+      svg.setAttribute("height", "30");
+      svg.setAttribute("style", "display:block;margin:0 auto;");
+      var poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      poly.setAttribute("fill", "#fff");
+      poly.setAttribute("stroke", "#000");
+      poly.setAttribute("stroke-width", "1.5");
+      poly.setAttribute("stroke-linejoin", "round");
+      var points = {
+        up: "15,3 27,24 3,24",
+        down: "3,6 27,6 15,27",
+        left: "24,3 3,15 24,27",
+        right: "6,3 27,15 6,27"
+      };
+      poly.setAttribute("points", points[direction] || points.up);
+      svg.appendChild(poly);
+      return svg;
+    }
+
     root.innerHTML =
       '<div id="tcJoyBase"><div id="tcJoyThumb"></div></div>' +
       '<div id="tcDpad">' +
-      // Use U+25C4/25BA (◄ ►) not U+25C0/25B6 (◀ ▶): the latter have emoji
-      // presentation and render as coloured OS emoji on mobile. These match the
-      // text-default ▲ ▼ family.
-      '  <div class="tcDbtn" id="tcDup">▲</div>' +
-      '  <div class="tcDbtn" id="tcDdown">▼</div>' +
-      '  <div class="tcDbtn" id="tcDleft">◄</div>' +
-      '  <div class="tcDbtn" id="tcDright">►</div>' +
+      '  <div class="tcDbtn" id="tcDup"></div>' +
+      '  <div class="tcDbtn" id="tcDdown"></div>' +
+      '  <div class="tcDbtn" id="tcDleft"></div>' +
+      '  <div class="tcDbtn" id="tcDright"></div>' +
       "</div>" +
       '<div id="tcMoveToggle">STICK</div>' +
       '<div id="tcButtons">' +
@@ -283,6 +324,12 @@
       "</div>" +
       '<div id="tcPause">II</div>';
     document.body.appendChild(root);
+
+    // Replace all directional buttons with SVG arrows (consistent rendering on all platforms).
+    document.getElementById("tcDup").appendChild(createArrow("up"));
+    document.getElementById("tcDdown").appendChild(createArrow("down"));
+    document.getElementById("tcDleft").appendChild(createArrow("left"));
+    document.getElementById("tcDright").appendChild(createArrow("right"));
 
     // iOS starts a long-press gesture (callout/selection/magnifier) ~0.5s into a
     // held touch, which causes a visible one-second hitch — most noticeable when
@@ -429,7 +476,11 @@
   //   "menu"     — main menu OR in-game quick menu: joystick + Select/Back
   //   ""         — hidden
   function computeMode() {
-    if (!isTouchDevice() || !lastInputWasTouch()) return "";
+    // Only show controls on touch-capable devices (includes responsive/emulation mode).
+    if (!isTouchDevice()) return "";
+    // On touch devices, show controls if the last input was touch (defaults to true).
+    // Gamepad/mouse input will hide them; tapping screen shows them again.
+    if (!lastInputWasTouch()) return "";
     // isMenuVisible() (C++ IsMenuActive) is the source of truth for "menu";
     // STATE_MENU is a fallback only if that export isn't available yet.
     if (isMenuVisible() || getGameState() === STATE_MENU) return "menu";
@@ -453,6 +504,7 @@
 
   function setupVisibility(root) {
     var mode = null;
+
     function tick() {
       var next = computeMode();
       if (next !== mode) {
@@ -529,6 +581,34 @@
     setupTapButton(document.getElementById("tcSelect"), KEY.select, HAPTIC.medium);
     setupTapButton(document.getElementById("tcBack"), KEY.back, HAPTIC.light);
     setupVisibility(root);
+
+    // Detect mouse movement to switch from touch to cursor (for real devices with both).
+    // Only enable on actual mobile/tablet devices, not desktop browser emulation.
+    // This prevents accidental cursor switching in responsive mode testing.
+    var canvas = document.getElementById("canvas");
+    if (canvas && isRealMobileDevice()) {
+      canvas.addEventListener("mousemove", function (e) {
+        window.__lastPointerWasTouch = false;
+      });
+      canvas.addEventListener("mousedown", function (e) {
+        window.__lastPointerWasTouch = false;
+      });
+    }
+
+    // Keep touch controls visible during fullscreen by reparenting when needed.
+    // When canvas enters fullscreen, fullscreen API creates a new stacking context;
+    // move touch-controls into the fullscreen element so it stays visible.
+    document.addEventListener("fullscreenchange", function () {
+      var fsEl = document.fullscreenElement;
+      if (fsEl) {
+        // Entering fullscreen: reparent to fullscreen element
+        fsEl.appendChild(root);
+      } else {
+        // Exiting fullscreen: reparent back to body
+        document.body.appendChild(root);
+      }
+    });
+
     console.log("[TouchControls] overlay initialized");
   }
 
