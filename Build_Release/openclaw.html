@@ -171,8 +171,13 @@
 
       /* On touch devices the fullscreen + FPS buttons and the FPS overlay are
          hidden — they're desktop chrome, and the same settings are reachable
-         through the in-game menu. (Class set from JS via maxTouchPoints.) */
-      body.touch-device .bottom-controls,
+         through the in-game menu. (Class set from JS via maxTouchPoints.)
+         But clearStorageBtn stays visible as a recovery mechanism for game load failures. */
+      body.touch-device .bottom-controls {
+        display: flex !important;
+      }
+      body.touch-device #fpsBtn,
+      body.touch-device #fullscreenBtn,
       body.touch-device #fpsOverlay {
         display: none !important;
       }
@@ -573,9 +578,9 @@
               class="control-btn"
               id="clearStorageBtn"
               onclick="clearStorageAndReload()"
-              title="Clear Storage and Reload"
+              title="Clear storage and reload (if game won't start)"
             >
-              🗑️
+              ⟲
             </button>
           </div>
         </div>
@@ -1017,7 +1022,7 @@
 
       // Clear IndexedDB storage and reload page
       function clearStorageAndReload() {
-        if (!confirm('This will clear all stored game data and reload the page. Continue?')) {
+        if (!confirm('Clear all stored game files and saved games? The page will reload and you\'ll need to re-upload CLAW.REZ.')) {
           return;
         }
 
