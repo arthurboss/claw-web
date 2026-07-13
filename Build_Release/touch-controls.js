@@ -263,7 +263,7 @@
     var root = document.createElement("div");
     root.id = "touchControls";
 
-    // Helper to create an SVG arrow (prevents emoji rendering on iOS).
+    // Helper to create an SVG arrow with stroke border (consistent across all platforms).
     function createArrow(direction) {
       var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svg.setAttribute("viewBox", "0 0 30 30");
@@ -272,6 +272,9 @@
       svg.setAttribute("style", "display:block;margin:0 auto;");
       var poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
       poly.setAttribute("fill", "#fff");
+      poly.setAttribute("stroke", "#000");
+      poly.setAttribute("stroke-width", "1.5");
+      poly.setAttribute("stroke-linejoin", "round");
       var points = {
         up: "15,3 27,24 3,24",
         down: "3,6 27,6 15,27",
@@ -286,8 +289,8 @@
     root.innerHTML =
       '<div id="tcJoyBase"><div id="tcJoyThumb"></div></div>' +
       '<div id="tcDpad">' +
-      '  <div class="tcDbtn" id="tcDup">▲</div>' +
-      '  <div class="tcDbtn" id="tcDdown">▼</div>' +
+      '  <div class="tcDbtn" id="tcDup"></div>' +
+      '  <div class="tcDbtn" id="tcDdown"></div>' +
       '  <div class="tcDbtn" id="tcDleft"></div>' +
       '  <div class="tcDbtn" id="tcDright"></div>' +
       "</div>" +
@@ -303,7 +306,9 @@
       '<div id="tcPause">II</div>';
     document.body.appendChild(root);
 
-    // Replace left/right arrows with SVG (up/down stay as Unicode since they don't emoji-render on mobile).
+    // Replace all directional buttons with SVG arrows (consistent rendering on all platforms).
+    document.getElementById("tcDup").appendChild(createArrow("up"));
+    document.getElementById("tcDdown").appendChild(createArrow("down"));
     document.getElementById("tcDleft").appendChild(createArrow("left"));
     document.getElementById("tcDright").appendChild(createArrow("right"));
 
