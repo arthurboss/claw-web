@@ -311,7 +311,7 @@ std::shared_ptr<ResourceHandle> ResourceCache::Load(Resource* r)
     int32 rawSize = _resourceFile->VGetRawResourceSize(r);
     if (rawSize < 0)
     {
-        LOG_ERROR("Resource size return -1 => Resource not found. Resource: " + r->GetName());
+
         return nullptr;
     }
 

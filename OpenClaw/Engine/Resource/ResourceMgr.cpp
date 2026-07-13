@@ -51,6 +51,7 @@ std::shared_ptr<ResourceHandle> ResourceMgrImpl::VGetHandle(Resource* r, const s
         }
     }
 
+    LOG_ERROR("[Load] Resource not found in any cache: " + std::string(r->GetName()));
     return nullptr;
 }
 
