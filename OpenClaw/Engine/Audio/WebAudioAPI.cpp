@@ -38,36 +38,20 @@ public:
                         console.error('Web Audio API is not supported in this browser');
                         return false;
                     }
-                    
                     window.audioContext = new AudioContext();
-                    
-                    // Create and configure gain nodes
-                    window.soundGainNode = window.audioContext.createGain();
-                    window.musicGainNode = window.audioContext.createGain();
-                    
-                    // Set initial gain values
-                    window.soundGainNode.gain.value = 1.0; // Full volume by default
-                    window.musicGainNode.gain.value = 1.0; // Full volume by default
-                    
-                    // Connect gain nodes to audio context
-                    window.soundGainNode.connect(window.audioContext.destination);
-                    window.musicGainNode.connect(window.audioContext.destination);
-                    
-                    // Resume audio context on any user interaction
-                    const resumeAudio = () => {
-                        if (window.audioContext.state === 'suspended') {
-                            window.audioContext.resume();
-                        }
-                        document.removeEventListener('click', resumeAudio);
-                        document.removeEventListener('keydown', resumeAudio);
-                        document.removeEventListener('touchstart', resumeAudio);
-                    };
-                    
-                    document.addEventListener('click', resumeAudio);
-                    document.addEventListener('keydown', resumeAudio);
-                    document.addEventListener('touchstart', resumeAudio);
-                    return true;
                 }
+                if (window.audioContext.state === 'suspended') {
+                    window.audioContext.resume();
+                }
+
+                // Create and configure gain nodes
+                window.soundGainNode = window.audioContext.createGain();
+                window.musicGainNode = window.audioContext.createGain();
+                window.soundGainNode.gain.value = 1.0;
+                window.musicGainNode.gain.value = 1.0;
+                window.soundGainNode.connect(window.audioContext.destination);
+                window.musicGainNode.connect(window.audioContext.destination);
+                return true;
             } catch (e) {
                 console.error('Error initializing Web Audio API:', e);
                 return false;
