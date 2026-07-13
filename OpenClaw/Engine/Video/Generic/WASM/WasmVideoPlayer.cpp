@@ -72,7 +72,7 @@ EM_JS(void, js_LoadVideo, (int id, const char *url), {
     };
     player.video.onerror = function() {
       player.error = true;
-      console.error("Video load error for: " + player.video.src);
+
       if (player.keyHandler) {
         document.removeEventListener('keydown', player.keyHandler, true);
         player.keyHandler = null;
