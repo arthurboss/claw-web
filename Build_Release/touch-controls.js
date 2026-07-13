@@ -232,6 +232,25 @@
       // Show joystick OR d-pad based on the movement mode class on the root.
       "#touchControls.move-joystick #tcDpad{display:none;}",
       "#touchControls.move-dpad #tcJoyBase{display:none;}",
+
+      // ---- Portrait placement -------------------------------------------------
+      // Original button/cluster SIZES kept; only the cluster POSITIONS change:
+      // 15px from the side borders, 60px from the bottom. Internal button
+      // offsets are unchanged (sizes unchanged, so the diamond/plus still tile).
+      "@media (orientation: portrait) {",
+      "  #tcJoyBase, #tcDpad{left:15px;bottom:60px;}",
+      "  #tcButtons{right:15px;bottom:60px;}",
+      // toggle sits above the 140px movement control (top at 60+140=200), ~8px gap
+      "  #tcMoveToggle{left:15px;bottom:208px;}",
+      // pause: same translucency as the other buttons (0.4); JS sets its top to
+      // 15px below the (dynamically-sized) canvas.
+      "  #tcPause{background:linear-gradient(to bottom,",
+      "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
+      "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
+      "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
+      "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
+      "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);}",
+      "}",
     ].join("");
     var style = document.createElement("style");
     style.id = "touchControlsStyles";
@@ -418,6 +437,20 @@
     return "";
   }
 
+  // Portrait only: place the pause button 15px below the canvas (its height is
+  // JS-set, so CSS can't know where its bottom is). Otherwise clear the inline
+  // top so the CSS default (top:6px) applies.
+  function positionPause() {
+    var pause = document.getElementById("tcPause");
+    if (!pause) return;
+    var portrait = window.matchMedia &&
+      window.matchMedia("(orientation: portrait)").matches;
+    if (!portrait) { pause.style.top = ""; return; }
+    var canvas = document.getElementById("canvas");
+    if (!canvas) return;
+    pause.style.top = Math.round(canvas.getBoundingClientRect().bottom + 15) + "px";
+  }
+
   function setupVisibility(root) {
     var mode = null;
     function tick() {
@@ -429,6 +462,7 @@
         root.classList.toggle("mode-gameplay", next === "gameplay");
         root.classList.toggle("mode-menu", next === "menu");
       }
+      positionPause();
       setTimeout(tick, 200);
     }
     tick();
