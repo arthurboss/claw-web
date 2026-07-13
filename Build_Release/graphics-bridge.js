@@ -64,7 +64,6 @@ class WebGLBridge {
                 return false;
             }
             
-            console.log('[WebGLBridge] WebGL context created successfully');
             
             // Set basic WebGL state
             this.gl.enable(this.gl.BLEND);
@@ -82,7 +81,6 @@ class WebGLBridge {
             }
             
             this.isInitialized = true;
-            console.log('[WebGLBridge] Initialization complete');
             return true;
             
         } catch (error) {
@@ -130,7 +128,6 @@ class WebGLBridge {
                 return false;
             }
             
-            console.log('[WebGLBridge] Shaders created and linked successfully');
             return true;
             
         } catch (error) {
@@ -152,7 +149,6 @@ class WebGLBridge {
             this.indexBuffer = this.gl.createBuffer();
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
             
-            console.log('[WebGLBridge] Buffers created successfully');
             return true;
             
         } catch (error) {
@@ -277,7 +273,6 @@ class WebGLBridge {
         }
         
         this.isInitialized = false;
-        console.log('[WebGLBridge] Cleanup complete');
     }
 }
 
@@ -290,4 +285,3 @@ if (typeof window !== 'undefined') {
   window.webglBridge = new WebGLBridge();
 }
 
-console.log('[WebGLBridge] Graphics bridge loaded and ready');

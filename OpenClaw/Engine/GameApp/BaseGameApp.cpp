@@ -412,7 +412,6 @@ void BaseGameApp::StepLoop() {
     if (debugOnce) {
       debugOnce = false;
       if (m_videoPlatform) {
-        EM_ASM({ console.log('[Debug] m_videoPlatform exists, calling PumpEvents'); });
       } else {
         EM_ASM({ console.log('[Debug] m_videoPlatform is NULL!'); });
       }
@@ -1130,7 +1129,6 @@ bool BaseGameApp::InitializeResources(GameOptions &gameOptions) {
 // BaseGameApp::InitializeFont
 //---------------------------------------------------------------------------------------------------------------------
 bool BaseGameApp::InitializeFont(GameOptions &gameOptions) {
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, ">>>>> Initializing font...");
 
   if (TTF_Init() < 0) {
     LOG_ERROR("Failed to initialize SDL TTF font subsystem");
@@ -1159,8 +1157,6 @@ bool BaseGameApp::InitializeLocalization(GameOptions &gameOptions) {
 bool BaseGameApp::InitializeTouchManager(GameOptions &gameOptions) {
   auto &touchScreenConfig = GetControlOptions()->touchScreen;
   if (touchScreenConfig.enable) {
-    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-                ">>>>> Initializing touch resolver...");
 
     m_pTouchManager = new TouchManager{};
 
@@ -1177,8 +1173,6 @@ bool BaseGameApp::InitializeTouchManager(GameOptions &gameOptions) {
 //     used to instantiate concrete actors
 //---------------------------------------------------------------------------------------------------------------------
 bool BaseGameApp::ReadActorXmlPrototypes(GameOptions &gameOptions) {
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-              ">>>>> Loading actor prototypes...");
 
   // In case of reload
   if (!m_ActorXmlPrototypeMap.empty()) {

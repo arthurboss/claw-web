@@ -36,13 +36,11 @@ window.initResourceLoader = function(Module) {
 
 // Initialize game (called from inline script)
 window.initGameWhenReady = async function() {
-  console.log('[Game Init] Starting game initialization...');
 
   try {
     const success = await prepareAssetStorage();
 
     if (success) {
-      console.log('[Game Init] Assets ready, loading game...');
 
       // Small delay to ensure all async operations are complete
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -62,4 +60,3 @@ window.initGameWhenReady = async function() {
   }
 };
 
-console.log('[Game Init] Module loaded and ready');

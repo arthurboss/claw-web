@@ -609,7 +609,6 @@
       }
     });
 
-    console.log("[TouchControls] overlay initialized");
   }
 
   if (document.readyState === "loading") {

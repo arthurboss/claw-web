@@ -43,7 +43,6 @@ export function updateLoadingUI(phase, resourceName, loaded, total) {
     loadingPercent.textContent = `${Math.floor(resourceLoadProgress)}%`;
   }
 
-  console.log(`[Resource Loading] ${phase}: ${resourceName} (${Math.floor(resourceLoadProgress)}%)`);
 }
 
 /**
@@ -55,7 +54,6 @@ function hideLoadingUI() {
     loadingIndicator.style.display = 'none';
   }
 
-  console.log('[Resource Loading] Complete');
 }
 
 /**
@@ -99,7 +97,6 @@ export function initResourceLoader(Module) {
     hideLoadingUI();
   };
 
-  console.log('[Resource Loader] Bridge initialized');
 }
 
 /**
