@@ -755,6 +755,12 @@ void HumanView::AmmoTypeUpdatedDelegate(IEventDataPtr pEventData)
         {
             LOG_ERROR("Unknown ammo type: " + ToStr(pCastEventData->GetAmmoType()));
         }
+
+        // Play weapon select sound
+        SoundInfo selectSound("/GAME/SOUNDS/SELECT.WAV");
+        selectSound.soundVolume = 100;
+        shared_ptr<EventData_Request_Play_Sound> pSoundEvent(new EventData_Request_Play_Sound(selectSound));
+        IEventMgr::Get()->VTriggerEvent(pSoundEvent);
     }
     else
     {
