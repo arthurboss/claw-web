@@ -90,15 +90,34 @@
       "ontouchstart" in window;
   }
 
+  function isRealMobileDevice() {
+    // Detect actual mobile/tablet devices, not desktop browser emulation.
+    // Desktop browsers with responsive mode enabled report maxTouchPoints but have
+    // mobile-like user agents only if explicitly emulated.
+    if (!isTouchDevice()) return false;
+    var ua = navigator.userAgent;
+    // Check for real mobile/tablet device markers
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Windows Phone/i.test(ua);
+  }
+
   // Show the overlay only when the last input was touch/pen (mirrors the
   // cursor-hiding logic). window.__lastPointerWasTouch is set by pointer-bridge
   // on canvas pointer events; the overlay's own touches keep it true (see
   // markTouchInput). A mouse move flips it false and hides the overlay again.
+  // Track which input is actually being used (touch/gamepad/mouse).
+  // pointer-bridge sets __lastPointerWasTouch on actual touch/pen input.
+  // gamepad-bridge sets __lastPointerWasTouch = false on actual gamepad/mouse input.
+  // Default to true (touch) at startup so controls show by default.
+
   function lastInputWasTouch() {
-    return window.__lastPointerWasTouch === true;
+    // If explicitly set, use that value. Otherwise default to touch (controls on).
+    return window.__lastPointerWasTouch !== false;
   }
+
   function markTouchInput(e) {
-    if (!e || e.pointerType !== "mouse") window.__lastPointerWasTouch = true;
+    if (!e || e.pointerType !== "mouse") {
+      window.__lastPointerWasTouch = true;
+    }
   }
 
   // ---- DOM / CSS ------------------------------------------------------------
@@ -457,7 +476,11 @@
   //   "menu"     — main menu OR in-game quick menu: joystick + Select/Back
   //   ""         — hidden
   function computeMode() {
-    if (!isTouchDevice() || !lastInputWasTouch()) return "";
+    // Only show controls on touch-capable devices (includes responsive/emulation mode).
+    if (!isTouchDevice()) return "";
+    // On touch devices, show controls if the last input was touch (defaults to true).
+    // Gamepad/mouse input will hide them; tapping screen shows them again.
+    if (!lastInputWasTouch()) return "";
     // isMenuVisible() (C++ IsMenuActive) is the source of truth for "menu";
     // STATE_MENU is a fallback only if that export isn't available yet.
     if (isMenuVisible() || getGameState() === STATE_MENU) return "menu";
@@ -481,6 +504,7 @@
 
   function setupVisibility(root) {
     var mode = null;
+
     function tick() {
       var next = computeMode();
       if (next !== mode) {
@@ -557,6 +581,20 @@
     setupTapButton(document.getElementById("tcSelect"), KEY.select, HAPTIC.medium);
     setupTapButton(document.getElementById("tcBack"), KEY.back, HAPTIC.light);
     setupVisibility(root);
+
+    // Detect mouse movement to switch from touch to cursor (for real devices with both).
+    // Only enable on actual mobile/tablet devices, not desktop browser emulation.
+    // This prevents accidental cursor switching in responsive mode testing.
+    var canvas = document.getElementById("canvas");
+    if (canvas && isRealMobileDevice()) {
+      canvas.addEventListener("mousemove", function (e) {
+        window.__lastPointerWasTouch = false;
+      });
+      canvas.addEventListener("mousedown", function (e) {
+        window.__lastPointerWasTouch = false;
+      });
+    }
+
     console.log("[TouchControls] overlay initialized");
   }
 
