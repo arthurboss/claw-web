@@ -323,11 +323,7 @@ EMSCRIPTEN_KEEPALIVE int IsMenuVisibleJS() {
 // Called from JavaScript when entering/exiting fullscreen to adjust game resolution
 // Width is calculated based on screen aspect ratio, height is always 480
 EMSCRIPTEN_KEEPALIVE void OnJSResolutionChange(int width, int height) {
-  if (!g_pApp) return;
-
-  EM_ASM({
-    console.log('[Resolution] Changing to ' + $0 + 'x' + $1);
-  }, width, height);
+  if (!g_pApp || !g_pApp->GetRenderer()) return;
 
   // Update the game's internal resolution
   g_pApp->SetWindowSize(width, height, 1.0);

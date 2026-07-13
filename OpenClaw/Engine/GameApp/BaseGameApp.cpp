@@ -610,11 +610,10 @@ void BaseGameApp::SetWindowSize(int width, int height, double scale) {
   SDL_SetWindowSize(m_pWindow, width, height);
   m_WindowSize.Set(width, height);
 
-  printf("newscale: %s - %f\n", newScale.ToString().c_str(), scale);
-
   SetScale(newScale);
 
-  GetHumanView()->GetCamera()->SetSize(width, height);
+  HumanView* pView = GetHumanView();
+  if (pView) pView->GetCamera()->SetSize(width, height);
 
   // Don't reset camera scale - this was causing viewport misalignment when zoom changed
   // GetHumanView()->GetCamera()->SetScale(1, 1);
