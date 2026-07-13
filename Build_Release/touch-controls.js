@@ -206,7 +206,8 @@
       "  color:#fff;font:bold 18px sans-serif;",
       "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;",
-      "  touch-action:none;}",
+      "  touch-action:none;padding:0;}",
+      ".tcDbtn svg{width:24px;height:24px;flex-shrink:0;}",
       ".tcDbtn.active{background:linear-gradient(to bottom,",
       "    rgb(252,239,82) 0 10%,rgb(248,232,110) 10% 20%,",
       "    rgb(253,253,183) 20% 30%,rgb(251,244,214) 30% 40%,",
@@ -261,16 +262,34 @@
   function buildDom() {
     var root = document.createElement("div");
     root.id = "touchControls";
+
+    // Helper to create an SVG arrow (prevents emoji rendering on iOS).
+    function createArrow(direction) {
+      var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 30 30");
+      svg.setAttribute("width", "30");
+      svg.setAttribute("height", "30");
+      svg.setAttribute("style", "display:block;margin:0 auto;");
+      var poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+      poly.setAttribute("fill", "#fff");
+      var points = {
+        up: "15,3 27,24 3,24",
+        down: "3,6 27,6 15,27",
+        left: "24,3 3,15 24,27",
+        right: "6,3 27,15 6,27"
+      };
+      poly.setAttribute("points", points[direction] || points.up);
+      svg.appendChild(poly);
+      return svg;
+    }
+
     root.innerHTML =
       '<div id="tcJoyBase"><div id="tcJoyThumb"></div></div>' +
       '<div id="tcDpad">' +
-      // Use U+25C4/25BA (◄ ►) not U+25C0/25B6 (◀ ▶): the latter have emoji
-      // presentation and render as coloured OS emoji on mobile. These match the
-      // text-default ▲ ▼ family.
       '  <div class="tcDbtn" id="tcDup">▲</div>' +
       '  <div class="tcDbtn" id="tcDdown">▼</div>' +
-      '  <div class="tcDbtn" id="tcDleft">◄</div>' +
-      '  <div class="tcDbtn" id="tcDright">►</div>' +
+      '  <div class="tcDbtn" id="tcDleft"></div>' +
+      '  <div class="tcDbtn" id="tcDright"></div>' +
       "</div>" +
       '<div id="tcMoveToggle">STICK</div>' +
       '<div id="tcButtons">' +
@@ -283,6 +302,10 @@
       "</div>" +
       '<div id="tcPause">II</div>';
     document.body.appendChild(root);
+
+    // Replace left/right arrows with SVG (up/down stay as Unicode since they don't emoji-render on mobile).
+    document.getElementById("tcDleft").appendChild(createArrow("left"));
+    document.getElementById("tcDright").appendChild(createArrow("right"));
 
     // iOS starts a long-press gesture (callout/selection/magnifier) ~0.5s into a
     // held touch, which causes a visible one-second hitch — most noticeable when
