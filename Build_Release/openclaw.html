@@ -1031,34 +1031,23 @@
       // Initialize resolution on load
       updateGameResolution();
 
-      // Clear IndexedDB storage and reload page
+      // Clear CLAW.REZ storage and reload page
       function clearStorageAndReload() {
-        if (!confirm('Clear all stored game files and saved games? The page will reload and you\'ll need to re-upload CLAW.REZ.')) {
+        if (!confirm('Clear the stored CLAW.REZ file? Your saved games will be preserved. The page will reload and you\'ll need to re-upload CLAW.REZ.')) {
           return;
         }
 
-        const DBNames = ['claw-assets', 'claw-saves'];
-        let completed = 0;
-
-        DBNames.forEach(dbName => {
-          const request = indexedDB.deleteDatabase(dbName);
-          request.onsuccess = function() {
-            console.log(`[Storage] Deleted IndexedDB: ${dbName}`);
-            completed++;
-            if (completed === DBNames.length) {
-              console.log('[Storage] All databases cleared, reloading page...');
-              location.reload();
-            }
-          };
-          request.onerror = function() {
-            console.error(`[Storage] Failed to delete ${dbName}:`, request.error);
-            completed++;
-            if (completed === DBNames.length) {
-              console.log('[Storage] Reloading page...');
-              location.reload();
-            }
-          };
-        });
+        const request = indexedDB.deleteDatabase('claw-assets');
+        request.onsuccess = function() {
+          console.log('[Storage] Cleared CLAW.REZ (claw-assets database)');
+          console.log('[Storage] Reloading page...');
+          location.reload();
+        };
+        request.onerror = function() {
+          console.error('[Storage] Failed to delete claw-assets:', request.error);
+          console.log('[Storage] Reloading page anyway...');
+          location.reload();
+        };
       }
       window.clearStorageAndReload = clearStorageAndReload;
 
