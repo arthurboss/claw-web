@@ -62,8 +62,14 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
+        /* vw/vh fallback; dvw/dvh track the actually-visible viewport (100vw/vh
+           extend under the mobile browser UI + safe-area insets with
+           viewport-fit=cover, cutting the canvas off in landscape and shifting
+           it right). On desktop dvh == vh, so it's a no-op there. */
         width: 100vw;
         height: 100vh;
+        width: 100dvw;
+        height: 100dvh;
         transition:
           background-color 0.3s,
           color 0.3s;
@@ -93,25 +99,51 @@
         container-type: size;
       }
 
-      /* Mobile only (body.mobile set from JS via user-agent) — desktop looks
-         fine and is left untouched.
-         - dvw/dvh: track the visible viewport (100vw/vh extend under the mobile
-           browser UI + safe-area insets with viewport-fit=cover, which cut the
-           canvas off in landscape and shifted it horizontally).
-         - Portrait: pin the canvas to the top instead of vertically centering;
-           landscape keeps it centered. */
-      body.mobile {
-        width: 100dvw;
-        height: 100dvh;
-      }
+      /* Portrait: pin the canvas to the top instead of vertically centering.
+         Both the wrapper AND #canvasContainer are full-height flex boxes that
+         center by default, so the inner one must also align to start. Desktop
+         monitors are landscape, so this effectively only affects mobile. */
       @media (orientation: portrait) {
-        /* Pin the canvas to the top. Both the wrapper AND #canvasContainer are
-           full-height flex boxes that vertically center by default, so the
-           inner one must also align to the start or it re-centers the canvas. */
-        body.mobile .canvas-wrapper,
-        body.mobile #canvasContainer {
+        /* Prefix with .game-container to out-specify the base #canvasContainer
+           rule (equal specificity would lose on source order, leaving it
+           centered). */
+        .game-container .canvas-wrapper,
+        .game-container #canvasContainer {
           align-items: flex-start;
         }
+      }
+
+      /* Rotate prompt: browsers can't force device rotation from a tab, so on
+         very narrow portrait screens (< 375px wide) show a full-screen overlay
+         asking the player to rotate. Hidden otherwise. */
+      #rotatePrompt {
+        display: none;
+      }
+      @media (orientation: portrait) and (max-width: 374px) {
+        #rotatePrompt {
+          position: fixed;
+          inset: 0;
+          z-index: 10000;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          background: #000;
+          color: #fde46b;
+          font-family: sans-serif;
+          font-weight: bold;
+          text-align: center;
+          padding: 24px;
+        }
+        #rotatePrompt .rotate-icon {
+          font-size: 48px;
+          animation: rotateHint 1.6s ease-in-out infinite;
+        }
+      }
+      @keyframes rotateHint {
+        0%, 40% { transform: rotate(0deg); }
+        60%, 100% { transform: rotate(-90deg); }
       }
 
       #loading {
@@ -483,18 +515,14 @@
           "ontouchstart" in window) {
         document.body.classList.add("touch-device");
       }
-      // Tag real mobile browsers (user-agent) so the viewport/centering fixes
-      // (dvw/dvh, portrait-top) apply ONLY on mobile — desktop layout is fine
-      // and must stay untouched. iPadOS reports as desktop Safari, so also
-      // treat touch + coarse pointer as mobile.
-      var isMobileUA = /Android|iPhone|iPad|iPod|Mobile|Silk|Kindle|Opera Mini/i
-        .test(navigator.userAgent);
-      var isTouchCoarse = (navigator.maxTouchPoints > 0) &&
-        window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
-      if (isMobileUA || isTouchCoarse) {
-        document.body.classList.add("mobile");
-      }
     </script>
+
+    <!-- Rotate prompt: shown on narrow portrait screens (< 375px wide) -->
+    <div id="rotatePrompt">
+      <div class="rotate-icon">📱</div>
+      <div>Please rotate your device to landscape to play.</div>
+    </div>
+
     <!-- Asset Upload UI (shown on first run) -->
     <section id="assetUpload" style="display: none;">
       <h2>First Time Setup</h2>
