@@ -262,6 +262,17 @@
         display: none;
       }
 
+      /* Clear storage button fade-out after 10 seconds (if game boots normally) */
+      @keyframes fadeOutButton {
+        to {
+          opacity: 0;
+          pointer-events: none;
+        }
+      }
+
+      #clearStorageBtn.fade-out {
+        animation: fadeOutButton 0.5s ease-out forwards;
+      }
 
       .divider {
         height: 1px;
@@ -578,9 +589,9 @@
               class="control-btn"
               id="clearStorageBtn"
               onclick="clearStorageAndReload()"
-              title="Clear storage and reload (if game won't start)"
+              title="Troubleshoot: Clear storage and reload (if game won't start)"
             >
-              ⟲
+              ?
             </button>
           </div>
         </div>
@@ -1050,6 +1061,18 @@
         });
       }
       window.clearStorageAndReload = clearStorageAndReload;
+
+      // Auto-fade out troubleshoot button after 10 seconds (once game boots normally)
+      function initTroubleshootButtonFadeout() {
+        const btn = document.getElementById('clearStorageBtn');
+        if (!btn) return;
+
+        setTimeout(function() {
+          btn.classList.add('fade-out');
+          console.log('[UI] Troubleshoot button faded out after 10s');
+        }, 10000);
+      }
+      window.initTroubleshootButtonFadeout = initTroubleshootButtonFadeout;
     </script>
     <script type="text/javascript">
       var loadingElement = document.getElementById("loading");
@@ -1193,6 +1216,10 @@
           }
           if (typeof window.initGameWhenReady === 'function') {
             window.initGameWhenReady();
+            // Start fade-out timer for troubleshoot button once game init starts
+            if (typeof window.initTroubleshootButtonFadeout === 'function') {
+              window.initTroubleshootButtonFadeout();
+            }
           } else {
             console.error('[Init] initGameWhenReady not found. game-init.js may not have loaded.');
           }
@@ -1204,6 +1231,10 @@
         }
         if (typeof window.initGameWhenReady === 'function') {
           window.initGameWhenReady();
+          // Start fade-out timer for troubleshoot button once game init starts
+          if (typeof window.initTroubleshootButtonFadeout === 'function') {
+            window.initTroubleshootButtonFadeout();
+          }
         } else {
           console.error('[Init] initGameWhenReady not found. game-init.js may not have loaded.');
         }
