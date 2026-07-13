@@ -595,6 +595,20 @@
       });
     }
 
+    // Keep touch controls visible during fullscreen by reparenting when needed.
+    // When canvas enters fullscreen, fullscreen API creates a new stacking context;
+    // move touch-controls into the fullscreen element so it stays visible.
+    document.addEventListener("fullscreenchange", function () {
+      var fsEl = document.fullscreenElement;
+      if (fsEl) {
+        // Entering fullscreen: reparent to fullscreen element
+        fsEl.appendChild(root);
+      } else {
+        // Exiting fullscreen: reparent back to body
+        document.body.appendChild(root);
+      }
+    });
+
     console.log("[TouchControls] overlay initialized");
   }
 
