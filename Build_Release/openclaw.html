@@ -569,6 +569,14 @@
             >
               ⛶
             </button>
+            <button
+              class="control-btn"
+              id="clearStorageBtn"
+              onclick="clearStorageAndReload()"
+              title="Clear Storage and Reload"
+            >
+              🗑️
+            </button>
           </div>
         </div>
       </div>
@@ -1006,6 +1014,37 @@
 
       // Initialize resolution on load
       updateGameResolution();
+
+      // Clear IndexedDB storage and reload page
+      function clearStorageAndReload() {
+        if (!confirm('This will clear all stored game data and reload the page. Continue?')) {
+          return;
+        }
+
+        const DBNames = ['claw-assets', 'claw-saves'];
+        let completed = 0;
+
+        DBNames.forEach(dbName => {
+          const request = indexedDB.deleteDatabase(dbName);
+          request.onsuccess = function() {
+            console.log(`[Storage] Deleted IndexedDB: ${dbName}`);
+            completed++;
+            if (completed === DBNames.length) {
+              console.log('[Storage] All databases cleared, reloading page...');
+              location.reload();
+            }
+          };
+          request.onerror = function() {
+            console.error(`[Storage] Failed to delete ${dbName}:`, request.error);
+            completed++;
+            if (completed === DBNames.length) {
+              console.log('[Storage] Reloading page...');
+              location.reload();
+            }
+          };
+        });
+      }
+      window.clearStorageAndReload = clearStorageAndReload;
     </script>
     <script type="text/javascript">
       var loadingElement = document.getElementById("loading");
