@@ -62,15 +62,33 @@ function waitForStartClick() {
   });
 }
 
+async function checkClawRezCached() {
+  try {
+    const storage = new AssetStorage();
+    await storage.init();
+    return await storage.hasFile('CLAW.REZ');
+  } catch {
+    return false;
+  }
+}
+
 // Initialize game (called from inline script)
 window.initGameWhenReady = async function() {
 
   try {
-    const success = await prepareAssetStorage();
+    const hasCached = await checkClawRezCached();
+
+    let success;
+    if (hasCached) {
+      // CLAW.REZ already in storage — load it and show play button in parallel.
+      [success] = await Promise.all([prepareAssetStorage(), waitForStartClick()]);
+    } else {
+      // First run — upload must complete before showing the play button.
+      success = await prepareAssetStorage();
+      if (success) await waitForStartClick();
+    }
 
     if (success) {
-      await waitForStartClick();
-
       // Small delay to ensure all async operations are complete
       await new Promise(resolve => setTimeout(resolve, 100));
 
