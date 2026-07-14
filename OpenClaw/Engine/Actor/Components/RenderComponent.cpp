@@ -31,10 +31,14 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
     assert(pXmlData != NULL);
 
     WapPal* palette = g_pApp->GetCurrentPalette();
+    m_HasImagePathElements = false;
+    m_AllImageDirsEmpty = true;
 
     for (TiXmlElement* pImagePathElem = pXmlData->FirstChildElement("ImagePath");
         pImagePathElem; pImagePathElem = pImagePathElem->NextSiblingElement("ImagePath"))
     {
+        m_HasImagePathElements = true;
+
         if (palette == NULL)
         {
             LOG_ERROR("Attempting to create BaseRenderComponent without existing palette");
@@ -52,6 +56,14 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
         imageDir = imageDir.substr(0, imageDir.find_last_of("/")); // Get rid of filenames - get just path to the final directory
         std::vector<std::string> matchingPathNames =
             g_pApp->GetResourceCache()->GetAllFilesInDirectory(imageDir.c_str());
+
+        // Skip if directory is empty — some level props (decorations) may have empty image directories
+        if (matchingPathNames.empty())
+        {
+            continue;
+        }
+
+        m_AllImageDirsEmpty = false;
 
         // Remove all images which dont conform to the given pattern
         // This affects probably only object with "DoNothing" logic
@@ -107,7 +119,7 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
                 imageNameKey = "frame" + Util::ConvertToThreeDigitsString(imageNameNumStr);
             }*/
             // Just reconstruct it...
-            if (imageNameKey.length() > 3 /* Hack for checkpointflag */ || 
+            if (imageNameKey.length() > 3 /* Hack for checkpointflag */ ||
                 std::string(pXmlData->Parent()->ToElement()->Attribute("Type")) == "GAME_CHECKPOINTFLAG")
             {
                 std::string tmp = imageNameKey;
@@ -127,7 +139,9 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
         }
     }
 
-    if (m_ImageMap.empty())
+    // Only warn if actor specified ImagePath elements with files but none were loaded
+    // Don't warn if all image directories were empty (expected for some decorations)
+    if (m_HasImagePathElements && m_ImageMap.empty() && !m_AllImageDirsEmpty)
     {
         LOG_WARNING("Image map for render component is empty. Actor type: " + std::string(pXmlData->Parent()->ToElement()->Attribute("Type")));
     }
@@ -267,7 +281,10 @@ bool ActorRenderComponent::VDelegateInit(TiXmlElement* pXmlData)
     {
         if (m_ImageMap.empty())
         {
-            LOG_WARNING("Creating actor render component without valid image.");
+            if (m_HasImagePathElements && !m_AllImageDirsEmpty)
+            {
+                LOG_WARNING("Creating actor render component without valid image.");
+            }
             return true;
         }
         m_CachedImage = m_ImageMap.begin()->second;
@@ -620,7 +637,6 @@ bool TilePlaneRenderComponent::VDelegateInit(TiXmlElement* pXmlData)
         LOG_ERROR("Tiles are missing.");
         return false;
     }
-    PROFILE_CPU("PLANE CREATION");
     int32 tileIdx = 0;
 
     TileList tileList;
