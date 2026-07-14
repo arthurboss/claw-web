@@ -395,10 +395,6 @@ static IEventDataPtr XmlElemToGeneratedEvent(TiXmlElement* pElem)
     {
         pEventData.reset(new EventData_Menu_ToggleAspectRatio());
     }
-    else if (eventType == "ToggleFPS")
-    {
-        pEventData.reset(new EventData_Menu_ToggleFPS());
-    }
     else
     {
         return nullptr;
@@ -1699,20 +1695,6 @@ bool ScreenElementMenuItem::Initialize(TiXmlElement* pElem)
             m_bVisible = (bool)EM_ASM_INT({ return window.forceOriginalAspect ? 1 : 0; });
 #endif
         }
-        else if (conditionTypeStr == "FPSOn")
-        {
-#ifdef __EMSCRIPTEN__
-            m_bVisible = (bool)EM_ASM_INT({ return window.fpsEnabled ? 1 : 0; });
-#else
-            m_bVisible = true;
-#endif
-        }
-        else if (conditionTypeStr == "FPSOff")
-        {
-#ifdef __EMSCRIPTEN__
-            m_bVisible = (bool)EM_ASM_INT({ return window.fpsEnabled ? 0 : 1; });
-#endif
-        }
     }
     std::string menuItemTypeStr;
     ParseValueFromXmlElem(&menuItemTypeStr, pElem->FirstChildElement("Type"));
@@ -2016,20 +1998,6 @@ void ScreenElementMenuItem::ReEvaluateVisibilityCondition()
     {
 #ifdef __EMSCRIPTEN__
         m_bVisible = (bool)EM_ASM_INT({ return window.forceOriginalAspect ? 1 : 0; });
-#endif
-    }
-    else if (m_VisibilityConditionType == "FPSOn")
-    {
-#ifdef __EMSCRIPTEN__
-        m_bVisible = (bool)EM_ASM_INT({ return window.fpsEnabled ? 1 : 0; });
-#else
-        m_bVisible = true;
-#endif
-    }
-    else if (m_VisibilityConditionType == "FPSOff")
-    {
-#ifdef __EMSCRIPTEN__
-        m_bVisible = (bool)EM_ASM_INT({ return window.fpsEnabled ? 0 : 1; });
 #endif
     }
 }
