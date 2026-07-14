@@ -34,6 +34,7 @@ Build_Release/vim.exe.stackdump
 *.exp
 
 # WebAssembly build artifacts
+Build_Release/ASSETS.ZIP
 Build_Release/openclaw.*
 Build_Release/*.wasm
 Build_Release/*.data

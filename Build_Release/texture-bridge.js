@@ -23,7 +23,6 @@ class TextureBridge {
      */
     initialize() {
         if (this.isInitialized) {
-            console.log('[TextureBridge] Already initialized');
             return true;
         }
         
@@ -31,7 +30,6 @@ class TextureBridge {
         this.createDefaultTexture();
         
         this.isInitialized = true;
-        console.log('[TextureBridge] Texture bridge initialized successfully');
         return true;
     }
     
@@ -66,7 +64,6 @@ class TextureBridge {
             webgpuTexture: null
         };
         
-        console.log('[TextureBridge] Default texture created');
     }
     
     /**
@@ -81,7 +78,6 @@ class TextureBridge {
                 this.textures.set(textureId, texture);
                 this.textureNames.set(textureId, name);
                 
-                console.log('[TextureBridge] Texture loaded from cache:', name, 'ID:', textureId);
                 return true;
             }
             
@@ -102,7 +98,6 @@ class TextureBridge {
                 this.textureNames.set(textureId, name);
                 this.textureCache.set(name, texture);
                 
-                console.log('[TextureBridge] Texture loaded successfully:', name, 'ID:', textureId, 'Size:', texture.width, 'x', texture.height);
                 return true;
             }
             
@@ -111,7 +106,6 @@ class TextureBridge {
             this.textures.set(textureId, defaultTexture);
             this.textureNames.set(textureId, name);
             
-            console.log('[TextureBridge] Using default texture for:', name, 'ID:', textureId);
             return true;
             
         } catch (error) {
@@ -347,7 +341,6 @@ class TextureBridge {
         this.textures.delete(textureId);
         this.textureNames.delete(textureId);
         
-        console.log('[TextureBridge] Texture unloaded:', textureId);
     }
     
     /**
@@ -376,7 +369,6 @@ class TextureBridge {
         this.defaultTexture = null;
         this.isInitialized = false;
         
-        console.log('[TextureBridge] Texture bridge shutdown complete');
     }
 }
 
@@ -389,4 +381,3 @@ if (typeof window !== 'undefined') {
   window.textureBridge = new TextureBridge();
 }
 
-console.log('[TextureBridge] Texture bridge loaded and ready');

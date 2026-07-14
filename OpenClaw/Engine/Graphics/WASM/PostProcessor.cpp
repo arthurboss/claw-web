@@ -61,7 +61,6 @@ bool PostProcessor::Initialize() {
 
     m_isInitialized = true;
     m_effects.clear();
-    std::cout << "PostProcessor: Initialized successfully" << std::endl;
 
     return true;
 }

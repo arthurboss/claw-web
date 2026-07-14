@@ -86,5 +86,4 @@
     });
   }
 
-  console.log('[Keyboard] Game key interceptor enabled');
 })();

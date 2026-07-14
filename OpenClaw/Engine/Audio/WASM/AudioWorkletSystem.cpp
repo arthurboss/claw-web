@@ -520,34 +520,23 @@ void AudioWorkletSystem::SetMusicVolume(float volume) {
 bool AudioWorkletSystem::InitializeAudioWorklet() {
     return EM_ASM_INT({
         try {
-            // Create AudioContext
-            window.AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!window.AudioContext) {
-                console.error('Web Audio API not supported');
-                return false;
+            if (!window.audioContext) {
+                window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!window.AudioContext) {
+                    console.error('Web Audio API not supported');
+                    return false;
+                }
+                window.audioContext = new AudioContext();
             }
-            
-            window.audioContext = new AudioContext();
-            
+            if (window.audioContext.state === 'suspended') {
+                window.audioContext.resume();
+            }
+
             // Initialize global volume variables
             window.soundVolume = 1.0;
             window.musicVolume = 1.0;
             window.musicEnabled = true;
             window.soundEnabled = true;
-            
-            // Resume audio context on user interaction
-            const resumeAudio = () => {
-                if (window.audioContext.state === 'suspended') {
-                    window.audioContext.resume();
-                }
-                document.removeEventListener('click', resumeAudio);
-                document.removeEventListener('keydown', resumeAudio);
-                document.removeEventListener('touchstart', resumeAudio);
-            };
-            
-            document.addEventListener('click', resumeAudio);
-            document.addEventListener('keydown', resumeAudio);
-            document.addEventListener('touchstart', resumeAudio);
             return true;
         } catch (e) {
             console.error('Error initializing AudioContext:', e);

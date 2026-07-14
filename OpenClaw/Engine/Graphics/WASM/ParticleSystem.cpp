@@ -53,7 +53,6 @@ bool ParticleSystem::Initialize() {
     m_emitters.clear();
 
     m_isInitialized = true;
-    std::cout << "ParticleSystem: Initialized with " << m_maxParticles << " particles" << std::endl;
 
     return true;
 }

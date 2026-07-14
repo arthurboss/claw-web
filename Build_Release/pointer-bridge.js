@@ -15,13 +15,8 @@
 
   var debugMode = true;
   function log(msg) {
-    if (debugMode) console.log("[Pointer] " + msg);
   }
 
-  console.log(
-    "%c[Pointer] pointer-bridge.js loaded — branch: feat/native-pointer-input (native Pointer Events, no SDL input)",
-    "color:#fff;background:#7c3aed;padding:2px 6px;border-radius:3px;font-weight:bold"
-  );
 
   // "mouse" | "touch" | "pen" -> 0 | 1 | 2
   function pointerTypeCode(e) {

@@ -57,15 +57,7 @@ do \
 } \
     while (0);\
 
-#define LOG(str) \
-do \
-{ \
-    std::string s((str)); \
-    std::string out; \
-    Logger::GetOutputString(out, "", s, NULL, NULL, 0); \
-    SDL_Log("%s", out.c_str()); \
-} \
-while (0);\
+#define LOG(str) (void)(str)
 
 #define LOG_TRACE(str) \
 do \

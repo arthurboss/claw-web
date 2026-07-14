@@ -72,7 +72,7 @@ EM_JS(void, js_LoadVideo, (int id, const char *url), {
     };
     player.video.onerror = function() {
       player.error = true;
-      console.error("Video load error for: " + player.video.src);
+
       if (player.keyHandler) {
         document.removeEventListener('keydown', player.keyHandler, true);
         player.keyHandler = null;
@@ -210,24 +210,8 @@ EM_JS(void, js_PlayVideo, (int id), {
     player.video.style.backgroundColor = '#000';
     gameContainer.appendChild(player.video);
 
-    // Try to play with sound first, fallback to muted if blocked
     player.video.play().catch(function(err) {
-      player.video.muted = true;
-      player.video.play()
-          .then(function() {
-            // Add click listener to unmute
-            document.addEventListener(
-                'click',
-                function unmute() {
-                  player.video.muted = false;
-                  document.removeEventListener('click', unmute);
-                },
-                {once : true});
-          })
-          .catch(function(err2) {
-            console.error('Muted autoplay also failed:', err2.message);
-            player.error = true;
-          });
+      player.error = true;
     });
   }
 });

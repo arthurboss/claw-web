@@ -92,7 +92,6 @@ bool GraphicsManager::InitializeInternal() {
     // WASM: Use WebGL renderer
     if (TryInitializePureWebGL()) {
         m_currentRendererType = RendererType::WebGL;
-        std::cout << "Initialized pure WebGL renderer" << std::endl;
     } else {
         std::cerr << "Failed to initialize WebGL renderer" << std::endl;
         return false;

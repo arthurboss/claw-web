@@ -16,7 +16,6 @@ GenericVideoModule::~GenericVideoModule() {
 bool GenericVideoModule::Initialize() {
     if (m_initialized) return true;
     
-    std::cout << "Initializing GenericVideoModule on " << m_platform << std::endl;
     m_initialized = true;
     return true;
 }
