@@ -31,10 +31,13 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
     assert(pXmlData != NULL);
 
     WapPal* palette = g_pApp->GetCurrentPalette();
+    bool hasImagePathElements = false;
 
     for (TiXmlElement* pImagePathElem = pXmlData->FirstChildElement("ImagePath");
         pImagePathElem; pImagePathElem = pImagePathElem->NextSiblingElement("ImagePath"))
     {
+        hasImagePathElements = true;
+
         if (palette == NULL)
         {
             LOG_ERROR("Attempting to create BaseRenderComponent without existing palette");
@@ -107,7 +110,7 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
                 imageNameKey = "frame" + Util::ConvertToThreeDigitsString(imageNameNumStr);
             }*/
             // Just reconstruct it...
-            if (imageNameKey.length() > 3 /* Hack for checkpointflag */ || 
+            if (imageNameKey.length() > 3 /* Hack for checkpointflag */ ||
                 std::string(pXmlData->Parent()->ToElement()->Attribute("Type")) == "GAME_CHECKPOINTFLAG")
             {
                 std::string tmp = imageNameKey;
@@ -127,7 +130,8 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
         }
     }
 
-    if (m_ImageMap.empty())
+    // Only warn if actor explicitly specified ImagePath elements but none were loaded
+    if (hasImagePathElements && m_ImageMap.empty())
     {
         LOG_WARNING("Image map for render component is empty. Actor type: " + std::string(pXmlData->Parent()->ToElement()->Attribute("Type")));
     }
