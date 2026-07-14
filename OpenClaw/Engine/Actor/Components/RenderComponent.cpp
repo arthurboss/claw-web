@@ -32,6 +32,7 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
 
     WapPal* palette = g_pApp->GetCurrentPalette();
     m_HasImagePathElements = false;
+    m_AllImageDirsEmpty = true;
 
     for (TiXmlElement* pImagePathElem = pXmlData->FirstChildElement("ImagePath");
         pImagePathElem; pImagePathElem = pImagePathElem->NextSiblingElement("ImagePath"))
@@ -61,6 +62,8 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
         {
             continue;
         }
+
+        m_AllImageDirsEmpty = false;
 
         // Remove all images which dont conform to the given pattern
         // This affects probably only object with "DoNothing" logic
@@ -136,8 +139,9 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
         }
     }
 
-    // Only warn if actor explicitly specified ImagePath elements but none were loaded
-    if (m_HasImagePathElements && m_ImageMap.empty())
+    // Only warn if actor specified ImagePath elements with files but none were loaded
+    // Don't warn if all image directories were empty (expected for some decorations)
+    if (m_HasImagePathElements && m_ImageMap.empty() && !m_AllImageDirsEmpty)
     {
         LOG_WARNING("Image map for render component is empty. Actor type: " + std::string(pXmlData->Parent()->ToElement()->Attribute("Type")));
     }
@@ -277,7 +281,7 @@ bool ActorRenderComponent::VDelegateInit(TiXmlElement* pXmlData)
     {
         if (m_ImageMap.empty())
         {
-            if (m_HasImagePathElements)
+            if (m_HasImagePathElements && !m_AllImageDirsEmpty)
             {
                 LOG_WARNING("Creating actor render component without valid image.");
             }

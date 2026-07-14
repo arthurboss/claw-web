@@ -44,6 +44,7 @@ protected:
 
     ImageMap m_ImageMap;
     bool m_HasImagePathElements;
+    bool m_AllImageDirsEmpty;
 
     shared_ptr<SceneNode> m_pSceneNode;
 
