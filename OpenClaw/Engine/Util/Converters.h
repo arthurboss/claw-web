@@ -1215,32 +1215,39 @@ inline TiXmlElement* WwdObjectToXml(WwdObject* wwdObject, std::string& imagesRoo
             position,
             def);
     }
-    else
-    {
-        static std::vector<std::string> s_ReportedUnknownLogicsList;
-
-        bool isAlreadyReported = false;
-        for (std::string &unkLogic : s_ReportedUnknownLogicsList)
-        {
-            if (unkLogic == logic)
-            {
-                isAlreadyReported = true;
-                break;
-            }
-        }
-
-        if (!isAlreadyReported)
-        {
-            s_ReportedUnknownLogicsList.push_back(logic);
-            LOG_WARNING("Unknown logic: " + logic);
-        }
-    }
 
     // If we have actor prototype defined and not processed, it is a failure on our side
     if (actorProto != ActorPrototype_None)
     {
         SAFE_DELETE(pActorElem);
         return NULL;
+    }
+
+    // Static decoration objects with no behavior — just return the render-only XML
+    // This silently handles them without logging an "Unknown logic" warning
+    if (logic == "DoNothing" || logic == "DoNothingNormal" ||
+        logic == "BehindAniCandy" || logic == "FrontCandy" ||
+        logic == "BehindCandy" || logic == "FrontAniCandy")
+    {
+        return pActorElem;
+    }
+
+    // Log unknown logic only for unhandled types (not DoNothing)
+    static std::vector<std::string> s_ReportedUnknownLogicsList;
+    bool isAlreadyReported = false;
+    for (std::string &unkLogic : s_ReportedUnknownLogicsList)
+    {
+        if (unkLogic == logic)
+        {
+            isAlreadyReported = true;
+            break;
+        }
+    }
+
+    if (!isAlreadyReported)
+    {
+        s_ReportedUnknownLogicsList.push_back(logic);
+        LOG_WARNING("Unknown logic: " + logic);
     }
 
     return pActorElem;
