@@ -309,9 +309,6 @@ void RenderLoadingScreen(shared_ptr<Image> pBackground, SDL_Rect& renderRect, Po
 
 bool BaseGameLogic::VLoadGame(const char* xmlLevelResource)
 {
-    PROFILE_CPU("GAME LOADING");
-    PROFILE_MEMORY("GAME LOADING");
-
     // Stop all audio
     g_pApp->GetAudio()->StopAllSounds();
 

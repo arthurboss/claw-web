@@ -5,7 +5,6 @@ void FixupWwdObject(WwdObject* pObj, int levelNumber);
 
 TiXmlElement* WwdToXml(WapWwd* wapWwd, int levelNumber)
 {
-    PROFILE_CPU("WWD->XML");
     TiXmlDocument xmlDoc;
 
     //----- [Level]

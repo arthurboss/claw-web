@@ -637,7 +637,6 @@ bool TilePlaneRenderComponent::VDelegateInit(TiXmlElement* pXmlData)
         LOG_ERROR("Tiles are missing.");
         return false;
     }
-    PROFILE_CPU("PLANE CREATION");
     int32 tileIdx = 0;
 
     TileList tileList;
