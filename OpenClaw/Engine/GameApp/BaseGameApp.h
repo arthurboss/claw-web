@@ -148,9 +148,9 @@ struct GlobalOptions {
     springBoardSpringSpeed = 11;
     clawMinFallHeight = 500.0f;
     loadAllLevelSaves = false;
-    showFps = true;
     showPosition = true;
     gameLogicFps = 60;  // Game logic update rate (independent of display FPS)
+    renderFps = 60;     // Max render rate; capped independently of display refresh
   }
 
   double maxJumpSpeed;
@@ -171,9 +171,9 @@ struct GlobalOptions {
   double springBoardSpringSpeed;
   float clawMinFallHeight;
   bool loadAllLevelSaves;
-  bool showFps;
   bool showPosition;
   int gameLogicFps;  // Target game logic update rate (default: 60)
+  int renderFps;     // Max render rate, capped independently of display refresh (default: 60)
 };
 
 struct ControlOptions {
@@ -342,9 +342,6 @@ public:
   const ControlOptions *GetControlOptions() const { return &m_ControlOptions; }
   const DebugOptions *GetDebugOptions() const { return &m_DebugOptions; }
 
-  // FPS tracking
-  uint32 GetLogicFPS() const { return m_lastLogicFPS; }
-  uint32 GetRenderFPS() const { return m_lastRenderFPS; }
 
   TiXmlElement *GetActorPrototypeElem(ActorPrototype proto);
 
@@ -427,12 +424,9 @@ private:
   double m_fixedTimestep;       // Target physics/logic timestep in seconds (e.g., 1/60 for 60Hz)
   double m_alpha;               // Interpolation factor for rendering between updates
 
-  // FPS tracking
-  uint32 m_logicUpdateCount;    // Number of logic updates in current second
-  uint32 m_renderFrameCount;    // Number of render frames in current second
-  uint32 m_fpsCounterMs;        // Time accumulator for FPS calculation
-  uint32 m_lastLogicFPS;        // Last measured logic update rate
-  uint32 m_lastRenderFPS;       // Last measured render frame rate
+  // Render rate cap, independent of display refresh
+  double m_renderAccumulator;   // Accumulated time since last render
+  double m_renderInterval;      // Min seconds between renders (e.g., 1/60 for 60fps cap)
 };
 
 extern BaseGameApp *g_pApp;

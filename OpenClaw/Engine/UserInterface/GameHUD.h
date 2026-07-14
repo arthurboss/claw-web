@@ -46,8 +46,6 @@ public:
     void UpdateLives(uint32 newLives);
     void UpdateStopwatchTime(uint32 newTime);
 
-    void UpdateFPS(uint32 renderFPS, uint32 logicFPS);
-
 private:
     void BossHealthChangedDelegate(IEventDataPtr pEvent);
     void BossFightEndedDelegate(IEventDataPtr pEvent);
@@ -66,7 +64,6 @@ private:
 
     HUDElementsMap m_HUDElementsMap;
 
-    SDL_Texture* m_pFPSTexture;
     SDL_Texture* m_pPositionTexture;
     SDL_Texture* m_pBossBarTexture;
 };
