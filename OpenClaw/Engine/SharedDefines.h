@@ -67,7 +67,11 @@ typedef int8_t int8;
 #endif
 
 #ifndef PROFILE_MEMORY
+#ifdef __EMSCRIPTEN__
+#define PROFILE_MEMORY(tag)
+#else
 #define PROFILE_MEMORY(tag) MEMORY_PROFILER _MEMORY_PROFILER_(tag);
+#endif
 #endif
 
 #ifndef min
