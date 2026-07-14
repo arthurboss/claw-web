@@ -155,6 +155,11 @@ async function uploadClawRez() {
     return;
   }
 
+  // Upload button click is a user gesture — pre-warm AudioContext now.
+  if (typeof window.prewarmAudioContext === 'function') {
+    window.prewarmAudioContext();
+  }
+
   // Show progress UI
   document.getElementById('uploadArea').style.display = 'none';
   const progressDiv = document.getElementById('uploadProgress');
