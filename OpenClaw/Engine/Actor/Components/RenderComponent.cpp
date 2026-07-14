@@ -56,6 +56,12 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
         std::vector<std::string> matchingPathNames =
             g_pApp->GetResourceCache()->GetAllFilesInDirectory(imageDir.c_str());
 
+        // Skip if directory is empty — some level props (decorations) may have empty image directories
+        if (matchingPathNames.empty())
+        {
+            continue;
+        }
+
         // Remove all images which dont conform to the given pattern
         // This affects probably only object with "DoNothing" logic
         // Compute everything in lowercase to assure compatibility with everything in the engine
