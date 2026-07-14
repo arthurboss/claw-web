@@ -31,12 +31,12 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
     assert(pXmlData != NULL);
 
     WapPal* palette = g_pApp->GetCurrentPalette();
-    bool hasImagePathElements = false;
+    m_HasImagePathElements = false;
 
     for (TiXmlElement* pImagePathElem = pXmlData->FirstChildElement("ImagePath");
         pImagePathElem; pImagePathElem = pImagePathElem->NextSiblingElement("ImagePath"))
     {
-        hasImagePathElements = true;
+        m_HasImagePathElements = true;
 
         if (palette == NULL)
         {
@@ -131,7 +131,7 @@ bool BaseRenderComponent::VInit(TiXmlElement* pXmlData)
     }
 
     // Only warn if actor explicitly specified ImagePath elements but none were loaded
-    if (hasImagePathElements && m_ImageMap.empty())
+    if (m_HasImagePathElements && m_ImageMap.empty())
     {
         LOG_WARNING("Image map for render component is empty. Actor type: " + std::string(pXmlData->Parent()->ToElement()->Attribute("Type")));
     }
@@ -271,7 +271,10 @@ bool ActorRenderComponent::VDelegateInit(TiXmlElement* pXmlData)
     {
         if (m_ImageMap.empty())
         {
-            LOG_WARNING("Creating actor render component without valid image.");
+            if (m_HasImagePathElements)
+            {
+                LOG_WARNING("Creating actor render component without valid image.");
+            }
             return true;
         }
         m_CachedImage = m_ImageMap.begin()->second;
