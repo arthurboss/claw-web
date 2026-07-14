@@ -715,16 +715,19 @@ void HumanView::AmmoUpdatedDelegate(IEventDataPtr pEventData)
     {
         shared_ptr<EventData_Updated_Ammo> pCastEventData = static_pointer_cast<EventData_Updated_Ammo>(pEventData);
 
+        // Validate ammo type first
+        if (pCastEventData->GetAmmoType() < AmmoType_Pistol || pCastEventData->GetAmmoType() >= AmmoType_Max)
+        {
+            LOG_ERROR("Unknown ammo type: " + ToStr(pCastEventData->GetAmmoType()));
+            return;
+        }
+
         // TODO: This should be more generic
         if ((pCastEventData->GetAmmoType() == AmmoType_Pistol && m_pHUD->IsElementVisible("pistol")) ||
             (pCastEventData->GetAmmoType() == AmmoType_Magic && m_pHUD->IsElementVisible("magic")) ||
             (pCastEventData->GetAmmoType() == AmmoType_Dynamite && m_pHUD->IsElementVisible("dynamite")))
-        { 
-            m_pHUD->UpdateAmmo(pCastEventData->GetAmmoCount());
-        }
-        else if (pCastEventData->GetAmmoType() <= AmmoType_None || pCastEventData->GetAmmoType() >= AmmoType_Max)
         {
-            LOG_ERROR("Unknown ammo type: " + ToStr(pCastEventData->GetAmmoType()));
+            m_pHUD->UpdateAmmo(pCastEventData->GetAmmoCount());
         }
     }
     else
@@ -736,8 +739,9 @@ void HumanView::AmmoUpdatedDelegate(IEventDataPtr pEventData)
 void HumanView::AmmoTypeUpdatedDelegate(IEventDataPtr pEventData)
 {
     shared_ptr<EventData_Updated_Ammo_Type> pCastEventData = static_pointer_cast<EventData_Updated_Ammo_Type>(pEventData);
-    if (pCastEventData->GetAmmoType() >= AmmoType_Max)
+    if (pCastEventData->GetAmmoType() < AmmoType_Pistol || pCastEventData->GetAmmoType() >= AmmoType_Max)
     {
+        LOG_ERROR("Unknown ammo type: " + ToStr(pCastEventData->GetAmmoType()));
         return;
     }
 
@@ -751,10 +755,6 @@ void HumanView::AmmoTypeUpdatedDelegate(IEventDataPtr pEventData)
         if (pCastEventData->GetAmmoType() == AmmoType_Pistol) { m_pHUD->SetElementVisible("pistol", true); }
         else if (pCastEventData->GetAmmoType() == AmmoType_Magic) { m_pHUD->SetElementVisible("magic", true); }
         else if (pCastEventData->GetAmmoType() == AmmoType_Dynamite) { m_pHUD->SetElementVisible("dynamite", true); }
-        else
-        {
-            LOG_ERROR("Unknown ammo type: " + ToStr(pCastEventData->GetAmmoType()));
-        }
 
         // Play weapon select sound
         SoundInfo selectSound("/GAME/SOUNDS/SELECT.WAV");
