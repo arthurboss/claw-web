@@ -55,6 +55,21 @@ public:
     const uint32& GetActorId() const { return m_ActorId; }
     const char* GetName() const { return m_Name.c_str(); }
     const Point& GetPosition() const { return m_Position; }
+    // Position for rendering. When the actor moved on the current logic tick, blend
+    // between its previous and current position by alpha (0..1) for smooth motion at
+    // refresh rates above the logic rate. When it did NOT move this tick (stationary
+    // actor), render its current position flat — otherwise alpha would keep sweeping
+    // between two stale positions and the sprite would visibly shake.
+    Point GetInterpolatedPosition(double alpha, uint32 currentTick) const
+    {
+        if (m_LastMoveTick != currentTick)
+        {
+            return m_Position;
+        }
+        return Point(
+            m_PrevPosition.x + (m_Position.x - m_PrevPosition.x) * alpha,
+            m_PrevPosition.y + (m_Position.y - m_PrevPosition.y) * alpha);
+    }
     const int32 GetOrientation() const { return m_Orientation; }
     const int32 GetZCoord() const { return m_ZCoord; }
 
@@ -64,6 +79,8 @@ protected:
     uint32          m_ActorId;
     std::string     m_Name;
     Point           m_Position;
+    Point           m_PrevPosition;
+    uint32          m_LastMoveTick = 0;  // logic tick on which m_Position last changed
     RenderPass      m_RenderPass;
     int32           m_Orientation;
     int32           m_ZCoord;
