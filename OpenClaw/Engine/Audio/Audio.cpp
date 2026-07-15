@@ -344,10 +344,11 @@ void Audio::SetMusicActive(bool active)
     m_bMusicOn = active;
 
     if (m_audioSystem) {
+        // SetMusicEnabled mutes/unmutes via the gain node while leaving the music
+        // source alive. Do NOT StopMusic() on disable: that tears down the source
+        // and gain node, so re-enabling has nothing left to unmute and music never
+        // resumes (the bug where toggling music off then on again killed it).
         m_audioSystem->SetMusicEnabled(m_bMusicOn);
-        if (!m_bMusicOn) {
-            m_audioSystem->StopMusic();
-        }
     }
 }
 
