@@ -1014,11 +1014,27 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
         }
         else if (keyCode == SDL_SCANCODE_LEFT)
         {
+            // Let the active item consume left/right first (e.g. volume sliders
+            // adjust their value). Only navigate columns if it doesn't.
+            if (shared_ptr<ScreenElementMenuItem> pActiveItem = GetActiveMenuItem())
+            {
+                if (pActiveItem->TryHandleKey(evt.key.keysym.sym))
+                {
+                    return true;
+                }
+            }
             MoveToMenuItemInColumn(activeMenuItemIdx, -1);
             return true;
         }
         else if (keyCode == SDL_SCANCODE_RIGHT)
         {
+            if (shared_ptr<ScreenElementMenuItem> pActiveItem = GetActiveMenuItem())
+            {
+                if (pActiveItem->TryHandleKey(evt.key.keysym.sym))
+                {
+                    return true;
+                }
+            }
             MoveToMenuItemInColumn(activeMenuItemIdx, 1);
             return true;
         }
@@ -1529,6 +1545,28 @@ void ScreenElementMenuItem::VOnRender(uint32 msDiff)
     renderRect.h = (int)(pCurrImage->GetHeight() * g_MenuScale.y);
 
     SDL_RenderCopy(m_pRenderer, pCurrImage->GetTexture(), NULL, &renderRect);
+}
+
+bool ScreenElementMenuItem::TryHandleKey(SDL_Keycode key)
+{
+    // Fire this item's per-key events (e.g. a slider's Left/Right -> ModifyVolume).
+    // Returns true if the item had events bound to the key and consumed it.
+    if (m_State != MenuItemState_Active)
+    {
+        return false;
+    }
+
+    auto findIt = m_KeyToEventMap.find(SDL_GetScancodeFromKey(key));
+    if (findIt == m_KeyToEventMap.end())
+    {
+        return false;
+    }
+
+    for (IEventDataPtr pEvent : findIt->second)
+    {
+        IEventMgr::Get()->VQueueEvent(pEvent);
+    }
+    return true;
 }
 
 bool ScreenElementMenuItem::VOnEvent(SDL_Event& evt)

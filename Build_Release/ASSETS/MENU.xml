@@ -2732,7 +2732,7 @@
                     <Key>LeftArrow</Key>
                     <Event>
                         <Type>ModifyVolume</Type>
-                        <DeltaVolume>-2</DeltaVolume>
+                        <DeltaVolume>-10</DeltaVolume>
                         <IsMusic>true</IsMusic>
                     </Event>
                     <Event>
@@ -2747,7 +2747,7 @@
                 <Key>RightArrow</Key>
                     <Event>
                         <Type>ModifyVolume</Type>
-                        <DeltaVolume>2</DeltaVolume>
+                        <DeltaVolume>10</DeltaVolume>
                         <IsMusic>true</IsMusic>
                     </Event>
                     <Event>

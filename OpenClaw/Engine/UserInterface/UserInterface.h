@@ -326,6 +326,7 @@ public:
     bool Focus();
     bool CanBeFocused();
     bool Press();
+    bool TryHandleKey(SDL_Keycode key);
     SDL_Rect GetMenuItemRect();
 
     void OnStateChanged(MenuItemState newState, MenuItemState oldState);
