@@ -379,8 +379,11 @@ bool HumanView::VOnGamepadEvent(const AppEvent& evt)
 
         case AppEventType::GamepadButtonUp:
         {
-            bool ingameMenuVisible = m_pIngameMenu && m_pIngameMenu->VIsVisible();
-            if (!ingameMenuVisible && m_pGamepadHandler) {
+            // Always forward button-up (even while the menu is open) so a d-pad
+            // direction released during the pause gets cleared — otherwise the
+            // held-direction state sticks and the player moves on unpause. Mirrors
+            // the keyboard key-up handling.
+            if (m_pGamepadHandler) {
                 return m_pGamepadHandler->VOnGamepadButtonUp(evt.gamepadButton.button);
             }
             return false;
