@@ -211,16 +211,24 @@ bool HumanView::VOnEvent(SDL_Event& evt)
         {
             if (evt.key.repeat == 0)
             {
+                bool ingameMenuVisible = m_pIngameMenu && m_pIngameMenu->VIsVisible();
+
                 if (SDL_GetScancodeFromKey(evt.key.keysym.sym) == SDL_SCANCODE_ESCAPE &&
                     g_pApp->GetGameLogic()->GetGameState() == GameState_IngameRunning &&
                     m_pIngameMenu &&
-                    !m_pIngameMenu->VIsVisible())
+                    !ingameMenuVisible)
                 {
                     m_pIngameMenu->VSetVisible(true);
                     return true;
                 }
 
-                return m_pKeyboardHandler->VOnKeyDown(evt.key.keysym.sym);
+                // Don't feed new gameplay input to the player while the ingame menu
+                // is open, otherwise the character keeps responding in the background.
+                if (!ingameMenuVisible)
+                {
+                    return m_pKeyboardHandler->VOnKeyDown(evt.key.keysym.sym);
+                }
+                return false;
             }
             break;
         }
@@ -228,6 +236,8 @@ bool HumanView::VOnEvent(SDL_Event& evt)
         {
             if (evt.key.repeat == 0)
             {
+                // Always forward key-up so a key held when the menu opened gets
+                // cleared on release — prevents the player bolting when the menu closes.
                 return m_pKeyboardHandler->VOnKeyUp(evt.key.keysym.sym);
             }
             break;
