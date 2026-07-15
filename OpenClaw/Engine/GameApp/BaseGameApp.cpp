@@ -68,10 +68,7 @@ BaseGameApp::BaseGameApp() {
   m_accumulator = 0.0;
   m_fixedTimestep = 1.0 / 60.0;  // 60 updates per second
   m_alpha = 0.0;
-
-  // Initialize render rate cap (overwritten from options once they load)
-  m_renderAccumulator = 0.0;
-  m_renderInterval = 1.0 / 60.0;
+  m_logicTick = 0;
 }
 
 void BaseGameApp::OnAppEvent(const AppEvent &event) {
@@ -249,14 +246,6 @@ bool BaseGameApp::Initialize(int argc, char **argv) {
     m_fixedTimestep = 1.0 / 60.0;
   }
 
-  // Configure render rate cap based on settings
-  if (m_GlobalOptions.renderFps > 0) {
-    m_renderInterval = 1.0 / static_cast<double>(m_GlobalOptions.renderFps);
-  } else {
-    LOG_WARNING("Invalid renderFps value, using default 30 FPS");
-    m_renderInterval = 1.0 / 30.0;
-  }
-
   m_IsRunning = true;
 
   return true;
@@ -405,7 +394,6 @@ void BaseGameApp::StepLoop() {
 
     // Accumulate time for fixed timestep updates
     m_accumulator += frameTime;
-    m_renderAccumulator += frameTime;
 
 // Handle all input events
 #ifdef __EMSCRIPTEN__
@@ -447,6 +435,11 @@ void BaseGameApp::StepLoop() {
         IEventMgr::Get()->VUpdate(
             20); // Allow event queue to process for up to 20 ms
 
+        // Advance the logic-tick counter. Scene nodes stamp this when their
+        // position changes, so rendering only interpolates actors that actually
+        // moved on the current tick (stationary actors render flat, no shake).
+        m_logicTick++;
+
         // Convert fixed timestep back to milliseconds for game logic
         uint32 fixedDeltaMs = static_cast<uint32>(m_fixedTimestep * 1000.0);
         m_pGame->VOnUpdate(fixedDeltaMs);
@@ -454,26 +447,20 @@ void BaseGameApp::StepLoop() {
         m_accumulator -= m_fixedTimestep;
       }
 
-      // Calculate interpolation factor for smooth rendering
+      // Interpolation factor (0..1): how far this render frame sits between the
+      // previous and next fixed logic tick. Actors are drawn at the lerp of their
+      // previous/current positions by this alpha, so motion stays smooth even when
+      // the display refreshes faster than the fixed logic rate.
       m_alpha = m_accumulator / m_fixedTimestep;
 
-      // Cap render rate independently of the display refresh rate. The main loop
-      // fires at the monitor's refresh (via requestAnimationFrame), but rendering
-      // more often than renderFps is wasted work since game state only changes at
-      // gameLogicFps. Skip rendering until enough time has accumulated.
-      if (m_renderAccumulator >= m_renderInterval) {
-        uint32 fixedDeltaMs = static_cast<uint32>(m_fixedTimestep * 1000.0);
-        for (auto &pGameView : m_pGame->m_GameViews) {
-          // PROFILE_CPU("ONLY RENDER");
-          pGameView->VOnRender(fixedDeltaMs);
-        }
-
-        // Subtract the interval (not reset to 0) to keep render cadence steady
-        m_renderAccumulator -= m_renderInterval;
-        // Guard against unbounded growth after a long stall
-        if (m_renderAccumulator >= m_renderInterval) {
-          m_renderAccumulator = 0.0;
-        }
+      // Render every frame. The main loop is driven by requestAnimationFrame, which
+      // is already synced to the display's refresh rate — so rendering adapts to the
+      // device automatically (60Hz, 165Hz, VRR, ...) with no artificial cap. Motion
+      // smoothness comes from interpolation (m_alpha) rather than raw render count.
+      uint32 fixedDeltaMs = static_cast<uint32>(m_fixedTimestep * 1000.0);
+      for (auto &pGameView : m_pGame->m_GameViews) {
+        // PROFILE_CPU("ONLY RENDER");
+        pGameView->VOnRender(fixedDeltaMs);
       }
 
       // m_pGame->VRenderDiagnostics();

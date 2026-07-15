@@ -2,6 +2,7 @@
 #include "ActorSceneNode.h"
 #include "../Actor/Components/RenderComponent.h"
 #include "../Graphics2D/Image.h"
+#include "../GameApp/BaseGameApp.h"
 
 SDL2ActorSceneNode::SDL2ActorSceneNode(const uint32 actorId,
     BaseRenderComponent* pRenderComponent,
@@ -53,10 +54,13 @@ void SDL2ActorSceneNode::VRender(Scene* pScene)
     const SDL_Rect cameraRect = pCamera->GetCameraRect();
     int32 offsetX = arc->IsMirrored() ? -actorImage->GetOffsetX() : actorImage->GetOffsetX();
     int32 offsetY = arc->IsInverted() ? -actorImage->GetOffsetY() : actorImage->GetOffsetY();
+    // Interpolate between the previous and current logic-tick position so motion is
+    // smooth when the display refreshes faster than the fixed logic rate.
+    const Point renderPos = m_Properties.GetInterpolatedPosition(g_pApp->GetInterpolationAlpha(), g_pApp->GetLogicTick());
     SDL_Rect renderRect =
     {
-        (int)m_Properties.GetPosition().x - actorImage->GetWidth() / 2  + offsetX - cameraRect.x,
-        (int)m_Properties.GetPosition().y - actorImage->GetHeight() / 2 + offsetY - cameraRect.y,
+        (int)renderPos.x - actorImage->GetWidth() / 2  + offsetX - cameraRect.x,
+        (int)renderPos.y - actorImage->GetHeight() / 2 + offsetY - cameraRect.y,
         actorImage->GetWidth(),
         actorImage->GetHeight()
     };

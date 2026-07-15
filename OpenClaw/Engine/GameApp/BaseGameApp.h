@@ -150,7 +150,6 @@ struct GlobalOptions {
     loadAllLevelSaves = false;
     showPosition = true;
     gameLogicFps = 60;  // Game logic update rate (independent of display FPS)
-    renderFps = 60;     // Max render rate; capped independently of display refresh
   }
 
   double maxJumpSpeed;
@@ -173,7 +172,6 @@ struct GlobalOptions {
   bool loadAllLevelSaves;
   bool showPosition;
   int gameLogicFps;  // Target game logic update rate (default: 60)
-  int renderFps;     // Max render rate, capped independently of display refresh (default: 60)
 };
 
 struct ControlOptions {
@@ -265,6 +263,16 @@ public:
   Point GetScale();
   void SetScale(Point scale);
   uint32 GetWindowFlags();
+
+  // Interpolation factor (0..1) for how far the current render frame is between
+  // the previous and next fixed logic tick. Used to smoothly render motion at
+  // refresh rates higher than the fixed logic rate.
+  double GetInterpolationAlpha() const { return m_alpha; }
+
+  // Monotonic logic-tick counter. Scene nodes stamp this when their position
+  // changes so rendering can tell whether an actor moved on the current tick
+  // (and should interpolate) or is stationary (and should render flat).
+  uint32 GetLogicTick() const { return m_logicTick; }
 
   inline SDL_Renderer *GetRenderer() const { return m_pRenderer; }
   // TODO: Memory leak most likely
@@ -422,11 +430,8 @@ private:
   // Fixed timestep variables for frame-rate independent game logic
   double m_accumulator;         // Accumulated time for fixed updates
   double m_fixedTimestep;       // Target physics/logic timestep in seconds (e.g., 1/60 for 60Hz)
-  double m_alpha;               // Interpolation factor for rendering between updates
-
-  // Render rate cap, independent of display refresh
-  double m_renderAccumulator;   // Accumulated time since last render
-  double m_renderInterval;      // Min seconds between renders (e.g., 1/60 for 60fps cap)
+  double m_alpha;               // Interpolation factor (0..1) for rendering between logic ticks
+  uint32 m_logicTick;           // Monotonic count of fixed logic ticks executed
 };
 
 extern BaseGameApp *g_pApp;

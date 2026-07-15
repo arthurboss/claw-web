@@ -27,6 +27,7 @@ SceneNode::SceneNode(uint32 actorId, BaseRenderComponent* renderComponent, Rende
     m_Properties.m_Orientation = 0;
     m_Properties.m_Name = ""; // TODO
     m_Properties.m_Position = position;
+    m_Properties.m_PrevPosition = position;  // seed so first frame doesn't lerp from origin
     m_Properties.m_RenderPass = renderPass;
     m_Properties.m_ZCoord = zCoord;
     m_pRenderComponent = renderComponent;
@@ -137,7 +138,24 @@ void SceneNode::VSetPosition(const Point &position) {
     if (m_pParent) {
         m_pParent->VOnBeforeChildrenModifyPosition(this, position);
     }
+    // Shift current -> previous so rendering can interpolate between the two most
+    // recent logic-tick positions. VSetPosition is driven once per tick by the
+    // EventData_Move_Actor delegate. Stamp the current logic tick so the renderer
+    // knows this actor moved *this* tick (and should interpolate); actors that did
+    // not move keep a stale stamp and render flat instead of shaking.
+    m_Properties.m_PrevPosition = m_Properties.m_Position;
     m_Properties.m_Position = position;
+    m_Properties.m_LastMoveTick = g_pApp->GetLogicTick();
+
+    // Teleport guard: on respawn / level load / warp the actor jumps a large
+    // distance in a single tick. Interpolating that would streak the sprite
+    // across the screen for one frame, so snap instead (prev == current).
+    const double SNAP_THRESHOLD = 256.0;
+    if (std::abs(m_Properties.m_Position.x - m_Properties.m_PrevPosition.x) > SNAP_THRESHOLD ||
+        std::abs(m_Properties.m_Position.y - m_Properties.m_PrevPosition.y) > SNAP_THRESHOLD)
+    {
+        m_Properties.m_PrevPosition = m_Properties.m_Position;
+    }
 }
 
 //=================================================================================================
@@ -436,7 +454,9 @@ void CameraNode::SetViewPosition(Scene* pScene)
     // If there is a target, make sure target is in the center of the camera
     if (m_pTarget)
     {
-        Point targetPos = m_pTarget->VGetProperties()->GetPosition();
+        // Use the target's interpolated position so the camera stays glued to the
+        // smoothly-rendered player sprite instead of jittering against it.
+        Point targetPos = m_pTarget->VGetProperties()->GetInterpolatedPosition(g_pApp->GetInterpolationAlpha(), g_pApp->GetLogicTick());
         // Center camera
         Point scale = g_pApp->GetScale();
         Point cameraPos = targetPos - Point((m_Width / 2) / scale.x, (m_Height / 2) / scale.y);
