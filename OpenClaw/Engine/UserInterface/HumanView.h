@@ -18,6 +18,7 @@ class LevelData;
 class Scene;
 class CameraNode;
 class Image;
+class ScreenElementScoreScreen;
 class HumanView : public IGameView
 {
 public:
@@ -61,6 +62,7 @@ public:
     void SetCurrentLevelMusic(const std::string& music) { m_CurrentLevelMusic = music; }
 
 shared_ptr<ScreenElementMenu> GetActiveMenu() { return m_pMenu ? m_pMenu : (m_pGameOverMenu ? m_pGameOverMenu : m_pIngameMenu); }
+    bool IsScoreScreenVisible();
 
 protected:
     virtual bool VLoadGameDelegate(TiXmlElement* pLevelXmlElem, LevelData* pLevelData) { VPushElement(m_pScene); return true; }

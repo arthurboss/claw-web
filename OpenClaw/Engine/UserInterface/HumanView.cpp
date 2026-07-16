@@ -511,6 +511,20 @@ void HumanView::LoadScoreScreen(TiXmlElement* pScoreScreenRootElem)
     }
 }
 
+bool HumanView::IsScoreScreenVisible()
+{
+    if (m_ScreenElements.empty()) return false;
+    
+    // Check if the only screen element is a score screen
+    // ScreenElementScoreScreen stores score data and is the sole element during score screen display
+    shared_ptr<IScreenElement> pElement = m_ScreenElements.front();
+    
+    // ScreenElementScoreScreen is a subclass of IScreenElement and Scene
+    // Cast attempt: if it's valid, it's the score screen
+    shared_ptr<ScreenElementScoreScreen> pScoreScreen = std::dynamic_pointer_cast<ScreenElementScoreScreen>(pElement);
+    return (pScoreScreen != nullptr);
+}
+
 bool HumanView::LoadGame(TiXmlElement* pLevelXmlElem, LevelData* pLevelData)
 {
     m_pScene->SortSceneNodesByZCoord();
