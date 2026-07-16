@@ -58,6 +58,22 @@ void ActorController::HandleAction(ActionType actionType)
 
 void ActorController::OnUpdate(uint32 msDiff)
 {
+    // Don't drive the player while a menu (e.g. the ingame quick menu) is open.
+    // OnUpdate reads raw held-key state every frame, so even keys held down
+    // before the menu opened would otherwise keep moving the character in the
+    // background. Gating here is the single choke point for all held input.
+    if (g_pApp->IsMenuActive())
+    {
+        // Zero the stored analog-stick value. Unlike keyboard state (polled fresh
+        // each frame), the gamepad axis is only updated by events — which are
+        // dropped while the menu is open. Without this, releasing/centering the
+        // stick during the pause is never registered, so the stale value would
+        // keep moving the character the moment the menu closes.
+        m_GamepadMoveX = 0.0f;
+        m_GamepadMoveY = 0.0f;
+        return;
+    }
+
     int count;
     SDL_PumpEvents();
     m_pKeyStates = SDL_GetKeyboardState(&count);
