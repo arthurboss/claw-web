@@ -26,8 +26,8 @@ OpenClaw WASM is a browser-based version of Captain Claw (1997), a classic platf
 
 - Emscripten SDK (in `emsdk/` directory, gitignored)
 - CMake 4.10+
-- Python 3 (for local web server)
-- Caddy server (optional, for HTTP/3 support — install separately: <https://caddyserver.com/docs/install>)
+- Node.js 18+ (for Vite dev server)
+- Python 3 (optional, for basic HTTP server as fallback)
 
 ### Browser Requirements
 
@@ -82,26 +82,34 @@ make -j$(nproc)
 
 ## Running the Game Locally
 
-### Option 1: HTTP/3 Server (Recommended - Faster)
+### Option 1: Vite Dev Server (Recommended for Local Development)
+
+Vite provides hot reload and clean URLs without cert warnings:
 
 ```bash
-./scripts/start_http3_server.sh
-# Opens at https://localhost:8080/openclaw.html
+# Start Vite on port 5173 (from the VM)
+npm run dev
+
+# On your Mac, open an SSH tunnel (keeps connection encrypted):
+ssh -o ControlPath=none -f -N -L 5173:localhost:5173 -i ~/.ssh/id_fedora_vm testuser@172.16.25.133
+
+# Access at http://localhost:5173/ (no cert warning)
 ```
 
 **Benefits:**
 
-- HTTP/3 (QUIC protocol) for 30-50% faster loading
-- Brotli/Zstd/Gzip compression
-- Automatic HTTPS
-- HTTP/2 fallback
+- Plain HTTP with SSH tunnel encryption (no self-signed cert warnings)
+- `localhost` is a secure context (Keyboard Lock API works)
+- Root `/` rewrites to `/openclaw.html` automatically
+- Full instructions in `CLAUDE.local.md`
 
-### Option 2: Python Server (Simple)
+### Option 2: Python Server (Fallback)
 
 ```bash
 cd Build_Release
 python3 -m http.server 8080
 # Opens at http://localhost:8080/openclaw.html
+# Note: Keyboard Lock and some Web Audio features won't work over plain HTTP to an IP address
 ```
 
 ## Code Architecture
@@ -514,12 +522,14 @@ In-game console (press ~ key):
 
 ## Recent Changes
 
+- **Vite dev server**: Local development with hot reload, clean URLs, no cert warnings
+  - SSH tunnel for secure context (Keyboard Lock API works on localhost)
+  - HTTP port 5173 (no self-signed cert complexity)
 - **Audio system fix**: Fixed use-after-free bug causing game sounds to fail with "Invalid WAV header" errors
   - All sounds now load directly from CLAW.REZ via data parameter
   - Eliminated duplicate audio files and HTTP fetch overhead
   - Proper memory management with buffer copying in WavLoader
 - Lazy-loading architecture for faster startup
-- HTTP/3 server support with Caddy (30-50% faster loading)
 - Brotli/Zstd compression for optimal transfer size
 - SDL2 shader patches for WebGL compatibility
 - IndexedDB storage for CLAW.REZ (one-time upload)
