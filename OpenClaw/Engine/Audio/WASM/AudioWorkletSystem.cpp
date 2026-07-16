@@ -421,6 +421,13 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                     gainNode.gain.value = finalVolume;
 
                     if (isMusic) {
+                        // Stop any previously playing music source before starting a new one
+                        if (window.musicSource) {
+                            try {
+                                console.log("AudioWorklet: Stopping old music source before playing new music");
+                                window.musicSource.stop();
+                            } catch(e) {}
+                        }
                         window.musicGainNode = gainNode;
                         window.musicSource = source;
                         window.musicVolume = volumeMultiplier;
