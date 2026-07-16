@@ -271,6 +271,36 @@
       "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
       "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);}",
       "}",
+
+      // ---- Large screens (tablets, big phones) ---------------------------------",
+      // Scale up buttons and move them farther from corners for better spacing.
+      // Min-width 1024px targets landscape tablets and larger devices.
+      "@media (min-width: 1024px) {",
+      "  #tcJoyBase{width:200px;height:200px;left:50px;bottom:50px;}",
+      "  #tcJoyThumb{width:90px;height:90px;margin:-45px 0 0 -45px;}",
+      "  .tcBtn{width:90px;height:90px;font-size:16px;}",
+      "  #tcFire{right:20px;bottom:95px;}",
+      "  #tcJump{right:95px;bottom:20px;}",
+      "  #tcWeapon{right:95px;bottom:170px;}",
+      "  #tcAttack{right:170px;bottom:95px;}",
+      "  #tcPause{width:60px;height:42px;font-size:20px;}",
+      "  #tcMoveToggle{width:50px;height:50px;}",
+      "  #tcDpad{width:120px;height:120px;left:50px;bottom:50px;}",
+      "}",
+
+      // Extra-large screens (desktop with touch emulation, large tablets)
+      "@media (min-width: 1600px) {",
+      "  #tcJoyBase{width:240px;height:240px;left:70px;bottom:70px;}",
+      "  #tcJoyThumb{width:110px;height:110px;margin:-55px 0 0 -55px;}",
+      "  .tcBtn{width:110px;height:110px;font-size:18px;}",
+      "  #tcFire{right:30px;bottom:120px;}",
+      "  #tcJump{right:120px;bottom:30px;}",
+      "  #tcWeapon{right:120px;bottom:210px;}",
+      "  #tcAttack{right:210px;bottom:120px;}",
+      "  #tcPause{width:70px;height:50px;font-size:24px;}",
+      "  #tcMoveToggle{width:60px;height:60px;}",
+      "  #tcDpad{width:140px;height:140px;left:70px;bottom:70px;}",
+      "}",
     ].join("");
     var style = document.createElement("style");
     style.id = "touchControlsStyles";
@@ -466,7 +496,16 @@
 
   function isMenuVisible() {
     if (typeof Module !== "undefined" && typeof Module._IsMenuVisibleJS === "function") {
-      try { return Module._IsMenuVisibleJS() === 1; } catch (e) { return false; }
+      try {
+        var result = Module._IsMenuVisibleJS() === 1;
+        var gameState = getGameState();
+        var scoreScreenVisible = (typeof Module._IsScoreScreenVisibleJS === "function") ? (Module._IsScoreScreenVisibleJS() === 1) : "N/A";
+        console.log("[touch-controls] isMenuVisible=" + result + ", gameState=" + gameState + ", scoreScreenVisible=" + scoreScreenVisible);
+        return result;
+      } catch (e) {
+        console.error("[touch-controls] isMenuVisibleJS error:", e);
+        return false;
+      }
     }
     return false;
   }
