@@ -986,10 +986,10 @@ void ScreenElementMenuPage::VOnRender(uint32 msDiff)
 bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
 {
     int activeMenuItemIdx = GetActiveMenuItemIdx();
-    if (m_MenuItems.size() > 0)
-    {
-        assert(activeMenuItemIdx >= 0);
-    }
+    // A page may legitimately have no focusable item (e.g. the game-over screen,
+    // which is display text plus page-level KeyboardEvents). In that case skip
+    // item-focus navigation but still let page KeyboardEvents be handled below.
+    bool hasActiveItem = (activeMenuItemIdx >= 0);
 
     if (evt.type == SDL_KEYDOWN)
     {
@@ -1004,12 +1004,12 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
         SDL_Keycode keyCode = SDL_GetScancodeFromKey(evt.key.keysym.sym);
         if (keyCode == SDL_SCANCODE_DOWN)
         {
-            MoveToMenuItemIdx(activeMenuItemIdx, 1);
+            if (hasActiveItem) MoveToMenuItemIdx(activeMenuItemIdx, 1);
             return true;
         }
         else if (keyCode == SDL_SCANCODE_UP)
         {
-            MoveToMenuItemIdx(activeMenuItemIdx, -1);
+            if (hasActiveItem) MoveToMenuItemIdx(activeMenuItemIdx, -1);
             return true;
         }
         else if (keyCode == SDL_SCANCODE_LEFT)
@@ -1023,7 +1023,7 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
                     return true;
                 }
             }
-            MoveToMenuItemInColumn(activeMenuItemIdx, -1);
+            if (hasActiveItem) MoveToMenuItemInColumn(activeMenuItemIdx, -1);
             return true;
         }
         else if (keyCode == SDL_SCANCODE_RIGHT)
@@ -1035,7 +1035,7 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
                     return true;
                 }
             }
-            MoveToMenuItemInColumn(activeMenuItemIdx, 1);
+            if (hasActiveItem) MoveToMenuItemInColumn(activeMenuItemIdx, 1);
             return true;
         }
         else if (m_KeyToEventMap.find(keyCode) != m_KeyToEventMap.end())
@@ -1360,7 +1360,12 @@ bool ScreenElementMenuPage::MoveToMenuItemIdx(int oldIdx, int idxIncrement, bool
 
     while (true)
     {
-        assert(tryCount <= (int)m_MenuItems.size() && "Could not find any button to switch focus to");
+        // No focusable item on this page (e.g. the game-over screen, which only
+        // has display text). Bail gracefully instead of asserting/crashing.
+        if (tryCount > (int)m_MenuItems.size())
+        {
+            return false;
+        }
 
         // At first button and we pressed "up" -> move to last button
         if (buttonIdx < 0 && idxIncrement < 0)

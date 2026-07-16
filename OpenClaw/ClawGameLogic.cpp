@@ -438,6 +438,14 @@ void ClawGameLogic::ClawDiedDelegate(IEventDataPtr pEventData)
     IEventMgr* pEventMgr = IEventMgr::Get();
     pEventMgr->VTriggerEvent(IEventDataPtr(new EventData_Modify_Player_Stat(pCastEventData->GetActorId(), PlayerStat_Lives, -1, true)));
 
+    // On the final death (no lives left) don't revive/respawn Claw — the game-over
+    // screen takes over. Claw is held in his death pose by ClawControllableComponent
+    // (it skips the physics/animation restore and pauses the death animation).
+    if (pCastEventData->GetRemainingLives() < 0)
+    {
+        return;
+    }
+
     pEventMgr->VQueueEvent(IEventDataPtr(new EventData_Modify_Player_Stat(pCastEventData->GetActorId(), PlayerStat_Health, 1000, true)));
 
     // Clamp Claw to the floor when spawning him

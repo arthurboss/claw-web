@@ -60,7 +60,7 @@ public:
 
     void SetCurrentLevelMusic(const std::string& music) { m_CurrentLevelMusic = music; }
 
-shared_ptr<ScreenElementMenu> GetActiveMenu() { return m_pMenu ? m_pMenu : m_pIngameMenu; }
+shared_ptr<ScreenElementMenu> GetActiveMenu() { return m_pMenu ? m_pMenu : (m_pGameOverMenu ? m_pGameOverMenu : m_pIngameMenu); }
 
 protected:
     virtual bool VLoadGameDelegate(TiXmlElement* pLevelXmlElem, LevelData* pLevelData) { VPushElement(m_pScene); return true; }
@@ -110,6 +110,7 @@ protected:
     shared_ptr<CameraNode> m_pCamera;
     shared_ptr<Console> m_pConsole;
     shared_ptr<ScreenElementMenu> m_pIngameMenu;
+    shared_ptr<ScreenElementMenu> m_pGameOverMenu;
 
     shared_ptr<IKeyboardHandler> m_pKeyboardHandler;
     shared_ptr<IPointerHandler> m_pPointerHandler;
