@@ -722,6 +722,7 @@ bool ScreenElementMenu::Initialize(TiXmlElement* pElem)
     {
         // Play some music
         SoundInfo soundInfo(backgroundMusicPath);
+        soundInfo.isMusic = true;
         soundInfo.loops = -1;
         IEventMgr::Get()->VTriggerEvent(IEventDataPtr(
             new EventData_Request_Play_Sound(soundInfo)));
