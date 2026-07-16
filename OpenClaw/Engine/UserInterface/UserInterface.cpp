@@ -661,6 +661,20 @@ void ScreenElementMenu::VSetVisible(bool visible)
     m_bIsVisible = visible;
 }
 
+void ScreenElementMenu::PlayBackgroundMusic()
+{
+    if (m_BackgroundMusicPath.empty())
+    {
+        return;
+    }
+
+    SoundInfo soundInfo(m_BackgroundMusicPath);
+    soundInfo.isMusic = true;
+    soundInfo.loops = -1;
+    IEventMgr::Get()->VTriggerEvent(IEventDataPtr(
+        new EventData_Request_Play_Sound(soundInfo)));
+}
+
 bool ScreenElementMenu::Initialize(TiXmlElement* pElem)
 {
     assert(m_pRenderer != NULL);
@@ -715,18 +729,8 @@ bool ScreenElementMenu::Initialize(TiXmlElement* pElem)
     //
     // ---------- Background Music ----------
     //
-    std::string backgroundMusicPath;
-    ParseValueFromXmlElem(&backgroundMusicPath, pElem->FirstChildElement("BackgroundMusic"));
-
-    if (!backgroundMusicPath.empty())
-    {
-        // Play some music
-        SoundInfo soundInfo(backgroundMusicPath);
-        soundInfo.isMusic = true;
-        soundInfo.loops = -1;
-        IEventMgr::Get()->VTriggerEvent(IEventDataPtr(
-            new EventData_Request_Play_Sound(soundInfo)));
-    }
+    ParseValueFromXmlElem(&m_BackgroundMusicPath, pElem->FirstChildElement("BackgroundMusic"));
+    PlayBackgroundMusic();
 
     //
     // ---------- Enter Menu Sound ----------

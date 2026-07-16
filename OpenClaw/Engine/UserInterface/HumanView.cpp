@@ -469,6 +469,13 @@ bool HumanView::EnterMenu(TiXmlElement* pMenuData)
             return false;
         }
     }
+    else
+    {
+        // The menu object is created once and reused. Initialize (which starts the
+        // background music) only runs on first creation, so restart the menu music
+        // explicitly when returning to the menu from gameplay.
+        m_pMenu->PlayBackgroundMusic();
+    }
 
     m_ScreenElements.clear();
     VPushElement(m_pMenu);
