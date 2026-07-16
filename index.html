@@ -205,11 +205,10 @@
         animation: fadeInControls 0.3s ease-in 3.5s forwards;
       }
 
-      /* On touch devices the fullscreen + FPS buttons and the FPS overlay are
-         hidden — they're desktop chrome, and the same settings are reachable
-         through the in-game menu. (Class set from JS via maxTouchPoints.) */
-      body.touch-device .bottom-controls,
-      body.touch-device #fpsOverlay {
+      /* On touch devices the fullscreen button is hidden — it's desktop chrome,
+         and the same settings are reachable through the in-game menu.
+         (Class set from JS via maxTouchPoints.) */
+      body.touch-device .bottom-controls {
         display: none !important;
       }
 
@@ -250,49 +249,6 @@
         background-color: rgba(255, 255, 255, 0.2);
         border-color: rgba(255, 255, 255, 0.4);
       }
-
-      /* FPS overlay - styled to match the in-game golden numbers with drop shadow */
-      #fpsOverlay {
-        position: absolute;
-        bottom: 1%;
-        left: 1%;
-        z-index: 999;
-        font-family: "Georgia", "Times New Roman", serif;
-        font-size: clamp(12px, 2.5cqw, 22px);
-        font-weight: bold;
-        color: rgb(249, 229, 125);
-        /* Drop shadow towards bottom-right */
-        text-shadow:
-          2px 2px 0 #000,
-          2px 2px 0 #000,
-          2px 1px 0px rgba(0, 0, 0, 0.6);
-        pointer-events: none;
-        user-select: none;
-        letter-spacing: clamp(0.5px, 0.3cqw, 2px);
-      }
-
-      /* Initial page load animation */
-      #fpsOverlay.initial-load {
-        opacity: 0;
-        animation: fadeInOnLoad 0.3s ease-in 1s forwards;
-      }
-
-      @keyframes fadeInOnLoad {
-        to {
-          opacity: 1;
-        }
-      }
-
-      #fpsOverlay.hidden {
-        display: none;
-      }
-
-      /* Hide FPS overlay and FPS button when video is playing */
-      body:has(video) #fpsOverlay,
-      body:has(video) #fpsBtn {
-        display: none;
-      }
-
 
       .divider {
         height: 1px;
@@ -532,9 +488,8 @@
   </head>
   <body>
     <script>
-      // Tag touch devices so desktop-only chrome (fullscreen + FPS buttons,
-      // FPS overlay) can be hidden via CSS. maxTouchPoints is the canonical
-      // touch-capability check.
+      // Tag touch devices so desktop-only chrome (the fullscreen button) can be
+      // hidden via CSS. maxTouchPoints is the canonical touch-capability check.
       if ((navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
           "ontouchstart" in window) {
         document.body.classList.add("touch-device");
@@ -611,19 +566,8 @@
             })();
           </script>
 
-          <!-- FPS overlay - styled to match in-game rendering -->
-          <div id="fpsOverlay" class="initial-load">60 FPS</div>
-
           <!-- Bottom controls - inside canvasContainer so they're positioned relative to canvas -->
           <div class="bottom-controls">
-            <button
-              class="control-btn active"
-              id="fpsBtn"
-              onclick="toggleFPS()"
-              title="Toggle FPS Display"
-            >
-              📊
-            </button>
             <button
               class="control-btn"
               id="fullscreenBtn"
@@ -798,77 +742,6 @@
       };
     </script>
     <script type="text/javascript">
-      // Remove initial-load class after animation completes
-      setTimeout(function() {
-        var overlay = document.getElementById("fpsOverlay");
-        if (overlay) {
-          overlay.classList.remove("initial-load");
-        }
-      }, 1300); // 1s delay + 0.3s animation
-
-      // FPS measurement and display
-      var fpsEnabled = true;
-      window.fpsEnabled = fpsEnabled;
-      var fpsFrameCount = 0;
-      var fpsLastTime = performance.now();
-      var fpsCurrentValue = 60;
-
-      // Measure and update FPS
-      function updateFPSCounter() {
-        if (!fpsEnabled) return;
-
-        fpsFrameCount++;
-        var now = performance.now();
-        var elapsed = now - fpsLastTime;
-
-        // Update FPS every second
-        if (elapsed >= 1000) {
-          fpsCurrentValue = Math.round((fpsFrameCount * 1000) / elapsed);
-          fpsFrameCount = 0;
-          fpsLastTime = now;
-
-          // Update overlay
-          var overlay = document.getElementById("fpsOverlay");
-          if (overlay) {
-            overlay.textContent = fpsCurrentValue + " FPS";
-          }
-        }
-
-        // Continue measuring
-        requestAnimationFrame(updateFPSCounter);
-      }
-
-      // Start FPS counter when page loads
-      if (typeof requestAnimationFrame !== "undefined") {
-        requestAnimationFrame(updateFPSCounter);
-      }
-
-      // Toggle FPS display overlay
-      function toggleFPS() {
-        fpsEnabled = !fpsEnabled;
-        window.fpsEnabled = fpsEnabled;
-        if (typeof Module !== "undefined" && Module._OnJSFullscreenChange) {
-          Module._OnJSFullscreenChange();
-        }
-        var btn = document.getElementById("fpsBtn");
-        var overlay = document.getElementById("fpsOverlay");
-
-        // Update button style and overlay visibility
-        if (fpsEnabled) {
-          btn.classList.add("active");
-          btn.title = "Hide FPS Display";
-          if (overlay) overlay.classList.remove("hidden");
-          // Restart measurement
-          fpsFrameCount = 0;
-          fpsLastTime = performance.now();
-          requestAnimationFrame(updateFPSCounter);
-        } else {
-          btn.classList.remove("active");
-          btn.title = "Show FPS Display";
-          if (overlay) overlay.classList.add("hidden");
-        }
-      }
-
       // Dynamic resolution system
       // Base height is always 480px, width varies by aspect ratio
       var GameResolution = {
@@ -1243,6 +1116,11 @@
 
     <!-- On-screen touch controls (joystick + buttons), shown during gameplay on touch -->
     <script src="touch-controls.js"></script>
+
+    <!-- Level music via soundfont MIDI synth (spessasynth). Exposes
+         window.playLevelMidi / stopLevelMidi, used by the WASM audio system to
+         play the .mid level tracks the browser cannot decode from .XMI. -->
+    <script type="module" src="music/midi-player.js"></script>
 
     <!-- Browser Support Check -->
     <script>
