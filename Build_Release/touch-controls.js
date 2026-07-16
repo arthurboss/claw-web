@@ -213,9 +213,9 @@
       "    rgb(242,204,77) 60% 70%,rgb(244,219,99) 70% 80%,",
       "    rgb(249,237,146) 80% 90%,rgb(239,216,112) 90% 100%);}",
       // Menu buttons (Select / Back) — reuse the JUMP / ATK slots so switching
-      // modes doesn't shift button positions.
-      "#tcBack{right:6px;bottom:60px;}",     // E (same slot as ATK)
-      "#tcSelect{right:60px;bottom:6px;}",   // S (same slot as JUMP)
+      // modes doesn't shift button positions. Scaled proportionally.
+      "#tcBack{right:calc(6px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}",     // E (same slot as Fire)
+      "#tcSelect{right:calc(60px * var(--tc-scale));bottom:calc(6px * var(--tc-scale));}",   // S (same slot as Jump)
       // Mode-based visibility: gameplay shows action buttons + pause; menu shows
       // Select/Back only. Movement control (joystick/d-pad) shows in both.
       "#touchControls.mode-gameplay #tcSelect,#touchControls.mode-gameplay #tcBack{display:none;}",
