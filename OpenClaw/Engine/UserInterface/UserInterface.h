@@ -242,6 +242,11 @@ private:
     // Last mouse position used to detect real movement vs SDL noise
     int m_LastMouseX;
     int m_LastMouseY;
+
+    // Volume-slider mouse/pen dragging. When a slider is grabbed, the pointer's X
+    // sets the volume directly (and keeps updating while dragged), instead of the
+    // click falling through to the on/off button underneath.
+    weak_ptr<ScreenElementMenuItem> m_pDraggedSlider;
 };
 
 enum MenuItemType
@@ -326,7 +331,16 @@ public:
     bool Focus();
     bool CanBeFocused();
     bool Press();
+    bool TryHandleKey(SDL_Keycode key);
     SDL_Rect GetMenuItemRect();
+
+    // Volume-slider support (SOUND_KNOB / MUSIC_KNOB).
+    bool IsSlider() const { return m_Type == MenuItemType_Slider; }
+    // Clickable/draggable track area (wider than the knob sprite itself).
+    SDL_Rect GetSliderTrackRect();
+    // Map a pointer X (in menu-space) to a 0-100 volume and fire an absolute
+    // Set_Volume event for this slider. No-op if the item isn't a volume slider.
+    void SetVolumeFromPointerX(int menuX);
 
     void OnStateChanged(MenuItemState newState, MenuItemState oldState);
     void ReEvaluateStateCondition();

@@ -1014,11 +1014,27 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
         }
         else if (keyCode == SDL_SCANCODE_LEFT)
         {
+            // Let the active item consume left/right first (e.g. volume sliders
+            // adjust their value). Only navigate columns if it doesn't.
+            if (shared_ptr<ScreenElementMenuItem> pActiveItem = GetActiveMenuItem())
+            {
+                if (pActiveItem->TryHandleKey(evt.key.keysym.sym))
+                {
+                    return true;
+                }
+            }
             MoveToMenuItemInColumn(activeMenuItemIdx, -1);
             return true;
         }
         else if (keyCode == SDL_SCANCODE_RIGHT)
         {
+            if (shared_ptr<ScreenElementMenuItem> pActiveItem = GetActiveMenuItem())
+            {
+                if (pActiveItem->TryHandleKey(evt.key.keysym.sym))
+                {
+                    return true;
+                }
+            }
             MoveToMenuItemInColumn(activeMenuItemIdx, 1);
             return true;
         }
@@ -1065,6 +1081,16 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
 #else
         SDL_GetMouseState(&mouseX, &mouseY);
 #endif
+
+        // While a slider is grabbed, drag updates its volume from the pointer X.
+        if (shared_ptr<ScreenElementMenuItem> pSlider = m_pDraggedSlider.lock())
+        {
+            int menuX = (int)((mouseX - g_MenuOffset.x) / g_MenuScale.x);
+            pSlider->SetVolumeFromPointerX(menuX);
+            m_LastMouseX = mouseX;
+            m_LastMouseY = mouseY;
+            return true;
+        }
 
         if (mouseX != m_LastMouseX || mouseY != m_LastMouseY)
         {
@@ -1118,6 +1144,28 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
             clickPoint.w = 1;
             clickPoint.h = 1;
 
+            // Volume sliders first: a click on the track sets the volume and starts
+            // a drag. Checked before the button loop so a track click doesn't fall
+            // through to the on/off button sitting behind the slider.
+            for (shared_ptr<ScreenElementMenuItem> pMenuItem : m_MenuItems)
+            {
+                if (!pMenuItem->IsSlider() || !pMenuItem->VIsVisible())
+                {
+                    continue;
+                }
+                SDL_Rect trackRect = pMenuItem->GetSliderTrackRect();
+                if (SDL_HasIntersection(&clickPoint, &trackRect))
+                {
+                    pMenuItem->SetVolumeFromPointerX(clickPoint.x);
+                    m_pDraggedSlider = pMenuItem;
+#ifdef __EMSCRIPTEN__
+                    if (g_pApp->WasLastInputTouch())
+                        HapticFeedback::Trigger(HapticPreset::Light);
+#endif
+                    return true;
+                }
+            }
+
             for (shared_ptr<ScreenElementMenuItem> pMenuItem : m_MenuItems)
             {
                 SDL_Rect itemRect = pMenuItem->GetMenuItemRect();
@@ -1136,6 +1184,15 @@ bool ScreenElementMenuPage::VOnEvent(SDL_Event& evt)
                     }
                 }
             }
+        }
+    }
+    else if (evt.type == SDL_MOUSEBUTTONUP)
+    {
+        // End any slider drag.
+        if (!m_pDraggedSlider.expired())
+        {
+            m_pDraggedSlider.reset();
+            return true;
         }
     }
 
@@ -1513,6 +1570,60 @@ void ScreenElementMenuItem::VOnUpdate(uint32 msDiff)
     }
 }
 
+// Volume 0-100 maps to knob X in [m_DefaultPosition.x, m_DefaultPosition.x + 200]
+// (see VOnUpdate). SLIDER_TRACK_PIXELS is that 200px span.
+static const int SLIDER_TRACK_PIXELS = 200;
+
+SDL_Rect ScreenElementMenuItem::GetSliderTrackRect()
+{
+    int knobW, knobH;
+    SDL_QueryTexture(m_Images[m_State]->GetTexture(), NULL, NULL, &knobW, &knobH);
+
+    // Track spans the full volume range plus the knob width, with a little vertical
+    // padding around the knob so it's comfortable to grab with a pointer.
+    const int vPad = knobH / 2;
+    SDL_Rect track;
+    track.x = (int)m_DefaultPosition.x;
+    track.y = (int)m_DefaultPosition.y - vPad;
+    track.w = SLIDER_TRACK_PIXELS + knobW;
+    track.h = knobH + vPad * 2;
+    return track;
+}
+
+void ScreenElementMenuItem::SetVolumeFromPointerX(int menuX)
+{
+    if (!IsSlider())
+    {
+        return;
+    }
+
+    // Ignore slider input when the corresponding channel is toggled off — a muted
+    // channel's volume can't be adjusted (matches the on/off button gating it).
+    bool isMusic = (m_Name == "MUSIC_KNOB");
+    if (isMusic ? !g_pApp->GetAudio()->IsMusicActive()
+                : !g_pApp->GetAudio()->IsSoundActive())
+    {
+        return;
+    }
+
+    // Center the knob under the pointer: subtract half the knob width so the
+    // grabbed point tracks the cursor rather than the knob's left edge.
+    int knobW, knobH;
+    SDL_QueryTexture(m_Images[m_State]->GetTexture(), NULL, NULL, &knobW, &knobH);
+    int relX = menuX - (int)m_DefaultPosition.x - knobW / 2;
+
+    int volume = (relX * 100) / SLIDER_TRACK_PIXELS;
+    volume = max(0, min(100, volume));
+
+    // Snap to the same 10% steps the keyboard/gamepad use (DeltaVolume: 10), so
+    // dragging lands on the same discrete values rather than arbitrary ones.
+    volume = ((volume + 5) / 10) * 10;
+    volume = max(0, min(100, volume));
+
+    IEventMgr::Get()->VQueueEvent(IEventDataPtr(
+        new EventData_Set_Volume(volume, false /*absolute*/, isMusic)));
+}
+
 void ScreenElementMenuItem::VOnRender(uint32 msDiff)
 {
     shared_ptr<Image> pCurrImage = m_Images[m_State];
@@ -1529,6 +1640,28 @@ void ScreenElementMenuItem::VOnRender(uint32 msDiff)
     renderRect.h = (int)(pCurrImage->GetHeight() * g_MenuScale.y);
 
     SDL_RenderCopy(m_pRenderer, pCurrImage->GetTexture(), NULL, &renderRect);
+}
+
+bool ScreenElementMenuItem::TryHandleKey(SDL_Keycode key)
+{
+    // Fire this item's per-key events (e.g. a slider's Left/Right -> ModifyVolume).
+    // Returns true if the item had events bound to the key and consumed it.
+    if (m_State != MenuItemState_Active)
+    {
+        return false;
+    }
+
+    auto findIt = m_KeyToEventMap.find(SDL_GetScancodeFromKey(key));
+    if (findIt == m_KeyToEventMap.end())
+    {
+        return false;
+    }
+
+    for (IEventDataPtr pEvent : findIt->second)
+    {
+        IEventMgr::Get()->VQueueEvent(pEvent);
+    }
+    return true;
 }
 
 bool ScreenElementMenuItem::VOnEvent(SDL_Event& evt)
