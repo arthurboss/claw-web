@@ -297,13 +297,13 @@ void AudioWorkletSystem::StopMusic() {
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "AudioWorkletSystem::StopMusic: musicPlaying=%d, currentMusic=%s",
         m_musicPlaying, m_currentMusic.c_str());
 
-    if (!m_musicPlaying) {
-        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "AudioWorkletSystem::StopMusic: No music playing, returning early");
-        return;
-    }
-
     m_musicPlaying = false;
     m_currentMusic.clear();
+
+    // NOTE: don't early-return on !m_musicPlaying. Menu music (MENUBED.WAV) is played
+    // through the WAV path (PlaySoundWithPath), which sets window.musicSource in JS but
+    // never sets m_musicPlaying. The JS teardown below must always run so that source
+    // gets stopped regardless of how the music was started.
 
 #ifdef __EMSCRIPTEN__
     EM_ASM({
