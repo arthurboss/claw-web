@@ -124,16 +124,13 @@
 
   function injectStyles() {
     var css = [
-      // CSS custom properties for dynamic scaling based on viewport width.
-      // Scales proportionally: 1.4x at 1024px, 1.7x at 1600px, etc.
+      // Smooth scaling based on viewport minimum dimension (handles portrait & landscape).
+      // Formula: clamp(min, preferred, max) where preferred scales from 320px to 1920px
+      // 320px (phone portrait/landscape) → 1.0x, 820px (tablet portrait) → 1.32x, 1920px+ → 2.0x
       ":root{",
-      "  --tc-scale: 1;",
+      "  --tc-scale: clamp(1, (100vmin - 320px) / 1600px + 1, 2);",
       "  --tc-corner-dist: calc(30px * var(--tc-scale));",
       "}",
-      "@media (min-width: 1024px){:root{--tc-scale: 1.43;}}",
-      "@media (min-width: 1366px){:root{--tc-scale: 1.57;}}",
-      "@media (min-width: 1600px){:root{--tc-scale: 1.71;}}",
-      "@media (min-width: 1920px){:root{--tc-scale: 2;}}",
       "",
       "#touchControls{position:fixed;inset:0;z-index:9000;pointer-events:none;",
       "  display:none;touch-action:none;user-select:none;-webkit-user-select:none;",
