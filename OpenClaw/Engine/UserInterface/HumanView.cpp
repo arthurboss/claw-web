@@ -508,6 +508,9 @@ bool HumanView::LoadGame(TiXmlElement* pLevelXmlElem, LevelData* pLevelData)
 {
     m_pScene->SortSceneNodesByZCoord();
 
+    // Stop any currently playing music (e.g., menu music)
+    g_pApp->GetAudio()->StopMusic();
+
     // Start playing background music
     m_CurrentLevelMusic = "/LEVEL" + ToStr(pLevelData->GetLevelNumber()) +
         "/MUSIC/PLAY.XMI";
