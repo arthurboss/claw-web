@@ -124,6 +124,14 @@
 
   function injectStyles() {
     var css = [
+      // Smooth scaling based on viewport minimum dimension (handles portrait & landscape).
+      // Formula: clamp(min, preferred, max) where preferred scales from 320px to 1920px
+      // 320px (phone portrait/landscape) → 1.0x, 820px (tablet portrait) → 1.32x, 1920px+ → 2.0x
+      ":root{",
+      "  --tc-scale: clamp(1, (100vmin - 320px) / 1600px + 1, 2);",
+      "  --tc-corner-dist: calc(30px * var(--tc-scale));",
+      "}",
+      "",
       "#touchControls{position:fixed;inset:0;z-index:9000;pointer-events:none;",
       "  display:none;touch-action:none;user-select:none;-webkit-user-select:none;",
       "  -webkit-touch-callout:none;}",
@@ -138,7 +146,7 @@
       // FILL alpha kept low (~0.4) for transparency; borders are solid black.
       // Joystick base (bottom-left) — same score-system bands, kept subtler
       // (lower alpha) as it covers more play area.
-      "#tcJoyBase{position:absolute;left:30px;bottom:30px;width:140px;height:140px;",
+      "#tcJoyBase{position:absolute;left:var(--tc-corner-dist);bottom:var(--tc-corner-dist);width:calc(140px * var(--tc-scale));height:calc(140px * var(--tc-scale));",
       "  border-radius:50%;border:2px solid #000;box-shadow:0 0 0 1px rgba(0,0,0,0.5);",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
@@ -147,8 +155,8 @@
       "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
       "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
       "  pointer-events:auto;touch-action:none;}",
-      "#tcJoyThumb{position:absolute;left:50%;top:50%;width:60px;height:60px;",
-      "  margin:-30px 0 0 -30px;border-radius:50%;border:2px solid #000;",
+      "#tcJoyThumb{position:absolute;left:50%;top:50%;width:calc(60px * var(--tc-scale));height:calc(60px * var(--tc-scale));",
+      "  margin:calc(-30px * var(--tc-scale)) 0 0 calc(-30px * var(--tc-scale));border-radius:50%;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
       "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
@@ -156,18 +164,18 @@
       "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
       "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);}",
       // Action buttons (bottom-right cluster)
-      "#tcButtons{position:absolute;right:24px;bottom:24px;width:180px;height:180px;pointer-events:none;}",
+      "#tcButtons{position:absolute;right:calc(24px * var(--tc-scale));bottom:calc(24px * var(--tc-scale));width:calc(180px * var(--tc-scale));height:calc(180px * var(--tc-scale));pointer-events:none;}",
       // 10-band hard-stop gradient sampled from the score display (top->bottom),
       // slightly translucent so gameplay still reads through. Black border.
-      ".tcBtn{position:absolute;width:60px;height:60px;border-radius:50%;border:2px solid #000;",
+      ".tcBtn{position:absolute;width:calc(60px * var(--tc-scale));height:calc(60px * var(--tc-scale));border-radius:50%;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
       "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
       "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
       "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
       "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
-      "  color:#fff;font:bold 13px sans-serif;letter-spacing:0.5px;",
-      "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
+      "  color:#fff;font:bold calc(13px * var(--tc-scale)) sans-serif;letter-spacing:calc(0.5px * var(--tc-scale));",
+      "  text-shadow:calc(-1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(-1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;",
       "  touch-action:none;text-align:center;}",
       // Pressed: same score-system bands, fully opaque (lights up solid).
@@ -177,23 +185,23 @@
       "    rgb(172,120,53) 40% 50%,rgb(208,170,62) 50% 60%,",
       "    rgb(242,204,77) 60% 70%,rgb(244,219,99) 70% 80%,",
       "    rgb(249,237,146) 80% 90%,rgb(239,216,112) 90% 100%);}",
-      // Diamond layout: 4 buttons at N/E/S/W of the cluster, each 54px from
-      // center so every adjacent gap equals the JUMP-ATK spacing (~76px).
-      "#tcFire{right:6px;bottom:60px;}",     // E (outer right)
-      "#tcJump{right:60px;bottom:6px;}",     // S (bottom)
-      "#tcWeapon{right:60px;bottom:114px;}", // N (top)
-      "#tcAttack{right:114px;bottom:60px;}", // W (inner left)
+      // Diamond layout: 4 buttons at N/E/S/W of the cluster, scaled proportionally.
+      // Offsets scale with the button size to maintain spacing ratios.
+      "#tcFire{right:calc(6px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}",     // E (outer right)
+      "#tcJump{right:calc(60px * var(--tc-scale));bottom:calc(6px * var(--tc-scale));}",     // S (bottom)
+      "#tcWeapon{right:calc(60px * var(--tc-scale));bottom:calc(114px * var(--tc-scale));}", // N (top)
+      "#tcAttack{right:calc(114px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}", // W (inner left)
       // Pause (top-center)
-      "#tcPause{position:absolute;left:50%;top:6px;transform:translateX(-50%);",
-      "  width:42px;height:30px;border-radius:4px;border:2px solid #000;",
+      "#tcPause{position:absolute;left:50%;top:calc(6px * var(--tc-scale));transform:translateX(-50%);",
+      "  width:calc(42px * var(--tc-scale));height:calc(30px * var(--tc-scale));border-radius:4px;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.8) 0 10%,rgba(248,232,110,0.8) 10% 20%,",
       "    rgba(253,253,183,0.8) 20% 30%,rgba(251,244,214,0.8) 30% 40%,",
       "    rgba(172,120,53,0.8) 40% 50%,rgba(208,170,62,0.8) 50% 60%,",
       "    rgba(242,204,77,0.8) 60% 70%,rgba(244,219,99,0.8) 70% 80%,",
       "    rgba(249,237,146,0.8) 80% 90%,rgba(239,216,112,0.8) 90% 100%);",
-      "  color:#fff;font:bold 16px sans-serif;",
-      "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
+      "  color:#fff;font:bold calc(16px * var(--tc-scale)) sans-serif;",
+      "  text-shadow:calc(-1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(-1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;}",
       "#tcPause.active{background:linear-gradient(to bottom,",
       "    rgb(252,239,82) 0 10%,rgb(248,232,110) 10% 20%,",
@@ -202,9 +210,9 @@
       "    rgb(242,204,77) 60% 70%,rgb(244,219,99) 70% 80%,",
       "    rgb(249,237,146) 80% 90%,rgb(239,216,112) 90% 100%);}",
       // Menu buttons (Select / Back) — reuse the JUMP / ATK slots so switching
-      // modes doesn't shift button positions.
-      "#tcBack{right:6px;bottom:60px;}",     // E (same slot as ATK)
-      "#tcSelect{right:60px;bottom:6px;}",   // S (same slot as JUMP)
+      // modes doesn't shift button positions. Scaled proportionally.
+      "#tcBack{right:calc(6px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}",     // E (same slot as Fire)
+      "#tcSelect{right:calc(60px * var(--tc-scale));bottom:calc(6px * var(--tc-scale));}",   // S (same slot as Jump)
       // Mode-based visibility: gameplay shows action buttons + pause; menu shows
       // Select/Back only. Movement control (joystick/d-pad) shows in both.
       "#touchControls.mode-gameplay #tcSelect,#touchControls.mode-gameplay #tcBack{display:none;}",
@@ -212,18 +220,18 @@
       "#touchControls.mode-menu #tcFire,#touchControls.mode-menu #tcWeapon,",
       "#touchControls.mode-menu #tcPause{display:none;}",
       // D-pad — plus layout, 4 directions only (no diagonals), same footprint
-      // as the joystick base. Each key is a 46px rounded button.
-      "#tcDpad{position:absolute;left:30px;bottom:30px;width:140px;height:140px;",
+      // as the joystick base. Button size and layout scaled proportionally.
+      "#tcDpad{position:absolute;left:var(--tc-corner-dist);bottom:var(--tc-corner-dist);width:calc(140px * var(--tc-scale));height:calc(140px * var(--tc-scale));",
       "  pointer-events:none;}",
-      ".tcDbtn{position:absolute;width:46px;height:46px;border-radius:8px;border:2px solid #000;",
+      ".tcDbtn{position:absolute;width:calc(46px * var(--tc-scale));height:calc(46px * var(--tc-scale));border-radius:8px;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
       "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
       "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
       "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
       "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
-      "  color:#fff;font:bold 18px sans-serif;",
-      "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
+      "  color:#fff;font:bold calc(18px * var(--tc-scale)) sans-serif;",
+      "  text-shadow:calc(-1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(-1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;",
       "  touch-action:none;padding:0;}",
       ".tcDbtn svg{width:24px;height:24px;flex-shrink:0;}",
@@ -233,12 +241,12 @@
       "    rgb(172,120,53) 40% 50%,rgb(208,170,62) 50% 60%,",
       "    rgb(242,204,77) 60% 70%,rgb(244,219,99) 70% 80%,",
       "    rgb(249,237,146) 80% 90%,rgb(239,216,112) 90% 100%);}",
-      "#tcDup{left:47px;top:0;}",
-      "#tcDdown{left:47px;top:94px;}",
-      "#tcDleft{left:0;top:47px;}",
-      "#tcDright{left:94px;top:47px;}",
-      // Movement-mode toggle — small button above the movement control.
-      "#tcMoveToggle{position:absolute;left:30px;bottom:178px;width:48px;height:48px;",
+      "#tcDup{left:calc(47px * var(--tc-scale));top:0;}",
+      "#tcDdown{left:calc(47px * var(--tc-scale));top:calc(94px * var(--tc-scale));}",
+      "#tcDleft{left:0;top:calc(47px * var(--tc-scale));}",
+      "#tcDright{left:calc(94px * var(--tc-scale));top:calc(47px * var(--tc-scale));}",
+      // Movement-mode toggle — small button above the movement control, scaled.
+      "#tcMoveToggle{position:absolute;left:var(--tc-corner-dist);bottom:calc(178px * var(--tc-scale));width:calc(48px * var(--tc-scale));height:calc(48px * var(--tc-scale));",
       "  border-radius:50%;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.25) 0 10%,rgba(248,232,110,0.25) 10% 20%,",
@@ -246,31 +254,26 @@
       "    rgba(172,120,53,0.25) 40% 50%,rgba(208,170,62,0.25) 50% 60%,",
       "    rgba(242,204,77,0.25) 60% 70%,rgba(244,219,99,0.25) 70% 80%,",
       "    rgba(249,237,146,0.25) 80% 90%,rgba(239,216,112,0.25) 90% 100%);",
-      "  color:#fff;font:bold 10px sans-serif;",
-      "  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000;",
+      "  color:#fff;font:bold calc(10px * var(--tc-scale)) sans-serif;",
+      "  text-shadow:calc(-1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(-1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;}",
       // Show joystick OR d-pad based on the movement mode class on the root.
       "#touchControls.move-joystick #tcDpad{display:none;}",
       "#touchControls.move-dpad #tcJoyBase{display:none;}",
 
       // ---- Portrait placement -------------------------------------------------
-      // Original button/cluster SIZES kept; only the cluster POSITIONS change:
-      // 15px from the side borders, 60px from the bottom. Internal button
-      // offsets are unchanged (sizes unchanged, so the diamond/plus still tile).
+      // Adjust button spacing slightly when in portrait orientation
       "@media (orientation: portrait) {",
-      "  #tcJoyBase, #tcDpad{left:15px;bottom:60px;}",
-      "  #tcButtons{right:15px;bottom:60px;}",
-      // toggle sits above the 140px movement control (top at 60+140=200), ~8px gap
-      "  #tcMoveToggle{left:15px;bottom:208px;}",
-      // pause: same translucency as the other buttons (0.4); JS sets its top to
-      // 15px below the (dynamically-sized) canvas.
+      "  #tcJoyBase, #tcDpad{left:calc(15px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}",
+      "  #tcButtons{right:calc(15px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}",
+      "  #tcMoveToggle{bottom:calc(208px * var(--tc-scale));}",
       "  #tcPause{background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
       "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
       "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
       "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
       "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);}",
-      "}",
+      "}"
     ].join("");
     var style = document.createElement("style");
     style.id = "touchControlsStyles";
@@ -466,7 +469,16 @@
 
   function isMenuVisible() {
     if (typeof Module !== "undefined" && typeof Module._IsMenuVisibleJS === "function") {
-      try { return Module._IsMenuVisibleJS() === 1; } catch (e) { return false; }
+      try {
+        var result = Module._IsMenuVisibleJS() === 1;
+        var gameState = getGameState();
+        var scoreScreenVisible = (typeof Module._IsScoreScreenVisibleJS === "function") ? (Module._IsScoreScreenVisibleJS() === 1) : "N/A";
+        console.log("[touch-controls] isMenuVisible=" + result + ", gameState=" + gameState + ", scoreScreenVisible=" + scoreScreenVisible);
+        return result;
+      } catch (e) {
+        console.error("[touch-controls] isMenuVisibleJS error:", e);
+        return false;
+      }
     }
     return false;
   }

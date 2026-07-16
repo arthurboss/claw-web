@@ -29,7 +29,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: /tmp/tmphy7y4x7u.js
+// include: /tmp/tmpgiz9uc7r.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -161,7 +161,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
   })();
 
-// end include: /tmp/tmphy7y4x7u.js
+// end include: /tmp/tmpgiz9uc7r.js
 
 
 var arguments_ = [];
@@ -9815,6 +9815,7 @@ var _main,
   _OnJSPointerUp,
   _OnJSTouchCapability,
   _GetJSGameState,
+  _IsScoreScreenVisibleJS,
   _IsMenuVisibleJS,
   _OnJSResolutionChange,
   _GetGameWidth,
@@ -9910,6 +9911,7 @@ function assignWasmExports(wasmExports) {
   _OnJSPointerUp = Module['_OnJSPointerUp'] = wasmExports['OnJSPointerUp'];
   _OnJSTouchCapability = Module['_OnJSTouchCapability'] = wasmExports['OnJSTouchCapability'];
   _GetJSGameState = Module['_GetJSGameState'] = wasmExports['GetJSGameState'];
+  _IsScoreScreenVisibleJS = Module['_IsScoreScreenVisibleJS'] = wasmExports['IsScoreScreenVisibleJS'];
   _IsMenuVisibleJS = Module['_IsMenuVisibleJS'] = wasmExports['IsMenuVisibleJS'];
   _OnJSResolutionChange = Module['_OnJSResolutionChange'] = wasmExports['OnJSResolutionChange'];
   _GetGameWidth = Module['_GetGameWidth'] = wasmExports['GetGameWidth'];
