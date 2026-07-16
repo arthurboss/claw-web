@@ -516,14 +516,12 @@ bool HumanView::LoadGame(TiXmlElement* pLevelXmlElem, LevelData* pLevelData)
     m_pScene->SortSceneNodesByZCoord();
 
     // Stop any currently playing music (e.g., menu music)
-    LOG("LoadGame: Stopping current music before playing level music");
     g_pApp->GetAudio()->StopMusic();
 
     // Start playing background music
     m_CurrentLevelMusic = "/LEVEL" + ToStr(pLevelData->GetLevelNumber()) +
         "/MUSIC/PLAY.XMI";
 
-    LOG("LoadGame: Queuing level music: " + m_CurrentLevelMusic);
     SoundInfo soundInfo(m_CurrentLevelMusic);
     soundInfo.isMusic = true;
     soundInfo.loops = -1;
@@ -853,12 +851,10 @@ void HumanView::PowerupUpdatedStatusDelegate(IEventDataPtr pEventData)
 // Music has only 1 channel as far as I know so setting volume for music globally should be fine
 void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
 {
-    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "RequestPlaySoundDelegate called");
     shared_ptr<EventData_Request_Play_Sound> pCastEventData = static_pointer_cast<EventData_Request_Play_Sound>(pEventData);
     if (pCastEventData)
     {
         const SoundInfo* pSoundInfo = pCastEventData->GetSoundInfo();
-        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "RequestPlaySoundDelegate: sound=%s, isMusic=%d", pSoundInfo->soundToPlay.c_str(), pSoundInfo->isMusic);
 
         if ((pSoundInfo->soundToPlay.empty()) || (pSoundInfo->soundToPlay == "/GAME/SOUNDS/NULL.WAV"))
         {
@@ -867,11 +863,13 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
 
         if (pSoundInfo->isMusic) // Background music - instrumental
         {
-            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "RequestPlaySoundDelegate: Playing music: %s", pSoundInfo->soundToPlay.c_str());
 #ifdef __EMSCRIPTEN__
-            // Level/boss music are .XMI (MIDI) files the browser can't decode as WAV.
-            // Route them to the JS soundfont synth (spessasynth) which plays the shipped
-            // .mid equivalents. WAV music (MENUBED.WAV) falls through to the AudioWorklet.
+            // Level/boss music are .XMI (XMIDI) files the browser can't decode. We
+            // convert them to standard MIDI in-engine (libwap's WAP_XmiToMidiFromData,
+            // same path desktop uses) and hand the raw MIDI bytes to the JS soundfont
+            // synth (spessasynth). This means the repo ships NO game music — the XMI
+            // comes from the user's own CLAW.REZ upload and is converted at runtime.
+            // WAV music (MENUBED.WAV) falls through to the AudioWorklet below.
             {
                 const std::string& path = pSoundInfo->soundToPlay;
                 bool isXmi = path.size() >= 4 &&
@@ -879,11 +877,22 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
                      path.compare(path.size() - 4, 4, ".xmi") == 0);
                 if (isXmi)
                 {
-                    EM_ASM({
-                        if (window.playLevelMidi) {
-                            window.playLevelMidi(UTF8ToString($0));
-                        }
-                    }, path.c_str());
+                    shared_ptr<MidiFile> pMidiFile = MidiResourceLoader::LoadAndReturnMidiFile(path.c_str());
+                    if (pMidiFile && pMidiFile->data && pMidiFile->size > 0)
+                    {
+                        // Copy the converted MIDI bytes out of the WASM heap here (HEAPU8
+                        // is in scope inside EM_ASM) and hand a Uint8Array to the player.
+                        EM_ASM({
+                            if (window.playLevelMidiBuffer) {
+                                var bytes = HEAPU8.slice($0, $0 + $1);
+                                window.playLevelMidiBuffer(bytes);
+                            }
+                        }, pMidiFile->data, (int)pMidiFile->size);
+                    }
+                    else
+                    {
+                        LOG_ERROR("Failed to convert XMI to MIDI: " + path);
+                    }
                     return;
                 }
             }
@@ -894,7 +903,6 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
             shared_ptr<MidiFile> pMidiFile = MidiResourceLoader::LoadAndReturnMidiFile(pSoundInfo->soundToPlay.c_str());
             assert(pMidiFile != nullptr);
 
-            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "RequestPlaySoundDelegate: Calling PlayMusic with %zu bytes", pMidiFile->size);
             g_pApp->GetAudio()->PlayMusic(pMidiFile->data, pMidiFile->size, pSoundInfo->loops != 0);
             return;
 #endif
