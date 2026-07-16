@@ -372,11 +372,13 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
     }
 
     // Menu music (MENUBED.WAV / MENUMUSIC) is a WAV, so it comes through this sound
-    // path, but it must be gated on the MUSIC toggle, not the SOUND toggle. The JS
-    // below applies the same detection to route it to window.musicSource.
+    // path. Do NOT reject music when it's disabled: the JS below still creates the
+    // source but with gain 0, so SetMusicEnabled can later unmute it. Rejecting here
+    // means re-enabling music (e.g. returning to the menu with music off then on)
+    // would have no source left to unmute. Only SFX are gated by the sound toggle.
     const bool isMusic = (originalPath.find("MENUBED.WAV") != std::string::npos) ||
                          (originalPath.find("MENUMUSIC") != std::string::npos);
-    if (isMusic ? !m_musicEnabled : !m_soundEnabled) {
+    if (!isMusic && !m_soundEnabled) {
         return false;
     }
 
@@ -522,6 +524,12 @@ void AudioWorkletSystem::SetMusicEnabled(bool enabled) {
             }
         }
         
+        // Level music (soundfont synth) reads window.musicEnabled in its own
+        // gain calculation; nudge it to apply the new mute state immediately.
+        if (window.setLevelMidiVolume) {
+            window.setLevelMidiVolume();
+        }
+
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'setMusicEnabled',
@@ -544,7 +552,12 @@ void AudioWorkletSystem::SetMusicVolume(float volume) {
         if (window.musicGainNode && window.musicEnabled) {
             window.musicGainNode.gain.value = $0;
         }
-        
+
+        // Apply the new volume to the level music (soundfont synth) too.
+        if (window.setLevelMidiVolume) {
+            window.setLevelMidiVolume();
+        }
+
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'setMusicVolume',
