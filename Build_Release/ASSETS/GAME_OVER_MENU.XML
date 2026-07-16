@@ -29,7 +29,7 @@
          <MenuItem>
             <Name>MAIN_MENU_TEXT</Name>
             <Type>Text</Type>
-            <State>Active</State>
+            <State>Inactive</State>
             <InactiveImage>/GAME/IMAGES/MESSAGES/GAMEOVER4.PID</InactiveImage>
             <ActiveImage>/GAME/IMAGES/MESSAGES/GAMEOVER4.PID</ActiveImage>
             <Position x="177" y="193" />

@@ -277,7 +277,8 @@ bool HumanView::VOnGamepadEvent(const AppEvent& evt)
         case AppEventType::GamepadButtonDown:
         {
             GameState gameState = g_pApp->GetGameLogic()->GetGameState();
-            bool ingameMenuVisible = m_pIngameMenu && m_pIngameMenu->VIsVisible();
+            // Any active menu — quick menu, main menu, OR the game-over screen.
+            bool menuActive = g_pApp->IsMenuActive();
 
 
             // Handle Start button for pause menu (like ESC key)
@@ -290,8 +291,8 @@ bool HumanView::VOnGamepadEvent(const AppEvent& evt)
                 return true;
             }
 
-            // Handle gamepad input for menus (main menu or ingame menu visible)
-            bool inMenu = (gameState == GameState_Menu || ingameMenuVisible);
+            // Handle gamepad input for menus (main menu, quick menu, or game-over)
+            bool inMenu = (gameState == GameState_Menu || menuActive);
 
             if (inMenu)
             {
@@ -369,8 +370,8 @@ bool HumanView::VOnGamepadEvent(const AppEvent& evt)
                 }
             }
 
-            // Forward to gamepad handler for in-game controls (only if menu not visible)
-            if (!ingameMenuVisible && m_pGamepadHandler) {
+            // Forward to gamepad handler for in-game controls (only if no menu active)
+            if (!menuActive && m_pGamepadHandler) {
                 return m_pGamepadHandler->VOnGamepadButtonDown(
                     evt.gamepadButton.button, evt.gamepadButton.value);
             }
@@ -393,8 +394,8 @@ bool HumanView::VOnGamepadEvent(const AppEvent& evt)
         {
             // Handle analog stick for menu navigation
             GameState gameState = g_pApp->GetGameLogic()->GetGameState();
-            bool ingameMenuVisible = m_pIngameMenu && m_pIngameMenu->VIsVisible();
-            bool inMenu = (gameState == GameState_Menu || ingameMenuVisible);
+            bool menuActive = g_pApp->IsMenuActive();
+            bool inMenu = (gameState == GameState_Menu || menuActive);
 
             if (inMenu && evt.gamepadAxis.axis == GamepadAxis::LeftStickY)
             {
@@ -439,8 +440,8 @@ bool HumanView::VOnGamepadEvent(const AppEvent& evt)
                 return true;
             }
 
-            // Forward to gamepad handler for in-game controls (only if menu not visible)
-            if (!ingameMenuVisible && m_pGamepadHandler) {
+            // Forward to gamepad handler for in-game controls (only if no menu active)
+            if (!menuActive && m_pGamepadHandler) {
                 return m_pGamepadHandler->VOnGamepadAxis(
                     evt.gamepadAxis.axis, evt.gamepadAxis.value);
             }
@@ -1010,6 +1011,7 @@ void HumanView::EnterMenuDelegate(IEventDataPtr pEventData)
     m_pScene.reset(new ScreenElementScene(g_pApp->GetRenderer()));
     m_pHUD.reset();
     m_pIngameMenu.reset();
+    m_pGameOverMenu.reset();
     m_pCamera->SetParent(nullptr);
 
     g_pApp->GetAudio()->StopAllSounds();
@@ -1157,11 +1159,14 @@ void HumanView::ClawDiedDelegate(IEventDataPtr pEventData)
         TiXmlElement* pXmlGameOverMenuRoot = XmlResourceLoader::LoadAndReturnRootXmlElement("GAME_OVER_MENU.XML");
         assert(pXmlGameOverMenuRoot != NULL);
 
-        shared_ptr<ScreenElementMenu> pGameOverMenu(new ScreenElementMenu(g_pApp->GetRenderer()));
-        DO_AND_CHECK(pGameOverMenu->Initialize(pXmlGameOverMenuRoot));
+        // Track as a member so GetActiveMenu()/IsMenuActive() recognize the
+        // game-over screen — otherwise the touch overlay never switches to menu
+        // mode and touch users can't leave the game-over screen.
+        m_pGameOverMenu.reset(new ScreenElementMenu(g_pApp->GetRenderer()));
+        DO_AND_CHECK(m_pGameOverMenu->Initialize(pXmlGameOverMenuRoot));
 
-        m_ScreenElements.push_back(pGameOverMenu);
-        pGameOverMenu->VSetVisible(true);
+        m_ScreenElements.push_back(m_pGameOverMenu);
+        m_pGameOverMenu->VSetVisible(true);
 
         IEventMgr::Get()->VAbortAllEvents();
     }

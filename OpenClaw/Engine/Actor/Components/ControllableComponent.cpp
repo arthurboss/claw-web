@@ -1000,15 +1000,44 @@ void ClawControllableComponent::VOnAnimationLooped(Animation* pAnimation)
         shared_ptr<LifeComponent> pClawLifeComponent = MakeStrongPtr(m_pOwner->GetComponent<LifeComponent>());
         assert(pClawLifeComponent != nullptr);
 
+        int remainingLives = pClawLifeComponent->GetLives() - 1;
+
         shared_ptr<EventData_Claw_Died> pEvent(new EventData_Claw_Died(
-            m_pOwner->GetGUID(), 
-            m_pPositionComponent->GetPosition(), 
-            pClawLifeComponent->GetLives() - 1));
+            m_pOwner->GetGUID(),
+            m_pPositionComponent->GetPosition(),
+            remainingLives));
         IEventMgr::Get()->VTriggerEvent(pEvent);
 
-        SetCurrentPhysicsState();
-        m_pPhysicsComponent->RestoreGravityScale();
-        m_pRenderComponent->SetVisible(true);
+        // On the final death (no lives left) there is no respawn — freeze Claw in
+        // his lying-down death pose instead of restoring physics/gravity/visibility,
+        // which would animate him back up to standing. The spikedeath animation is
+        // [0: falling, 1: lying down, 2: vanish]; pin to the lying-down frame (1),
+        // not the last frame (which is the disappear frame for the normal respawn).
+        if (remainingLives < 0)
+        {
+            // Freeze on the lying-down death frame. The spikedeath animation is
+            // [0: falling, 1: lying down, 2: vanish]; pin frame 1, not the last
+            // frame (the disappear frame used for the normal respawn).
+            uint32 frameCount = pAnimation->GetAnimFramesSize();
+            uint32 restFrame = frameCount >= 2 ? 1 : 0;
+            pAnimation->SetAnimationFrame(restFrame);
+            pAnimation->Pause();
+            // SetAnimationFrame only updates the animation's current-frame data; the
+            // rendered sprite is fed separately via the render component. Push the
+            // pinned frame's image directly so the lying-down sprite actually shows
+            // (otherwise the last image pushed — the loop-wrap frame — keeps drawing).
+            AnimationFrame* pRestFrame = pAnimation->GetCurrentAnimationFrame();
+            if (m_pRenderComponent && pRestFrame)
+            {
+                m_pRenderComponent->SetImage(pRestFrame->imageName);
+            }
+        }
+        else
+        {
+            SetCurrentPhysicsState();
+            m_pPhysicsComponent->RestoreGravityScale();
+            m_pRenderComponent->SetVisible(true);
+        }
     }
     else if (animName == "damage1" ||
              animName == "damage2")
