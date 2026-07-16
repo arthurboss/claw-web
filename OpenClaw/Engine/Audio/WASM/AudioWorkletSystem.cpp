@@ -362,7 +362,16 @@ void AudioWorkletSystem::ResumeMusic() {
 }
 
 bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, const char* data, size_t size, float volume, int loops) {
-    if (!m_initialized || !m_soundEnabled || !data || size == 0) {
+    if (!m_initialized || !data || size == 0) {
+        return false;
+    }
+
+    // Menu music (MENUBED.WAV / MENUMUSIC) is a WAV, so it comes through this sound
+    // path, but it must be gated on the MUSIC toggle, not the SOUND toggle. The JS
+    // below applies the same detection to route it to window.musicSource.
+    const bool isMusic = (originalPath.find("MENUBED.WAV") != std::string::npos) ||
+                         (originalPath.find("MENUMUSIC") != std::string::npos);
+    if (isMusic ? !m_musicEnabled : !m_soundEnabled) {
         return false;
     }
 
