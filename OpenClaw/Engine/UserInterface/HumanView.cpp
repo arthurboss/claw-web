@@ -469,6 +469,13 @@ bool HumanView::EnterMenu(TiXmlElement* pMenuData)
             return false;
         }
     }
+    else
+    {
+        // The menu object is created once and reused. Initialize (which starts the
+        // background music) only runs on first creation, so restart the menu music
+        // explicitly when returning to the menu from gameplay.
+        m_pMenu->PlayBackgroundMusic();
+    }
 
     m_ScreenElements.clear();
     VPushElement(m_pMenu);
@@ -507,6 +514,9 @@ void HumanView::LoadScoreScreen(TiXmlElement* pScoreScreenRootElem)
 bool HumanView::LoadGame(TiXmlElement* pLevelXmlElem, LevelData* pLevelData)
 {
     m_pScene->SortSceneNodesByZCoord();
+
+    // Stop any currently playing music (e.g., menu music)
+    g_pApp->GetAudio()->StopMusic();
 
     // Start playing background music
     m_CurrentLevelMusic = "/LEVEL" + ToStr(pLevelData->GetLevelNumber()) +
@@ -854,16 +864,51 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
         if (pSoundInfo->isMusic) // Background music - instrumental
         {
 #ifdef __EMSCRIPTEN__
-            // TODO: [EMSCRIPTEN] Disable midi sounds for now.
-            // All midi must be converted to MP3 or another web browser compatible formats
-            return;
-#endif
+            // Level/boss music are .XMI (XMIDI) files the browser can't decode. We
+            // convert them to standard MIDI in-engine (libwap's WAP_XmiToMidiFromData,
+            // same path desktop uses) and hand the raw MIDI bytes to the JS soundfont
+            // synth (spessasynth). This means the repo ships NO game music — the XMI
+            // comes from the user's own CLAW.REZ upload and is converted at runtime.
+            // WAV music (MENUBED.WAV) falls through to the AudioWorklet below.
+            {
+                const std::string& path = pSoundInfo->soundToPlay;
+                bool isXmi = path.size() >= 4 &&
+                    (path.compare(path.size() - 4, 4, ".XMI") == 0 ||
+                     path.compare(path.size() - 4, 4, ".xmi") == 0);
+                if (isXmi)
+                {
+                    shared_ptr<MidiFile> pMidiFile = MidiResourceLoader::LoadAndReturnMidiFile(path.c_str());
+                    if (pMidiFile && pMidiFile->data && pMidiFile->size > 0)
+                    {
+                        // Copy the converted MIDI bytes out of the WASM heap here (HEAPU8
+                        // is in scope inside EM_ASM) and hand a Uint8Array to the player.
+                        EM_ASM({
+                            if (window.playLevelMidiBuffer) {
+                                var bytes = HEAPU8.slice($0, $0 + $1);
+                                window.playLevelMidiBuffer(bytes);
+                            }
+                        }, pMidiFile->data, (int)pMidiFile->size);
+                    }
+                    else
+                    {
+                        LOG_ERROR("Failed to convert XMI to MIDI: " + path);
+                    }
+                    return;
+                }
+            }
+            // On WASM, WAV music (like MENUBED.WAV) is handled by the AudioWorklet;
+            // fall through to the WAV path which routes it to window.musicSource.
+#else
+            // Desktop: load MIDI files for music
             shared_ptr<MidiFile> pMidiFile = MidiResourceLoader::LoadAndReturnMidiFile(pSoundInfo->soundToPlay.c_str());
             assert(pMidiFile != nullptr);
 
             g_pApp->GetAudio()->PlayMusic(pMidiFile->data, pMidiFile->size, pSoundInfo->loops != 0);
+            return;
+#endif
         }
-        else // Effect / Speech etc. - WAV
+
+        // Handle WAV files (including music files on WASM like MENUBED.WAV)
         {
             SoundProperties soundProperties;
             soundProperties.volume = pSoundInfo->soundVolume;

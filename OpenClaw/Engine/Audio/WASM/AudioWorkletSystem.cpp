@@ -287,12 +287,13 @@ bool AudioWorkletSystem::PlayMusic(const std::string& name, bool looping) {
 }
 
 void AudioWorkletSystem::StopMusic() {
-    if (!m_musicPlaying) {
-        return;
-    }
-
     m_musicPlaying = false;
     m_currentMusic.clear();
+
+    // NOTE: don't early-return on !m_musicPlaying. Menu music (MENUBED.WAV) is played
+    // through the WAV path (PlaySoundWithPath), which sets window.musicSource in JS but
+    // never sets m_musicPlaying. The JS teardown below must always run so that source
+    // gets stopped regardless of how the music was started.
 
 #ifdef __EMSCRIPTEN__
     EM_ASM({
@@ -304,7 +305,12 @@ void AudioWorkletSystem::StopMusic() {
         if (window.musicGainNode) {
             window.musicGainNode = null;
         }
-        
+
+        // Also stop level music played through the soundfont synth (spessasynth).
+        if (window.stopLevelMidi) {
+            window.stopLevelMidi();
+        }
+
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'stopMusic'
@@ -347,7 +353,18 @@ void AudioWorkletSystem::ResumeMusic() {
 }
 
 bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, const char* data, size_t size, float volume, int loops) {
-    if (!m_initialized || !m_soundEnabled || !data || size == 0) {
+    if (!m_initialized || !data || size == 0) {
+        return false;
+    }
+
+    // Menu music (MENUBED.WAV / MENUMUSIC) is a WAV, so it comes through this sound
+    // path. Do NOT reject music when it's disabled: the JS below still creates the
+    // source but with gain 0, so SetMusicEnabled can later unmute it. Rejecting here
+    // means re-enabling music (e.g. returning to the menu with music off then on)
+    // would have no source left to unmute. Only SFX are gated by the sound toggle.
+    const bool isMusic = (originalPath.find("MENUBED.WAV") != std::string::npos) ||
+                         (originalPath.find("MENUMUSIC") != std::string::npos);
+    if (!isMusic && !m_soundEnabled) {
         return false;
     }
 
@@ -406,6 +423,12 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                     gainNode.gain.value = finalVolume;
 
                     if (isMusic) {
+                        // Stop any previously playing music source before starting a new one
+                        if (window.musicSource) {
+                            try {
+                                window.musicSource.stop();
+                            } catch(e) {}
+                        }
                         window.musicGainNode = gainNode;
                         window.musicSource = source;
                         window.musicVolume = volumeMultiplier;
@@ -486,6 +509,12 @@ void AudioWorkletSystem::SetMusicEnabled(bool enabled) {
             }
         }
         
+        // Level music (soundfont synth) reads window.musicEnabled in its own
+        // gain calculation; nudge it to apply the new mute state immediately.
+        if (window.setLevelMidiVolume) {
+            window.setLevelMidiVolume();
+        }
+
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'setMusicEnabled',
@@ -508,7 +537,12 @@ void AudioWorkletSystem::SetMusicVolume(float volume) {
         if (window.musicGainNode && window.musicEnabled) {
             window.musicGainNode.gain.value = $0;
         }
-        
+
+        // Apply the new volume to the level music (soundfont synth) too.
+        if (window.setLevelMidiVolume) {
+            window.setLevelMidiVolume();
+        }
+
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'setMusicVolume',

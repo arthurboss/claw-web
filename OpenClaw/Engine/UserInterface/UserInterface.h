@@ -145,6 +145,11 @@ public:
 
     bool Initialize(TiXmlElement* pElem);
 
+    // (Re)starts the menu background music. Called on first init and whenever we
+    // re-enter the menu (the menu object is created once and reused, so the music
+    // must be restarted explicitly rather than relying on Initialize re-running).
+    void PlayBackgroundMusic();
+
 private:
     void SwitchPageDelegate(IEventDataPtr pEventData);
 
@@ -163,6 +168,7 @@ private:
     MenuPage m_DefaultMenuPage;
 
     std::string m_MenuEnterSound;
+    std::string m_BackgroundMusicPath;
 
     shared_ptr<Image> m_pBackground;
     SDL_Renderer* m_pRenderer;

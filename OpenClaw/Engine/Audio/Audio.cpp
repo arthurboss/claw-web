@@ -204,6 +204,12 @@ void Audio::ResumeMusic()
 
 void Audio::StopMusic()
 {
+    // On WASM the active music plays through the Web Audio system (window.musicSource),
+    // not SDL_mixer. Route the stop through the audio system so that source is torn down.
+    if (m_audioSystem) {
+        m_audioSystem->StopMusic();
+    }
+
 #ifdef _WIN32
     RpcTryExcept
     {
