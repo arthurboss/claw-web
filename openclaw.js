@@ -29,7 +29,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: /tmp/tmpgiz9uc7r.js
+// include: /tmp/tmpp45l01be.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -157,11 +157,11 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
     }
 
     }
-    loadPackage({"files": [{"filename": "/ASSETS.ZIP", "start": 0, "end": 5671628}, {"filename": "/clacon.ttf", "start": 5671628, "end": 5745840}, {"filename": "/console02.tga", "start": 5745840, "end": 5808592}], "remote_package_size": 5808592});
+    loadPackage({"files": [{"filename": "/ASSETS.ZIP", "start": 0, "end": 5646062}, {"filename": "/clacon.ttf", "start": 5646062, "end": 5720274}, {"filename": "/console02.tga", "start": 5720274, "end": 5783026}], "remote_package_size": 5783026});
 
   })();
 
-// end include: /tmp/tmpgiz9uc7r.js
+// end include: /tmp/tmpp45l01be.js
 
 
 var arguments_ = [];
