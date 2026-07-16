@@ -414,7 +414,10 @@ bool AudioWorkletSystem::PlaySoundWithPath(const std::string& originalPath, cons
                     window.activeSources = window.activeSources || new Map();
                     const isLooping = (loops === -1);
 
-                    if (isLooping || isMusic) {
+                    // Music (e.g. MENUBED) is tracked separately via window.musicSource
+                    // and must NOT go into activeSources, otherwise StopAllSounds()
+                    // (fired when SFX are toggled off) would also stop the music.
+                    if (isLooping && !isMusic) {
                         if (window.activeSources.has(originalPath)) {
                             try {
                                 window.activeSources.get(originalPath).stop();
