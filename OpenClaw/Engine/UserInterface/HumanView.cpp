@@ -862,18 +862,21 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
         {
             SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "RequestPlaySoundDelegate: Playing music: %s", pSoundInfo->soundToPlay.c_str());
 #ifdef __EMSCRIPTEN__
-            // TODO: [EMSCRIPTEN] Disable midi sounds for now.
-            // All midi must be converted to MP3 or another web browser compatible formats
-            LOG("RequestPlaySoundDelegate: WASM build - music playback disabled, returning");
-            return;
-#endif
+            // On WASM, music can be WAV files (like MENUBED.WAV) that the AudioWorklet handles.
+            // For MIDI files, fall through to the WAV path and let it be handled as sound effects
+            // (the AudioWorklet will detect MENUBED patterns and route them to the music system).
+#else
+            // Desktop: load MIDI files for music
             shared_ptr<MidiFile> pMidiFile = MidiResourceLoader::LoadAndReturnMidiFile(pSoundInfo->soundToPlay.c_str());
             assert(pMidiFile != nullptr);
 
-            LOG("RequestPlaySoundDelegate: Calling PlayMusic with " + ToStr(pMidiFile->size) + " bytes");
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "RequestPlaySoundDelegate: Calling PlayMusic with %zu bytes", pMidiFile->size);
             g_pApp->GetAudio()->PlayMusic(pMidiFile->data, pMidiFile->size, pSoundInfo->loops != 0);
+            return;
+#endif
         }
-        else // Effect / Speech etc. - WAV
+
+        // Handle WAV files (including music files on WASM like MENUBED.WAV)
         {
             SoundProperties soundProperties;
             soundProperties.volume = pSoundInfo->soundVolume;
