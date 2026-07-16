@@ -1,9 +1,0 @@
-{
-  "outputDirectory": "Build_Release",
-  "rewrites": [
-    {
-      "source": "/",
-      "destination": "/openclaw.html"
-    }
-  ]
-}
