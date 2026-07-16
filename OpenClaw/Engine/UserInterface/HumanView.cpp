@@ -509,12 +509,14 @@ bool HumanView::LoadGame(TiXmlElement* pLevelXmlElem, LevelData* pLevelData)
     m_pScene->SortSceneNodesByZCoord();
 
     // Stop any currently playing music (e.g., menu music)
+    LOG("LoadGame: Stopping current music before playing level music");
     g_pApp->GetAudio()->StopMusic();
 
     // Start playing background music
     m_CurrentLevelMusic = "/LEVEL" + ToStr(pLevelData->GetLevelNumber()) +
         "/MUSIC/PLAY.XMI";
 
+    LOG("LoadGame: Queuing level music: " + m_CurrentLevelMusic);
     SoundInfo soundInfo(m_CurrentLevelMusic);
     soundInfo.isMusic = true;
     soundInfo.loops = -1;
@@ -844,10 +846,12 @@ void HumanView::PowerupUpdatedStatusDelegate(IEventDataPtr pEventData)
 // Music has only 1 channel as far as I know so setting volume for music globally should be fine
 void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
 {
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "RequestPlaySoundDelegate called");
     shared_ptr<EventData_Request_Play_Sound> pCastEventData = static_pointer_cast<EventData_Request_Play_Sound>(pEventData);
     if (pCastEventData)
     {
         const SoundInfo* pSoundInfo = pCastEventData->GetSoundInfo();
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "RequestPlaySoundDelegate: sound=%s, isMusic=%d", pSoundInfo->soundToPlay.c_str(), pSoundInfo->isMusic);
 
         if ((pSoundInfo->soundToPlay.empty()) || (pSoundInfo->soundToPlay == "/GAME/SOUNDS/NULL.WAV"))
         {
@@ -856,14 +860,17 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
 
         if (pSoundInfo->isMusic) // Background music - instrumental
         {
+            SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "RequestPlaySoundDelegate: Playing music: %s", pSoundInfo->soundToPlay.c_str());
 #ifdef __EMSCRIPTEN__
             // TODO: [EMSCRIPTEN] Disable midi sounds for now.
             // All midi must be converted to MP3 or another web browser compatible formats
+            LOG("RequestPlaySoundDelegate: WASM build - music playback disabled, returning");
             return;
 #endif
             shared_ptr<MidiFile> pMidiFile = MidiResourceLoader::LoadAndReturnMidiFile(pSoundInfo->soundToPlay.c_str());
             assert(pMidiFile != nullptr);
 
+            LOG("RequestPlaySoundDelegate: Calling PlayMusic with " + ToStr(pMidiFile->size) + " bytes");
             g_pApp->GetAudio()->PlayMusic(pMidiFile->data, pMidiFile->size, pSoundInfo->loops != 0);
         }
         else // Effect / Speech etc. - WAV

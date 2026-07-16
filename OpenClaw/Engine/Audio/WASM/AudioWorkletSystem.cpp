@@ -261,7 +261,11 @@ bool AudioWorkletSystem::LoadMusic(const std::string& name, const char* data, si
 }
 
 bool AudioWorkletSystem::PlayMusic(const std::string& name, bool looping) {
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "AudioWorkletSystem::PlayMusic: name=%s, looping=%d, initialized=%d, musicEnabled=%d",
+        name.c_str(), looping, m_initialized, m_musicEnabled);
+
     if (!m_initialized || !m_musicEnabled || m_musicBuffers.find(name) == m_musicBuffers.end()) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "AudioWorkletSystem::PlayMusic: Failed - not initialized or buffer not found");
         return false;
     }
 
@@ -272,6 +276,7 @@ bool AudioWorkletSystem::PlayMusic(const std::string& name, bool looping) {
 #ifdef __EMSCRIPTEN__
     // Send play command to AudioWorklet
     EM_ASM({
+        console.log("AudioWorklet: Playing music - " + UTF8ToString($0));
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'playMusic',
@@ -279,6 +284,8 @@ bool AudioWorkletSystem::PlayMusic(const std::string& name, bool looping) {
                 looping: $1,
                 volume: $2
             });
+        } else {
+            console.error("AudioWorklet: audioWorkletNode not available!");
         }
     }, name.c_str(), looping, m_musicVolume);
 #endif
@@ -287,7 +294,11 @@ bool AudioWorkletSystem::PlayMusic(const std::string& name, bool looping) {
 }
 
 void AudioWorkletSystem::StopMusic() {
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "AudioWorkletSystem::StopMusic: musicPlaying=%d, currentMusic=%s",
+        m_musicPlaying, m_currentMusic.c_str());
+
     if (!m_musicPlaying) {
+        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "AudioWorkletSystem::StopMusic: No music playing, returning early");
         return;
     }
 
@@ -296,15 +307,19 @@ void AudioWorkletSystem::StopMusic() {
 
 #ifdef __EMSCRIPTEN__
     EM_ASM({
+        console.log("AudioWorklet: Stopping music");
         // Stop the currently playing music source
         if (window.musicSource) {
+            console.log("AudioWorklet: Stopping musicSource");
             window.musicSource.stop();
             window.musicSource = null;
+        } else {
+            console.log("AudioWorklet: No musicSource to stop");
         }
         if (window.musicGainNode) {
             window.musicGainNode = null;
         }
-        
+
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'stopMusic'

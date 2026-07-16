@@ -156,6 +156,7 @@ static int SetupPlayMusicThread(void* pData)
 
 void Audio::PlayMusic(const char* musicData, size_t musicSize, bool looping)
 {
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Audio::PlayMusic called with %zu bytes, looping=%d, musicEnabled=%d", musicSize, looping, m_bMusicOn);
     _MusicInfo* pMusicInfo = new _MusicInfo(musicData, musicSize, looping, m_bMusicOn ? m_MusicVolume : -1);
 
 // Playing music track takes ALOT of time for some reason so play it in another thread
@@ -204,6 +205,7 @@ void Audio::ResumeMusic()
 
 void Audio::StopMusic()
 {
+    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Audio::StopMusic called");
 #ifdef _WIN32
     RpcTryExcept
     {
