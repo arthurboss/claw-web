@@ -1117,6 +1117,11 @@
     <!-- On-screen touch controls (joystick + buttons), shown during gameplay on touch -->
     <script src="touch-controls.js"></script>
 
+    <!-- Level music via soundfont MIDI synth (spessasynth). Exposes
+         window.playLevelMidi / stopLevelMidi, used by the WASM audio system to
+         play the .mid level tracks the browser cannot decode from .XMI. -->
+    <script type="module" src="music/midi-player.js"></script>
+
     <!-- Browser Support Check -->
     <script>
       function checkBrowserSupport() {

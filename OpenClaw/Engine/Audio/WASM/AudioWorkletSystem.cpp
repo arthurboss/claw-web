@@ -320,6 +320,11 @@ void AudioWorkletSystem::StopMusic() {
             window.musicGainNode = null;
         }
 
+        // Also stop level music played through the soundfont synth (spessasynth).
+        if (window.stopLevelMidi) {
+            window.stopLevelMidi();
+        }
+
         if (window.audioWorkletNode) {
             window.audioWorkletNode.port.postMessage({
                 type: 'stopMusic'

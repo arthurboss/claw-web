@@ -869,9 +869,26 @@ void HumanView::RequestPlaySoundDelegate(IEventDataPtr pEventData)
         {
             SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "RequestPlaySoundDelegate: Playing music: %s", pSoundInfo->soundToPlay.c_str());
 #ifdef __EMSCRIPTEN__
-            // On WASM, music can be WAV files (like MENUBED.WAV) that the AudioWorklet handles.
-            // For MIDI files, fall through to the WAV path and let it be handled as sound effects
-            // (the AudioWorklet will detect MENUBED patterns and route them to the music system).
+            // Level/boss music are .XMI (MIDI) files the browser can't decode as WAV.
+            // Route them to the JS soundfont synth (spessasynth) which plays the shipped
+            // .mid equivalents. WAV music (MENUBED.WAV) falls through to the AudioWorklet.
+            {
+                const std::string& path = pSoundInfo->soundToPlay;
+                bool isXmi = path.size() >= 4 &&
+                    (path.compare(path.size() - 4, 4, ".XMI") == 0 ||
+                     path.compare(path.size() - 4, 4, ".xmi") == 0);
+                if (isXmi)
+                {
+                    EM_ASM({
+                        if (window.playLevelMidi) {
+                            window.playLevelMidi(UTF8ToString($0));
+                        }
+                    }, path.c_str());
+                    return;
+                }
+            }
+            // On WASM, WAV music (like MENUBED.WAV) is handled by the AudioWorklet;
+            // fall through to the WAV path which routes it to window.musicSource.
 #else
             // Desktop: load MIDI files for music
             shared_ptr<MidiFile> pMidiFile = MidiResourceLoader::LoadAndReturnMidiFile(pSoundInfo->soundToPlay.c_str());
