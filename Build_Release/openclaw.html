@@ -1270,20 +1270,21 @@
           localStorage.setItem(DISMISS_KEY, '1');
         }
 
-        // The only programmatic install API. Chrome/Edge/Chromium-with-Google
-        // fire this; Safari and Firefox never do. When present, the Install
-        // button triggers the real one-click prompt; the banner is shown here
-        // (rather than up-front) so it only appears once install is possible.
+        // Capture the native install prompt if the browser offers one. This is
+        // an enhancement: Chrome/Edge usually fire it, but it is unreliable
+        // (some Chrome setups, localhost, and all of Safari/Firefox never do).
+        // The banner is shown unconditionally below regardless, so it must not
+        // depend on this event — if it fired, the Install button uses it.
         window.addEventListener('beforeinstallprompt', function (e) {
           e.preventDefault();
           deferredPrompt = e;
-          banner.classList.add('visible');
         });
 
         window.addEventListener('appinstalled', dismiss);
 
         installBtn.addEventListener('click', function () {
           if (deferredPrompt) {
+            // One-click native install (Chrome/Edge when the event fired)
             deferredPrompt.prompt();
             deferredPrompt.userChoice.then(function (result) {
               deferredPrompt = null;
@@ -1306,31 +1307,41 @@
               '2. Choose “Add to Dock…”\n' +
               '3. Confirm — the game opens in its own window.'
             );
+          } else {
+            // Any other browser with no native prompt (e.g. Chrome that didn't
+            // fire the event, Firefox). Point at the universal menu action.
+            alert(
+              'Install OpenClaw:\n\n' +
+              'Open your browser menu and choose “Install app”,\n' +
+              '“Add to Home Screen”, or “Create shortcut”.\n\n' +
+              'The game will then open in its own fullscreen window.'
+            );
           }
         });
 
         dismissBtn.addEventListener('click', dismiss);
 
-        // Belt-and-suspenders: the start overlay and the game attach input
-        // listeners high in the tree. Stop every pointer/click/touch event that
-        // originates inside the banner from bubbling up to them, so interacting
-        // with the banner never also starts the game.
+        // The start overlay and the game attach input listeners high in the
+        // tree. Stop events that originate inside the banner from bubbling up
+        // to them, so interacting with the banner never also starts the game.
+        // NOTE: bubble phase (not capture) — capturing here would swallow the
+        // event before it reached the banner's own buttons.
         ['click', 'pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend'].forEach(
           function (type) {
-            banner.addEventListener(type, function (e) { e.stopPropagation(); }, true);
+            banner.addEventListener(type, function (e) { e.stopPropagation(); });
           }
         );
 
-        // Safari has no install event, so show the banner up-front there with
-        // platform-specific copy. Other browsers without the event (Firefox,
-        // plain Chromium) have no reliable install path, so no banner is shown.
-        if (isIOSSafari && textEl) {
-          textEl.textContent = 'Tap Share, then “Add to Home Screen”';
-          banner.classList.add('visible');
-        } else if (isMacSafari && textEl) {
-          textEl.textContent = 'File menu → “Add to Dock”';
-          banner.classList.add('visible');
+        // Tailor the subtitle to the platform, then show the banner to every
+        // non-installed user. Install behaviour is handled by the button above.
+        if (textEl) {
+          if (isIOSSafari) {
+            textEl.textContent = 'Tap Share, then “Add to Home Screen”';
+          } else if (isMacSafari) {
+            textEl.textContent = 'File menu → “Add to Dock”';
+          }
         }
+        banner.classList.add('visible');
       })();
     </script>
 
