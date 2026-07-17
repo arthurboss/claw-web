@@ -492,30 +492,35 @@
         opacity: 1;
       }
 
-      /* PWA install banner — shown on mobile when game is not running as installed PWA */
+      /* PWA install prompt — compact card, bottom-right on wide screens.
+         Sits above #startOverlay (z-index 10000); a capture-phase JS guard also
+         stops clicks from reaching the overlay / game input listeners. */
       #pwa-install-banner {
         display: none;
         position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 9999;
+        bottom: 16px;
+        right: 16px;
+        left: auto;
+        z-index: 10001;
+        max-width: min(560px, calc(100vw - 32px));
         background: rgba(0, 0, 0, 0.92);
         color: #fff;
-        padding: 12px 16px;
+        padding: 12px 14px;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         font-size: 14px;
-        border-top: 1px solid rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 12px;
+        box-shadow: 0 6px 24px rgba(0,0,0,0.45);
       }
       #pwa-install-banner.visible { display: flex; }
-      #pwa-install-banner .pwa-icon { font-size: 28px; flex-shrink: 0; }
-      #pwa-install-banner .pwa-text { flex: 1; line-height: 1.4; }
-      #pwa-install-banner .pwa-text strong { display: block; }
-      #pwa-install-banner .pwa-text small { color: #aaa; }
-      #pwa-install-banner .pwa-actions { display: flex; gap: 8px; flex-shrink: 0; }
+      #pwa-install-banner .pwa-icon { font-size: 24px; flex-shrink: 0; }
+      #pwa-install-banner .pwa-text { flex: 1; line-height: 1.35; min-width: 0; white-space: nowrap; }
+      #pwa-install-banner .pwa-text strong { display: block; font-size: 13px; }
+      #pwa-install-banner .pwa-text small { color: #aaa; font-size: 12px; }
+      #pwa-install-banner .pwa-actions { display: flex; gap: 6px; flex-shrink: 0; }
       #pwa-install-banner button {
-        border: none; border-radius: 6px; padding: 8px 14px;
+        border: none; border-radius: 6px; padding: 7px 12px;
         font-size: 13px; cursor: pointer; font-weight: 600;
       }
       #pwa-install-banner .btn-install {
@@ -523,6 +528,15 @@
       }
       #pwa-install-banner .btn-dismiss {
         background: rgba(255,255,255,0.12); color: #ccc;
+      }
+      /* Narrow screens: stretch to a bottom bar so the card never overflows */
+      @media (max-width: 480px) {
+        #pwa-install-banner {
+          left: 12px;
+          right: 12px;
+          bottom: 12px;
+          max-width: none;
+        }
       }
     </style>
   </head>
