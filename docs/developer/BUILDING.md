@@ -122,30 +122,20 @@ Build_Release/
 
 ## Running Locally
 
-### Option 1: Python Server (Simple)
+### Vite Dev Server
 
 ```bash
-cd Build_Release
-python3 -m http.server 8080
+yarn dev
 ```
 
-Open: <http://localhost:8080/openclaw.html>
+Open: <http://localhost:5173/>
 
-### Option 2: HTTP/3 Server (Fast)
+**Features:**
 
-Requires Caddy server installed separately ([install guide](https://caddyserver.com/docs/install)). The `caddy` binary is not bundled in the repo — install it and ensure it's on your `PATH`:
-
-```bash
-./scripts/start_http3_server.sh
-```
-
-Open: <https://localhost:8080/openclaw.html>
-
-**Benefits:**
-
-- HTTP/3 (QUIC protocol) for faster loading
-- Brotli/Zstd/Gzip compression
-- Automatic HTTPS
+- Hot reload for rapid iteration
+- Clean root URL (`/` → `openclaw.html`)
+- No certificate warnings
+- Secure context for Keyboard Lock API and Web Audio
 
 ## Development Workflow
 
@@ -291,10 +281,10 @@ rm -rf build
 CLAW.REZ is uploaded by users at runtime, not bundled in build.
 
 **Slow loading**
-Use HTTP/3 server instead of Python:
+Start the dev server:
 
 ```bash
-./scripts/start_http3_server.sh
+yarn dev
 ```
 
 ## SDL2 Shader Patching

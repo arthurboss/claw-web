@@ -24,32 +24,32 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 
 ### Running the Game
 
-1. **Open Terminal:**
-   - **Mac:** Press `Cmd + Space`, type "Terminal", press Enter
-   - **Windows:** Press `Win + R`, type "wsl", press Enter (requires WSL installed)
-   - **Linux:** Press `Ctrl + Alt + T`
-
-2. **Navigate to the game folder:**
+1. **Clone or download the repository:**
 
    ```bash
-   cd path/to/OpenClaw
+   git clone https://github.com/arthurboss/WASM-OpenClaw.git
+   cd WASM-OpenClaw
    ```
 
-   Replace `path/to/OpenClaw` with the actual location where you downloaded the game.
-
-3. **Start the game server** (pick one):
+2. **Build the game:**
 
    ```bash
-   # Option A: HTTP/3 server (faster loading)
-   ./scripts/start_http3_server.sh
-
-   # Option B: Python server (simpler, works everywhere)
-   cd Build_Release && python3 -m http.server 8080
+   source ./emsdk/emsdk_env.sh
+   yarn install
+   ./build_wasm.sh
    ```
+
+3. **Start the dev server:**
+
+   ```bash
+   yarn dev
+   ```
+
+   The server starts on `http://localhost:5173/`
 
 4. **Open in your web browser:**
-   - If using HTTP/3: `https://localhost:8080/openclaw.html`
-   - If using Python: `http://localhost:8080/openclaw.html`
+
+   Visit: `http://localhost:5173/`
 
 5. **First time only:** Upload your CLAW.REZ file when prompted
 

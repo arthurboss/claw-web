@@ -46,6 +46,7 @@ Build_Release/openclaw.html
 !Build_Release/resource-*.js
 !Build_Release/graphics-bridge.js
 !Build_Release/texture-bridge.js
+!Build_Release/keyboard-capture.js!Build_Release/save-storage.js!Build_Release/gamepad-bridge.js!Build_Release/game-init.js
 
 # Test and demo files (development only)
 Build_Release/test-*.html
