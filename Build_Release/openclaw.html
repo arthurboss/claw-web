@@ -1216,21 +1216,52 @@
         var deferredPrompt = null;
         var DISMISS_KEY = 'pwa_install_dismissed';
 
+        console.log('[PWA] Install prompt script running');
+
         // Don't show if already running as PWA or user dismissed
         var isStandalone =
           window.matchMedia('(display-mode: fullscreen)').matches ||
           window.matchMedia('(display-mode: standalone)').matches ||
           window.navigator.standalone === true;
 
-        if (isStandalone || localStorage.getItem(DISMISS_KEY)) return;
+        console.log('[PWA] isStandalone:', isStandalone, '| dismissed:', !!localStorage.getItem(DISMISS_KEY));
 
-        // Android Chrome: capture the native install prompt
+        if (isStandalone) {
+          console.log('[PWA] Already running as installed app — banner suppressed');
+          return;
+        }
+        if (localStorage.getItem(DISMISS_KEY)) {
+          console.log('[PWA] Previously dismissed. Run localStorage.removeItem("pwa_install_dismissed") then reload to re-enable.');
+          return;
+        }
+
+        // Android/Desktop Chrome: capture the native install prompt
         window.addEventListener('beforeinstallprompt', function (e) {
           e.preventDefault();
           deferredPrompt = e;
-          // Show install banner on all platforms (desktop Chrome, mobile, etc.)
           banner.classList.add('visible');
+          console.log('[PWA] beforeinstallprompt fired — banner shown');
         });
+
+        // Confirm successful installation
+        window.addEventListener('appinstalled', function () {
+          console.log('[PWA] App installed successfully');
+          banner.classList.remove('visible');
+          localStorage.setItem(DISMISS_KEY, '1');
+        });
+
+        // Diagnostic: if the prompt never fires, tell the user why it might be
+        setTimeout(function () {
+          if (!deferredPrompt && !isStandalone) {
+            console.log(
+              '[PWA] beforeinstallprompt has not fired after 3s. Possible reasons:\n' +
+              '  - App is already installed (check chrome://apps)\n' +
+              '  - Chrome engagement heuristic not yet met (interact with the page)\n' +
+              '  - Manifest or service worker not valid (check Application tab)\n' +
+              '  - Prompt already dismissed this session'
+            );
+          }
+        }, 3000);
 
         // iOS: show manual instructions (no beforeinstallprompt support)
         var isIOS =
@@ -1246,13 +1277,9 @@
           installBtn.textContent = 'How?';
           installBtn.addEventListener('click', function () {
             alert(
-              'To install OpenClaw on iOS:
-
-' +
-              '1. Tap the Share button (↑) at the bottom
-' +
-              '2. Scroll down and tap “Add to Home Screen”
-' +
+              'To install OpenClaw on iOS:\n\n' +
+              '1. Tap the Share button (↑) at the bottom\n' +
+              '2. Scroll down and tap “Add to Home Screen”\n' +
               '3. Tap “Add” — the game will launch fullscreen!'
             );
           });
