@@ -157,8 +157,7 @@ If the game loads but you want to re-upload:
 1. First load with decompression adds ~200-500ms (normal, barely noticeable)
 2. Subsequent loads should still be <3 seconds total
 3. Close unnecessary browser tabs to free up memory
-4. Try the HTTP/3 server for faster loading
-5. Check browser console to see decompression timing
+4. Check browser console to see decompression timing
 
 ### Assets Won't Load
 

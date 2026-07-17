@@ -103,14 +103,6 @@ ssh -o ControlPath=none -f -N -L 5173:localhost:5173 -i ~/.ssh/id_fedora_vm test
 - Root `/` rewrites to `/openclaw.html` automatically
 - Full instructions in `CLAUDE.local.md`
 
-### Option 2: Python Server (Fallback)
-
-```bash
-cd Build_Release
-python3 -m http.server 8080
-# Opens at http://localhost:8080/openclaw.html
-# Note: Keyboard Lock and some Web Audio features won't work over plain HTTP to an IP address
-```
 
 ## Code Architecture
 
@@ -370,7 +362,7 @@ Never commit these generated files:
 This project does not have automated tests. Verify changes by:
 
 1. **Build:** Run `./build_wasm.sh` to compile changes
-2. **Run:** Start local server (`./scripts/start_http3_server.sh` or Python server)
+2. **Run:** Start the dev server (`npm run dev`)
 3. **Browser Console:** Check for JavaScript errors and warnings (F12)
 4. **Manual Testing:** Play through affected levels/features
 5. **Log Output:** Watch browser console for C++ logs (uses `LOG` macro)

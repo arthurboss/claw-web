@@ -37,19 +37,21 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 
    Replace `path/to/OpenClaw` with the actual location where you downloaded the game.
 
-3. **Start the game server** (pick one):
+3. **Start the dev server:**
 
    ```bash
-   # Option A: HTTP/3 server (faster loading)
-   ./scripts/start_http3_server.sh
-
-   # Option B: Python server (simpler, works everywhere)
-   cd Build_Release && python3 -m http.server 8080
+   npm run dev
    ```
 
-4. **Open in your web browser:**
-   - If using HTTP/3: `https://localhost:8080/openclaw.html`
-   - If using Python: `http://localhost:8080/openclaw.html`
+4. **On your local machine, start an SSH tunnel:**
+
+   ```bash
+   ssh -o ControlPath=none -f -N -L 5173:localhost:5173 -i ~/.ssh/id_fedora_vm testuser@172.16.25.133
+   ```
+
+5. **Open in your web browser:**
+
+   Visit: `http://localhost:5173/`
 
 5. **First time only:** Upload your CLAW.REZ file when prompted
 
