@@ -1,6 +1,6 @@
 // PWA shell cache — includes all app bootstrap assets
 // Vite will serve these with consistent, deterministic paths
-const CACHE_NAME = "openclaw-v1";
+const CACHE_NAME = "openclaw-v2";
 
 // Essential assets needed to boot the game
 // These are served by Vite and have stable, hashed filenames in production
@@ -63,42 +63,43 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Fetch strategy: cache-first for shell, network-first for game data
+// Fetch strategy: cache-first for the small shell, hands-off for everything
+// else. Anything the SW does not explicitly handle is left to the browser by
+// NOT calling event.respondWith — critical for large/streamed assets.
 self.addEventListener("fetch", (event) => {
-  const url = new URL(event.request.url);
-  const pathname = url.pathname;
+  const req = event.request;
+  const url = new URL(req.url);
 
-  // Never cache large WASM/binary assets — they have their own IndexedDB caching
-  const BYPASS_CACHE = [".wasm", ".data", "ASSETS.ZIP"];
-  if (BYPASS_CACHE.some((ext) => pathname.endsWith(ext))) {
-    event.respondWith(fetch(event.request));
-    return;
+  // Only ever touch same-origin GET requests.
+  if (req.method !== "GET" || url.origin !== self.location.origin) return;
+
+  // Never intercept range requests (WASM/data/media stream with these; a SW
+  // returning a 200 for a Range request breaks playback and wasm streaming).
+  if (req.headers.has("range")) return;
+
+  // Large binaries are loaded/streamed directly and have their own IndexedDB
+  // cache — the SW must not touch them at all (letting a failed inner fetch
+  // surface as a FetchEvent error would abort the game load).
+  const HANDS_OFF = [".wasm", ".data", ".zip", ".mp4"];
+  const path = url.pathname.toLowerCase();
+  if (HANDS_OFF.some((ext) => path.endsWith(ext)) || path.includes("assets.zip")) {
+    return; // browser handles it natively
   }
 
-  // Cache-first: shell assets (JS, HTML, icons, manifest)
-  // Return from cache if available, fall back to network
+  // Cache-first for the shell; fall back to network and cache the result.
+  // If the network fails, return any cached copy rather than throwing.
   event.respondWith(
-    caches.match(event.request).then((cached) => {
+    caches.match(req).then((cached) => {
       if (cached) return cached;
-
-      return fetch(event.request).then((response) => {
-        // Only cache successful responses with valid content-type
-        if (
-          !response ||
-          response.status !== 200 ||
-          response.type === "opaque"
-        ) {
+      return fetch(req)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === "basic") {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+          }
           return response;
-        }
-
-        // Store a clone in cache for future use
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, clone);
-        });
-
-        return response;
-      });
+        })
+        .catch(() => caches.match(req));
     })
   );
 });
