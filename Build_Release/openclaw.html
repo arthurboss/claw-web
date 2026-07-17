@@ -1228,10 +1228,8 @@
         window.addEventListener('beforeinstallprompt', function (e) {
           e.preventDefault();
           deferredPrompt = e;
-          // Only show on mobile
-          if (window.innerWidth <= 1024) {
-            banner.classList.add('visible');
-          }
+          // Show install banner on all platforms (desktop Chrome, mobile, etc.)
+          banner.classList.add('visible');
         });
 
         // iOS: show manual instructions (no beforeinstallprompt support)
