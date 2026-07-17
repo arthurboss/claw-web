@@ -84,24 +84,20 @@ make -j$(nproc)
 
 ### Option 1: Vite Dev Server (Recommended for Local Development)
 
-Vite provides hot reload and clean URLs without cert warnings:
+Vite provides hot reload and clean URLs:
 
 ```bash
-# Start Vite on port 5173 (from the VM)
 yarn dev
-
-# On your Mac, open an SSH tunnel (keeps connection encrypted):
-ssh -o ControlPath=none -f -N -L 5173:localhost:5173 -i ~/.ssh/id_fedora_vm testuser@172.16.25.133
-
-# Access at http://localhost:5173/ (no cert warning)
 ```
+
+The dev server starts on `http://localhost:5173/`
 
 **Benefits:**
 
-- Plain HTTP with SSH tunnel encryption (no self-signed cert warnings)
-- `localhost` is a secure context (Keyboard Lock API works)
+- Hot module reload for rapid iteration
+- `localhost` is a secure context (Keyboard Lock API, Web Audio work correctly)
 - Root `/` rewrites to `/openclaw.html` automatically
-- Full instructions in `CLAUDE.local.md`
+- No certificate warnings
 
 
 ## Code Architecture

@@ -128,12 +128,6 @@ Build_Release/
 yarn dev
 ```
 
-Start an SSH tunnel on your machine:
-
-```bash
-ssh -o ControlPath=none -f -N -L 5173:localhost:5173 -i ~/.ssh/id_fedora_vm testuser@172.16.25.133
-```
-
 Open: <http://localhost:5173/>
 
 **Features:**

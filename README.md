@@ -24,18 +24,20 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 
 ### Running the Game
 
-1. **Open Terminal:**
-   - **Mac:** Press `Cmd + Space`, type "Terminal", press Enter
-   - **Windows:** Press `Win + R`, type "wsl", press Enter (requires WSL installed)
-   - **Linux:** Press `Ctrl + Alt + T`
-
-2. **Navigate to the game folder:**
+1. **Clone or download the repository:**
 
    ```bash
-   cd path/to/OpenClaw
+   git clone https://github.com/arthurboss/WASM-OpenClaw.git
+   cd WASM-OpenClaw
    ```
 
-   Replace `path/to/OpenClaw` with the actual location where you downloaded the game.
+2. **Build the game:**
+
+   ```bash
+   source ./emsdk/emsdk_env.sh
+   yarn install
+   ./build_wasm.sh
+   ```
 
 3. **Start the dev server:**
 
@@ -43,13 +45,9 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
    yarn dev
    ```
 
-4. **On your local machine, start an SSH tunnel:**
+   The server starts on `http://localhost:5173/`
 
-   ```bash
-   ssh -o ControlPath=none -f -N -L 5173:localhost:5173 -i ~/.ssh/id_fedora_vm testuser@172.16.25.133
-   ```
-
-5. **Open in your web browser:**
+4. **Open in your web browser:**
 
    Visit: `http://localhost:5173/`
 
