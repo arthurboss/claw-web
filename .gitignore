@@ -46,7 +46,10 @@ Build_Release/openclaw.html
 !Build_Release/resource-*.js
 !Build_Release/graphics-bridge.js
 !Build_Release/texture-bridge.js
-!Build_Release/keyboard-capture.js!Build_Release/save-storage.js!Build_Release/gamepad-bridge.js!Build_Release/game-init.js
+!Build_Release/keyboard-capture.js
+!Build_Release/save-storage.js
+!Build_Release/gamepad-bridge.js
+!Build_Release/game-init.js
 
 # Test and demo files (development only)
 Build_Release/test-*.html
@@ -100,12 +103,6 @@ Release/
 # Local Claude Code settings
 CLAUDE.local.md
 
-# Caddy web server binary (install separately: https://caddyserver.com/docs/install)
-caddy
-caddy.exe
-
-# Developer-only documentation (not for players)
-docs/HTTP3_MIGRATION.md
 # Node dependencies and Vite build output
 node_modules/
 dist/
