@@ -201,9 +201,16 @@
         bottom: 1%;
         right: 1%;
         z-index: 1000;
-        display: flex;
+        display: none;
         gap: clamp(5px, 1cqw, 10px);
         align-items: center;
+      }
+      /* Controls appear only after the player dismisses the start overlay.
+         The overlay is a full-screen z-index:10000 layer; showing the controls
+         (z-index:1000) beneath it earlier let their clicks fall through and
+         start the game. */
+      body.game-started .bottom-controls {
+        display: flex;
       }
 
       /* Delay button appearance only when intro video is playing */
@@ -314,91 +321,23 @@
       }
 
       /* Asset Upload UI */
-      #assetUpload {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.95);
-        z-index: 10000;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        padding: 20px;
-      }
-
-      #assetUpload h2 {
-        font-size: 2em;
-        margin-bottom: 15px;
-        color: #fff;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-        max-width: 600px;
-      }
-
-      #assetUpload p {
-        font-size: 1.1em;
-        margin: 10px 0;
-        max-width: 600px;
-        line-height: 1.6;
-      }
-
-      #assetUpload strong {
-        color: #4db8ff;
-        font-weight: 600;
-      }
+      /* CLAW.REZ strong text accent (used inside the onboarding card) */
+      #assetUpload strong { color: #e23b2e; font-weight: 600; }
+      /* Left-align body copy on the upload screen (title stays centered) */
+      #assetUpload p { text-align: left; }
 
       #uploadArea {
-        margin-top: 30px;
+        margin-top: 18px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 15px;
+        gap: 12px;
       }
 
-      #clawRezFile {
-        padding: 10px;
-        font-size: 1em;
-        border: 2px solid rgba(77, 184, 255, 0.5);
-        border-radius: 5px;
-        background-color: rgba(255, 255, 255, 0.1);
-        color: #fff;
-        cursor: pointer;
-      }
-
-      #uploadArea button {
-        padding: 12px 30px;
-        font-size: 1.1em;
-        font-weight: bold;
-        color: #fff;
-        background-color: #4db8ff;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      #uploadArea button:hover {
-        background-color: #66c2ff;
-        transform: scale(1.05);
-      }
-
-      #uploadArea button:active {
-        transform: scale(0.98);
-      }
-
-      #uploadArea button:disabled {
-        background-color: #666;
-        color: #999;
+      #uploadBtn:disabled {
+        background: #3a4250;
+        color: #7b828c;
         cursor: not-allowed;
-        opacity: 0.5;
-      }
-
-      #uploadArea button:disabled:hover {
-        background-color: #666;
-        transform: none;
       }
 
       #uploadProgress {
@@ -407,26 +346,28 @@
       }
 
       #uploadProgressBar {
-        width: 400px;
-        height: 30px;
-        border-radius: 5px;
+        width: 220px;
+        max-width: 80%;
+        height: 3px;
+        border-radius: 999px;
         overflow: hidden;
-        background-color: rgba(255, 255, 255, 0.1);
+        border: none;
+        background-color: rgba(255, 255, 255, 0.15);
       }
 
       #uploadProgressBar::-webkit-progress-bar {
-        background-color: rgba(255, 255, 255, 0.1);
-        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.15);
+        border-radius: 999px;
       }
 
       #uploadProgressBar::-webkit-progress-value {
-        background-color: #4db8ff;
-        border-radius: 5px;
+        background-color: #e23b2e;
+        border-radius: 999px;
       }
 
       #uploadProgressBar::-moz-progress-bar {
-        background-color: #4db8ff;
-        border-radius: 5px;
+        background-color: #e23b2e;
+        border-radius: 999px;
       }
 
       #uploadStatus {
@@ -492,69 +433,122 @@
         opacity: 1;
       }
 
-      /* PWA install prompt — compact card, bottom-right on wide screens.
-         Sits above #startOverlay (z-index 10000); a capture-phase JS guard also
-         stops clicks from reaching the overlay / game input listeners. */
-      #pwa-install-banner {
-        display: none;
+      /* Floating install button for touch devices only */
+      /* ---- Onboarding screens (install prompt + asset upload) ---- */
+      .onboard {
         position: fixed;
-        bottom: 16px;
-        right: 16px;
-        left: auto;
-        z-index: 10001;
-        max-width: min(560px, calc(100vw - 32px));
-        background: rgba(0, 0, 0, 0.92);
-        color: #fff;
-        padding: 12px 14px;
-        flex-wrap: wrap;
+        inset: 0;
+        z-index: 10000;
+        display: none;
+        flex-direction: column;
         align-items: center;
+        justify-content: center;
+        gap: 22px;
+        padding: 24px;
+        background: radial-gradient(circle at 50% 30%, #1a2230 0%, #0a0d12 70%);
+        color: #fff;
+        text-align: center;
+      }
+      .onboard.visible { display: flex; }
+      .onboard .onboard-card {
+        width: 100%;
+        max-width: 440px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 16px;
+        padding: 28px 26px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      }
+      .onboard .onboard-emoji { font-size: 44px; line-height: 1; }
+      .onboard h2 {
+        margin: 14px 0 6px;
+        font-size: 1.5em;
+        color: #fff;
+      }
+      .onboard .onboard-badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border-radius: 999px;
+        margin-bottom: 12px;
+      }
+      .onboard .onboard-badge.recommended {
+        background: rgba(82, 196, 26, 0.18); color: #7ee06a;
+        border: 1px solid rgba(82,196,26,0.4);
+      }
+      .onboard .onboard-badge.optional {
+        background: rgba(255,255,255,0.1); color: #bbb;
+        border: 1px solid rgba(255,255,255,0.2);
+      }
+      .onboard p {
+        margin: 8px 0;
+        font-size: 0.98em;
+        line-height: 1.55;
+        color: #cdd3db;
+      }
+      .onboard .onboard-actions {
+        display: flex;
+        flex-direction: column;
         gap: 10px;
-        font-size: 14px;
-        border: 1px solid rgba(255,255,255,0.15);
+        margin-top: 22px;
+      }
+      .onboard .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 13px 20px;
+        font-size: 1em;
+        font-weight: 600;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.15s ease, background 0.2s ease;
+      }
+      .onboard .btn:active { transform: scale(0.98); }
+      .onboard .btn-primary { background: #e23b2e; color: #fff; }
+      .onboard .btn-primary:hover { background: #c62f24; }
+      .onboard .btn-ghost {
+        background: transparent; color: #aab2bd;
+        border: 1px solid rgba(255,255,255,0.18);
+      }
+      .onboard .btn-ghost:hover { background: rgba(255,255,255,0.06); color: #fff; }
+      .onboard .onboard-legal {
+        margin-top: 20px;
+        font-size: 11px;
+        color: #6b7280;
+        line-height: 1.5;
+        max-width: 420px;
+      }
+
+      /* Custom file picker for the upload screen */
+      .file-drop {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 22px 16px;
+        margin: 4px 0 6px;
+        border: 2px dashed rgba(226,59,46,0.5);
         border-radius: 12px;
-        box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+        background: rgba(226,59,46,0.07);
+        color: #cdd3db;
+        cursor: pointer;
+        transition: border-color 0.2s ease, background 0.2s ease;
       }
-      #pwa-install-banner.visible { display: flex; }
-      #pwa-install-banner .pwa-icon { font-size: 24px; flex: 0 0 auto; }
-      /* Text grows and may shrink; min-width:0 lets it truncate instead of
-         pushing the buttons off the card. */
-      #pwa-install-banner .pwa-text { flex: 1 1 180px; line-height: 1.35; min-width: 0; }
-      #pwa-install-banner .pwa-text strong {
-        display: block; font-size: 13px;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      .file-drop:hover { border-color: rgba(226,59,46,0.9); background: rgba(226,59,46,0.14); }
+      .file-drop.has-file { border-style: solid; border-color: #52c41a; background: rgba(82,196,26,0.1); }
+      .file-drop .file-drop-icon { font-size: 30px; }
+      .file-drop .file-drop-label { font-size: 0.95em; }
+      .file-drop .file-drop-name { font-size: 0.82em; color: #7ee06a; word-break: break-all; }
+      .file-drop input[type="file"] {
+        position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;
       }
-      #pwa-install-banner .pwa-text small {
-        display: block; color: #aaa; font-size: 12px;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      }
-      #pwa-install-banner .pwa-actions { display: flex; gap: 6px; flex: 0 0 auto; margin-left: auto; }
-      #pwa-install-banner button {
-        border: none; border-radius: 6px; padding: 7px 12px;
-        font-size: 13px; cursor: pointer; font-weight: 600; white-space: nowrap;
-      }
-      #pwa-install-banner .btn-install {
-        background: var(--primary-color); color: #fff;
-      }
-      #pwa-install-banner .btn-dismiss {
-        background: rgba(255,255,255,0.12); color: #ccc;
-      }
-      /* Narrow screens: stretch to a bottom bar and drop the buttons onto a
-         full-width second row so they never overlap the text. */
-      @media (max-width: 480px) {
-        #pwa-install-banner {
-          left: 12px;
-          right: 12px;
-          bottom: 12px;
-          max-width: none;
-        }
-        #pwa-install-banner .pwa-text { flex: 1 1 auto; }
-        #pwa-install-banner .pwa-actions {
-          flex: 1 1 100%;
-          margin-left: 0;
-          justify-content: flex-end;
-        }
-        #pwa-install-banner .pwa-actions button { flex: 1 1 auto; }
-      }
+
     </style>
   </head>
   <body>
@@ -580,21 +574,30 @@
       </svg>
     </div>
 
-    <!-- Asset Upload UI (shown on first run) -->
-    <section id="assetUpload" style="display: none;">
-      <h2>First Time Setup</h2>
-      <p>OpenClaw requires <strong>CLAW.REZ</strong> from the original Captain Claw (1997) game.</p>
-      <p><strong>Legal Notice:</strong> You must own Captain Claw (1997) to use this file legally.</p>
-      <p>The file will be stored in your browser's local storage and only needs to be uploaded once.</p>
+    <!-- Asset Upload UI (shown after the install screen, on first run) -->
+    <section id="assetUpload" class="onboard">
+      <div class="onboard-card">
+        <div class="onboard-emoji">📦</div>
+        <h2>One-time setup</h2>
+        <p>The game requires <strong>CLAW.REZ</strong> from the original Captain Claw (1997) game.</p>
+        <p>The file only needs to be uploaded once.</p>
 
-      <div id="uploadArea">
-        <input type="file" id="clawRezFile" accept=".REZ,.rez" onchange="validateClawRezFile()" />
-        <button id="uploadBtn" onclick="uploadClawRez()" disabled>Upload CLAW.REZ</button>
-      </div>
+        <div id="uploadArea">
+          <label class="file-drop" id="fileDrop" for="clawRezFile">
+            <span class="file-drop-icon">📁</span>
+            <span class="file-drop-label">Choose or drop your CLAW.REZ file</span>
+            <span class="file-drop-name" id="fileDropName"></span>
+            <input type="file" id="clawRezFile" accept=".REZ,.rez" onchange="validateClawRezFile()" />
+          </label>
+          <button class="btn btn-primary" id="uploadBtn" onclick="uploadClawRez()" disabled>Upload CLAW.REZ</button>
+        </div>
 
-      <div id="uploadProgress" style="display: none;">
-        <progress id="uploadProgressBar" max="100" value="0"></progress>
-        <span id="uploadStatus">Storing assets...</span>
+        <div id="uploadProgress" style="display: none;">
+          <progress id="uploadProgressBar" max="100" value="0"></progress>
+          <span id="uploadStatus">Storing assets...</span>
+        </div>
+
+        <p class="onboard-legal">You must own Captain Claw (1997) to use this file legally.</p>
       </div>
     </section>
 
@@ -641,6 +644,15 @@
           <div class="bottom-controls">
             <button
               class="control-btn"
+              id="pwa-install-control"
+              title="Install App"
+              aria-label="Install OpenClaw"
+              style="display: none"
+            >
+              ⬇
+            </button>
+            <button
+              class="control-btn"
               id="fullscreenBtn"
               onclick="toggleFullscreen()"
               title="Enter Fullscreen"
@@ -651,18 +663,19 @@
         </div>
       </div>
     </div>
-    <!-- PWA install banner — shown to mobile users not yet running in standalone mode -->
-    <div id="pwa-install-banner" role="banner" aria-label="Install OpenClaw">
-      <span class="pwa-icon">🎮</span>
-      <div class="pwa-text">
-        <strong>Add OpenClaw to your Home Screen</strong>
-        <small>Play fullscreen, no browser chrome</small>
+    <!-- Install onboarding screen (shown first, before upload, when installable) -->
+    <section id="installScreen" class="onboard">
+      <div class="onboard-card">
+        <div class="onboard-emoji">🎮</div>
+        <span id="installBadge" class="onboard-badge">&nbsp;</span>
+        <h2>Install OpenClaw?</h2>
+        <p id="installReason">Install OpenClaw for the best experience.</p>
+        <div class="onboard-actions">
+          <button class="btn btn-primary" id="installYesBtn">⬇ Install OpenClaw</button>
+          <button class="btn btn-ghost" id="installSkipBtn">Not now</button>
+        </div>
       </div>
-      <div class="pwa-actions">
-        <button class="btn-install" id="pwa-install-btn">Install</button>
-        <button class="btn-dismiss" id="pwa-dismiss-btn">Later</button>
-      </div>
-    </div>
+    </section>
     <div class="debug_panel" style="display: none">
       <div class="cheats">
         <div>
@@ -1238,62 +1251,62 @@
         throw new Error('Browser not supported');
       }
     </script>
-    <!-- PWA install prompt logic -->
+    <!-- PWA install: shared API used by the onboarding screen and the
+         persistent install buttons (desktop toolbar + touch floating). -->
     <script>
       (function () {
-        var banner = document.getElementById('pwa-install-banner');
-        var installBtn = document.getElementById('pwa-install-btn');
-        var dismissBtn = document.getElementById('pwa-dismiss-btn');
-        var textEl = banner.querySelector('.pwa-text small');
+        var desktopBtn = document.getElementById('pwa-install-control');
         var deferredPrompt = null;
-        var DISMISS_KEY = 'pwa_install_dismissed';
 
-        // Detect an already-installed PWA. Note: display-mode: fullscreen is
-        // deliberately NOT checked — it also matches the Fullscreen API, which
-        // this game uses, and would suppress the banner during normal play.
         var isStandalone =
           window.matchMedia('(display-mode: standalone)').matches ||
           window.navigator.standalone === true;
 
-        if (isStandalone || localStorage.getItem(DISMISS_KEY)) return;
-
         var ua = navigator.userAgent;
         var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-        // Safari = has Safari token but is not Chrome/Chromium/Edge/Firefox-iOS.
+        var isAndroid = /Android/.test(ua);
         var isSafari =
           /Safari/.test(ua) && !/Chrome|Chromium|Edg|CriOS|FxiOS|OPR/.test(ua);
         var isIOSSafari = isIOS && isSafari;
         var isMacSafari = isSafari && /Macintosh/.test(ua) && !isIOS;
 
-        function dismiss() {
-          banner.classList.remove('visible');
-          localStorage.setItem(DISMISS_KEY, '1');
+        // Why installing is (or isn't) worth it, tuned per platform. Mobile
+        // benefits most (fullscreen, home-screen launch); desktop is optional.
+        function recommendation() {
+          if (isIOSSafari) {
+            return {
+              level: 'recommended',
+              reason: 'On iPhone/iPad, installing is the only way to play truly fullscreen and launch OpenClaw straight from your home screen.'
+            };
+          }
+          if (isAndroid) {
+            return {
+              level: 'recommended',
+              reason: 'On Android, installing gives you a real fullscreen, app-like experience launched from your home screen.'
+            };
+          }
+          return {
+            level: 'optional',
+            reason: 'On desktop, OpenClaw already runs great in the browser. Installing simply opens it in its own dedicated window.'
+          };
         }
 
-        // Capture the native install prompt if the browser offers one. This is
-        // an enhancement: Chrome/Edge usually fire it, but it is unreliable
-        // (some Chrome setups, localhost, and all of Safari/Firefox never do).
-        // The banner is shown unconditionally below regardless, so it must not
-        // depend on this event — if it fired, the Install button uses it.
-        window.addEventListener('beforeinstallprompt', function (e) {
-          e.preventDefault();
-          deferredPrompt = e;
-        });
+        function hideAllInstallUI() {
+          if (desktopBtn) desktopBtn.style.display = 'none';
+        }
 
-        window.addEventListener('appinstalled', dismiss);
-
-        installBtn.addEventListener('click', function () {
+        // Native prompt when available, else per-platform manual instructions.
+        // Returns a promise resolving true if a native install was accepted.
+        function trigger() {
           if (deferredPrompt) {
-            // One-click native install (Chrome/Edge when the event fired)
             deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(function (result) {
+            return deferredPrompt.userChoice.then(function (result) {
               deferredPrompt = null;
-              banner.classList.remove('visible');
-              if (result.outcome === 'accepted') {
-                localStorage.setItem(DISMISS_KEY, '1');
-              }
+              if (result.outcome === 'accepted') hideAllInstallUI();
+              return result.outcome === 'accepted';
             });
-          } else if (isIOSSafari) {
+          }
+          if (isIOSSafari) {
             alert(
               'Install OpenClaw on iOS:\n\n' +
               '1. Tap the Share button at the bottom of Safari\n' +
@@ -1308,8 +1321,6 @@
               '3. Confirm — the game opens in its own window.'
             );
           } else {
-            // Any other browser with no native prompt (e.g. Chrome that didn't
-            // fire the event, Firefox). Point at the universal menu action.
             alert(
               'Install OpenClaw:\n\n' +
               'Open your browser menu and choose “Install app”,\n' +
@@ -1317,31 +1328,34 @@
               'The game will then open in its own fullscreen window.'
             );
           }
-        });
-
-        dismissBtn.addEventListener('click', dismiss);
-
-        // The start overlay and the game attach input listeners high in the
-        // tree. Stop events that originate inside the banner from bubbling up
-        // to them, so interacting with the banner never also starts the game.
-        // NOTE: bubble phase (not capture) — capturing here would swallow the
-        // event before it reached the banner's own buttons.
-        ['click', 'pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend'].forEach(
-          function (type) {
-            banner.addEventListener(type, function (e) { e.stopPropagation(); });
-          }
-        );
-
-        // Tailor the subtitle to the platform, then show the banner to every
-        // non-installed user. Install behaviour is handled by the button above.
-        if (textEl) {
-          if (isIOSSafari) {
-            textEl.textContent = 'Tap Share, then “Add to Home Screen”';
-          } else if (isMacSafari) {
-            textEl.textContent = 'File menu → “Add to Dock”';
-          }
+          return Promise.resolve(false);
         }
-        banner.classList.add('visible');
+
+        window.addEventListener('beforeinstallprompt', function (e) {
+          e.preventDefault();
+          deferredPrompt = e;
+        });
+        window.addEventListener('appinstalled', hideAllInstallUI);
+
+        // Persistent desktop button (bottom toolbar). The touch install
+        // button lives inside #touchControls and is wired in touch-controls.js.
+        if (!isStandalone && desktopBtn) {
+          desktopBtn.style.display = '';
+          desktopBtn.addEventListener('click', trigger);
+        }
+
+        // Public API for the onboarding flow (game-init.js).
+        window.OpenClawInstall = {
+          isInstalled: isStandalone,
+          platform: {
+            isIOSSafari: isIOSSafari,
+            isMacSafari: isMacSafari,
+            isAndroid: isAndroid,
+            isMobile: isIOS || isAndroid
+          },
+          recommendation: recommendation(),
+          trigger: trigger
+        };
       })();
     </script>
 
