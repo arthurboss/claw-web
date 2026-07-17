@@ -1251,11 +1251,11 @@
               'To install OpenClaw on iOS:
 
 ' +
-              '1. Tap the Share button (↑) in Safari
+              '1. Tap the Share button (↑) at the bottom
 ' +
               '2. Scroll down and tap “Add to Home Screen”
 ' +
-              '3. Tap “Add” — the game will open fullscreen!'
+              '3. Tap “Add” — the game will launch fullscreen!'
             );
           });
           banner.classList.add('visible');
@@ -1284,9 +1284,18 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('./sw.js').catch(function (err) {
-            console.warn('[SW] Registration failed:', err);
-          });
+          navigator.serviceWorker
+            .register('./sw.js', { scope: './' })
+            .then(function (reg) {
+              console.log('[SW] Registered successfully', reg.scope);
+              // Check for updates periodically (once per day)
+              setInterval(function () {
+                reg.update();
+              }, 24 * 60 * 60 * 1000);
+            })
+            .catch(function (err) {
+              console.warn('[SW] Registration failed:', err);
+            });
         });
       }
     </script>

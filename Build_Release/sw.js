@@ -1,6 +1,9 @@
+// PWA shell cache — includes all app bootstrap assets
+// Vite will serve these with consistent, deterministic paths
 const CACHE_NAME = "openclaw-v1";
 
-// Shell assets to cache on install (everything needed to boot)
+// Essential assets needed to boot the game
+// These are served by Vite and have stable, hashed filenames in production
 const SHELL_ASSETS = [
   "./openclaw.html",
   "./openclaw.js",
@@ -18,52 +21,82 @@ const SHELL_ASSETS = [
   "./android-chrome-512x512.png",
   "./apple-touch-icon.png",
   "./favicon.ico",
+  "./favicon-16x16.png",
+  "./favicon-32x32.png",
 ];
 
+// On install: cache the app shell
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(SHELL_ASSETS))
-      .then(() => self.skipWaiting())
+      .then((cache) => {
+        // Use addAll to fail fast if any asset is missing
+        return cache.addAll(SHELL_ASSETS);
+      })
+      .then(() => {
+        // Force waiting service worker to become active immediately
+        return self.skipWaiting();
+      })
   );
 });
 
+// On activate: remove old caches if CACHE_NAME changes
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
       .then((keys) =>
         Promise.all(
-          keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
+          keys
+            .filter((k) => k !== CACHE_NAME)
+            .map((k) => {
+              console.log("[SW] Deleting old cache:", k);
+              return caches.delete(k);
+            })
         )
       )
-      .then(() => self.clients.claim())
+      .then(() => {
+        // Claim all clients immediately (no need to reload page)
+        return self.clients.claim();
+      })
   );
 });
 
+// Fetch strategy: cache-first for shell, network-first for game data
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
+  const pathname = url.pathname;
 
-  // Never cache WASM, game data or ASSETS.ZIP — they are large and loaded by the
-  // asset-loader with its own IndexedDB caching strategy.
-  const bypass = [".wasm", ".data", "ASSETS.ZIP"].some((ext) =>
-    url.pathname.endsWith(ext)
-  );
-  if (bypass) {
+  // Never cache large WASM/binary assets — they have their own IndexedDB caching
+  const BYPASS_CACHE = [".wasm", ".data", "ASSETS.ZIP"];
+  if (BYPASS_CACHE.some((ext) => pathname.endsWith(ext))) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // Cache-first for everything else (shell + small assets)
+  // Cache-first: shell assets (JS, HTML, icons, manifest)
+  // Return from cache if available, fall back to network
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
+
       return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type === "opaque")
+        // Only cache successful responses with valid content-type
+        if (
+          !response ||
+          response.status !== 200 ||
+          response.type === "opaque"
+        ) {
           return response;
+        }
+
+        // Store a clone in cache for future use
         const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, clone);
+        });
+
         return response;
       });
     })
