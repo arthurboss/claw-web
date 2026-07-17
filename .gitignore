@@ -106,3 +106,6 @@ caddy.exe
 
 # Developer-only documentation (not for players)
 docs/HTTP3_MIGRATION.md
+# Node dependencies and Vite build output
+node_modules/
+dist/
