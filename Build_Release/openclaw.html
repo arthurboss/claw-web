@@ -1227,95 +1227,93 @@
         var banner = document.getElementById('pwa-install-banner');
         var installBtn = document.getElementById('pwa-install-btn');
         var dismissBtn = document.getElementById('pwa-dismiss-btn');
+        var textEl = banner.querySelector('.pwa-text small');
         var deferredPrompt = null;
         var DISMISS_KEY = 'pwa_install_dismissed';
 
-        console.log('[PWA] Install prompt script running');
-
-        // Don't show if already running as PWA or user dismissed
+        // Detect an already-installed PWA. Note: display-mode: fullscreen is
+        // deliberately NOT checked — it also matches the Fullscreen API, which
+        // this game uses, and would suppress the banner during normal play.
         var isStandalone =
-          window.matchMedia('(display-mode: fullscreen)').matches ||
           window.matchMedia('(display-mode: standalone)').matches ||
           window.navigator.standalone === true;
 
-        console.log('[PWA] isStandalone:', isStandalone, '| dismissed:', !!localStorage.getItem(DISMISS_KEY));
+        if (isStandalone || localStorage.getItem(DISMISS_KEY)) return;
 
-        if (isStandalone) {
-          console.log('[PWA] Already running as installed app — banner suppressed');
-          return;
-        }
-        if (localStorage.getItem(DISMISS_KEY)) {
-          console.log('[PWA] Previously dismissed. Run localStorage.removeItem("pwa_install_dismissed") then reload to re-enable.');
-          return;
+        var ua = navigator.userAgent;
+        var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        // Safari = has Safari token but is not Chrome/Chromium/Edge/Firefox-iOS.
+        var isSafari =
+          /Safari/.test(ua) && !/Chrome|Chromium|Edg|CriOS|FxiOS|OPR/.test(ua);
+        var isIOSSafari = isIOS && isSafari;
+        var isMacSafari = isSafari && /Macintosh/.test(ua) && !isIOS;
+
+        function dismiss() {
+          banner.classList.remove('visible');
+          localStorage.setItem(DISMISS_KEY, '1');
         }
 
-        // Android/Desktop Chrome: capture the native install prompt
+        // The only programmatic install API. Chrome/Edge/Chromium-with-Google
+        // fire this; Safari and Firefox never do. When present, the Install
+        // button triggers the real one-click prompt; the banner is shown here
+        // (rather than up-front) so it only appears once install is possible.
         window.addEventListener('beforeinstallprompt', function (e) {
           e.preventDefault();
           deferredPrompt = e;
           banner.classList.add('visible');
-          console.log('[PWA] beforeinstallprompt fired — banner shown');
         });
 
-        // Confirm successful installation
-        window.addEventListener('appinstalled', function () {
-          console.log('[PWA] App installed successfully');
-          banner.classList.remove('visible');
-          localStorage.setItem(DISMISS_KEY, '1');
-        });
-
-        // Diagnostic: if the prompt never fires, tell the user why it might be
-        setTimeout(function () {
-          if (!deferredPrompt && !isStandalone) {
-            console.log(
-              '[PWA] beforeinstallprompt has not fired after 3s. Possible reasons:\n' +
-              '  - App is already installed (check chrome://apps)\n' +
-              '  - Chrome engagement heuristic not yet met (interact with the page)\n' +
-              '  - Manifest or service worker not valid (check Application tab)\n' +
-              '  - Prompt already dismissed this session'
-            );
-          }
-        }, 3000);
-
-        // iOS: show manual instructions (no beforeinstallprompt support)
-        var isIOS =
-          /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        var isIOSSafari =
-          isIOS && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS/.test(navigator.userAgent);
-        if (isIOSSafari && !isStandalone) {
-          // Show banner with iOS-specific text
-          var textEl = banner.querySelector('.pwa-text small');
-          if (textEl) {
-            textEl.textContent = 'Tap Share ↓ then “Add to Home Screen”';
-          }
-          installBtn.textContent = 'How?';
-          installBtn.addEventListener('click', function () {
-            alert(
-              'To install OpenClaw on iOS:\n\n' +
-              '1. Tap the Share button (↑) at the bottom\n' +
-              '2. Scroll down and tap “Add to Home Screen”\n' +
-              '3. Tap “Add” — the game will launch fullscreen!'
-            );
-          });
-          banner.classList.add('visible');
-        }
+        window.addEventListener('appinstalled', dismiss);
 
         installBtn.addEventListener('click', function () {
-          if (!deferredPrompt) return;
-          deferredPrompt.prompt();
-          deferredPrompt.userChoice.then(function (result) {
-            deferredPrompt = null;
-            banner.classList.remove('visible');
-            if (result.outcome === 'accepted') {
-              localStorage.setItem(DISMISS_KEY, '1');
-            }
-          });
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function (result) {
+              deferredPrompt = null;
+              banner.classList.remove('visible');
+              if (result.outcome === 'accepted') {
+                localStorage.setItem(DISMISS_KEY, '1');
+              }
+            });
+          } else if (isIOSSafari) {
+            alert(
+              'Install OpenClaw on iOS:\n\n' +
+              '1. Tap the Share button at the bottom of Safari\n' +
+              '2. Choose “Add to Home Screen”\n' +
+              '3. Tap “Add” — the game launches fullscreen.'
+            );
+          } else if (isMacSafari) {
+            alert(
+              'Install OpenClaw on Mac:\n\n' +
+              '1. Open the File menu in Safari\n' +
+              '2. Choose “Add to Dock…”\n' +
+              '3. Confirm — the game opens in its own window.'
+            );
+          }
         });
 
-        dismissBtn.addEventListener('click', function () {
-          banner.classList.remove('visible');
-          localStorage.setItem(DISMISS_KEY, '1');
-        });
+        dismissBtn.addEventListener('click', dismiss);
+
+        // Belt-and-suspenders: the start overlay and the game attach input
+        // listeners high in the tree. Stop every pointer/click/touch event that
+        // originates inside the banner from bubbling up to them, so interacting
+        // with the banner never also starts the game.
+        ['click', 'pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend'].forEach(
+          function (type) {
+            banner.addEventListener(type, function (e) { e.stopPropagation(); }, true);
+          }
+        );
+
+        // Safari has no install event, so show the banner up-front there with
+        // platform-specific copy. Other browsers without the event (Firefox,
+        // plain Chromium) have no reliable install path, so no banner is shown.
+        if (isIOSSafari && textEl) {
+          textEl.textContent = 'Tap Share, then “Add to Home Screen”';
+          banner.classList.add('visible');
+        } else if (isMacSafari && textEl) {
+          textEl.textContent = 'File menu → “Add to Dock”';
+          banner.classList.add('visible');
+        }
       })();
     </script>
 
@@ -1326,7 +1324,6 @@
           navigator.serviceWorker
             .register('./sw.js', { scope: './' })
             .then(function (reg) {
-              console.log('[SW] Registered successfully', reg.scope);
               // Check for updates periodically (once per day)
               setInterval(function () {
                 reg.update();
