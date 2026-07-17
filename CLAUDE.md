@@ -88,7 +88,7 @@ Vite provides hot reload and clean URLs without cert warnings:
 
 ```bash
 # Start Vite on port 5173 (from the VM)
-npm run dev
+yarn dev
 
 # On your Mac, open an SSH tunnel (keeps connection encrypted):
 ssh -o ControlPath=none -f -N -L 5173:localhost:5173 -i ~/.ssh/id_fedora_vm testuser@172.16.25.133
@@ -362,7 +362,7 @@ Never commit these generated files:
 This project does not have automated tests. Verify changes by:
 
 1. **Build:** Run `./build_wasm.sh` to compile changes
-2. **Run:** Start the dev server (`npm run dev`)
+2. **Run:** Start the dev server (`yarn dev`)
 3. **Browser Console:** Check for JavaScript errors and warnings (F12)
 4. **Manual Testing:** Play through affected levels/features
 5. **Log Output:** Watch browser console for C++ logs (uses `LOG` macro)

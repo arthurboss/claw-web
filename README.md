@@ -40,7 +40,7 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 3. **Start the dev server:**
 
    ```bash
-   npm run dev
+   yarn dev
    ```
 
 4. **On your local machine, start an SSH tunnel:**

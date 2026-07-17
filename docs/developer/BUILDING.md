@@ -125,7 +125,7 @@ Build_Release/
 ### Vite Dev Server
 
 ```bash
-npm run dev
+yarn dev
 ```
 
 Start an SSH tunnel on your machine:
@@ -290,7 +290,7 @@ CLAW.REZ is uploaded by users at runtime, not bundled in build.
 Start the dev server:
 
 ```bash
-npm run dev
+yarn dev
 ```
 
 ## SDL2 Shader Patching
