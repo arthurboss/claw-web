@@ -506,6 +506,7 @@
         background: rgba(0, 0, 0, 0.92);
         color: #fff;
         padding: 12px 14px;
+        flex-wrap: wrap;
         align-items: center;
         gap: 10px;
         font-size: 14px;
@@ -514,14 +515,22 @@
         box-shadow: 0 6px 24px rgba(0,0,0,0.45);
       }
       #pwa-install-banner.visible { display: flex; }
-      #pwa-install-banner .pwa-icon { font-size: 24px; flex-shrink: 0; }
-      #pwa-install-banner .pwa-text { flex: 1; line-height: 1.35; min-width: 0; white-space: nowrap; }
-      #pwa-install-banner .pwa-text strong { display: block; font-size: 13px; }
-      #pwa-install-banner .pwa-text small { color: #aaa; font-size: 12px; }
-      #pwa-install-banner .pwa-actions { display: flex; gap: 6px; flex-shrink: 0; }
+      #pwa-install-banner .pwa-icon { font-size: 24px; flex: 0 0 auto; }
+      /* Text grows and may shrink; min-width:0 lets it truncate instead of
+         pushing the buttons off the card. */
+      #pwa-install-banner .pwa-text { flex: 1 1 180px; line-height: 1.35; min-width: 0; }
+      #pwa-install-banner .pwa-text strong {
+        display: block; font-size: 13px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      #pwa-install-banner .pwa-text small {
+        display: block; color: #aaa; font-size: 12px;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      #pwa-install-banner .pwa-actions { display: flex; gap: 6px; flex: 0 0 auto; margin-left: auto; }
       #pwa-install-banner button {
         border: none; border-radius: 6px; padding: 7px 12px;
-        font-size: 13px; cursor: pointer; font-weight: 600;
+        font-size: 13px; cursor: pointer; font-weight: 600; white-space: nowrap;
       }
       #pwa-install-banner .btn-install {
         background: var(--primary-color); color: #fff;
@@ -529,7 +538,8 @@
       #pwa-install-banner .btn-dismiss {
         background: rgba(255,255,255,0.12); color: #ccc;
       }
-      /* Narrow screens: stretch to a bottom bar so the card never overflows */
+      /* Narrow screens: stretch to a bottom bar and drop the buttons onto a
+         full-width second row so they never overlap the text. */
       @media (max-width: 480px) {
         #pwa-install-banner {
           left: 12px;
@@ -537,6 +547,13 @@
           bottom: 12px;
           max-width: none;
         }
+        #pwa-install-banner .pwa-text { flex: 1 1 auto; }
+        #pwa-install-banner .pwa-actions {
+          flex: 1 1 100%;
+          margin-left: 0;
+          justify-content: flex-end;
+        }
+        #pwa-install-banner .pwa-actions button { flex: 1 1 auto; }
       }
     </style>
   </head>
