@@ -129,7 +129,7 @@
       // 320px (phone portrait/landscape) → 1.0x, 820px (tablet portrait) → 1.32x, 1920px+ → 2.0x
       ":root{",
       "  --tc-scale: clamp(1, (100vmin - 320px) / 1600px + 1, 2);",
-      "  --tc-corner-dist: calc(30px * var(--tc-scale));",
+      "  --tc-corner-dist: calc(40px * var(--tc-scale));",
       "}",
       "",
       "#touchControls{position:fixed;inset:0;z-index:9000;pointer-events:none;",
@@ -246,15 +246,29 @@
       "#tcDleft{left:0;top:calc(47px * var(--tc-scale));}",
       "#tcDright{left:calc(94px * var(--tc-scale));top:calc(47px * var(--tc-scale));}",
       // Movement-mode toggle — small button above the movement control, scaled.
-      "#tcMoveToggle{position:absolute;left:var(--tc-corner-dist);bottom:calc(178px * var(--tc-scale));width:calc(48px * var(--tc-scale));height:calc(48px * var(--tc-scale));",
+      "#tcMoveToggle{position:absolute;left:var(--tc-corner-dist);bottom:calc(178px * var(--tc-scale));width:calc(42px * var(--tc-scale));height:calc(42px * var(--tc-scale));",
       "  border-radius:50%;border:2px solid #000;",
       "  background:linear-gradient(to bottom,",
-      "    rgba(252,239,82,0.25) 0 10%,rgba(248,232,110,0.25) 10% 20%,",
-      "    rgba(253,253,183,0.25) 20% 30%,rgba(251,244,214,0.25) 30% 40%,",
-      "    rgba(172,120,53,0.25) 40% 50%,rgba(208,170,62,0.25) 50% 60%,",
-      "    rgba(242,204,77,0.25) 60% 70%,rgba(244,219,99,0.25) 70% 80%,",
-      "    rgba(249,237,146,0.25) 80% 90%,rgba(239,216,112,0.25) 90% 100%);",
+      "    rgba(252,239,82,0.16) 0 10%,rgba(248,232,110,0.16) 10% 20%,",
+      "    rgba(253,253,183,0.16) 20% 30%,rgba(251,244,214,0.16) 30% 40%,",
+      "    rgba(172,120,53,0.16) 40% 50%,rgba(208,170,62,0.16) 50% 60%,",
+      "    rgba(242,204,77,0.16) 60% 70%,rgba(244,219,99,0.16) 70% 80%,",
+      "    rgba(249,237,146,0.16) 80% 90%,rgba(239,216,112,0.16) 90% 100%);",
       "  color:#fff;font:bold calc(10px * var(--tc-scale)) sans-serif;",
+      "  text-shadow:calc(-1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(-1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000;",
+      "  display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;}",
+      // Install button — mirrors the movement toggle on the right side, same
+      // gold-band style and bottom distance. Hidden once the app is installed
+      // (JS removes it) or on desktop.
+      "#tcInstall{position:absolute;right:var(--tc-corner-dist);bottom:calc(178px * var(--tc-scale));width:calc(42px * var(--tc-scale));height:calc(42px * var(--tc-scale));",
+      "  border-radius:50%;border:2px solid #000;",
+      "  background:linear-gradient(to bottom,",
+      "    rgba(252,239,82,0.16) 0 10%,rgba(248,232,110,0.16) 10% 20%,",
+      "    rgba(253,253,183,0.16) 20% 30%,rgba(251,244,214,0.16) 30% 40%,",
+      "    rgba(172,120,53,0.16) 40% 50%,rgba(208,170,62,0.16) 50% 60%,",
+      "    rgba(242,204,77,0.16) 60% 70%,rgba(244,219,99,0.16) 70% 80%,",
+      "    rgba(249,237,146,0.16) 80% 90%,rgba(239,216,112,0.16) 90% 100%);",
+      "  color:#fff;font:bold calc(18px * var(--tc-scale)) sans-serif;",
       "  text-shadow:calc(-1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(-1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;}",
       // Show joystick OR d-pad based on the movement mode class on the root.
@@ -264,9 +278,9 @@
       // ---- Portrait placement -------------------------------------------------
       // Adjust button spacing slightly when in portrait orientation
       "@media (orientation: portrait) {",
-      "  #tcJoyBase, #tcDpad{left:calc(15px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}",
-      "  #tcButtons{right:calc(15px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}",
-      "  #tcMoveToggle{bottom:calc(208px * var(--tc-scale));}",
+      "  #tcJoyBase, #tcDpad{left:calc(28px * var(--tc-scale));bottom:calc(72px * var(--tc-scale));}",
+      "  #tcButtons{right:calc(28px * var(--tc-scale));bottom:calc(72px * var(--tc-scale));}",
+      "  #tcMoveToggle, #tcInstall{bottom:calc(208px * var(--tc-scale));}",
       "  #tcPause{background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
       "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
@@ -317,6 +331,7 @@
       '  <div class="tcDbtn" id="tcDright"></div>' +
       "</div>" +
       '<div id="tcMoveToggle">STICK</div>' +
+      '<div id="tcInstall">\u2b07</div>' +
       '<div id="tcButtons">' +
       '  <div class="tcBtn" id="tcJump">JUMP</div>' +
       '  <div class="tcBtn" id="tcAttack">ATK</div>' +
@@ -567,6 +582,26 @@
     });
   }
 
+  // ---- Install button -------------------------------------------------------
+  // Delegates to the shared install API defined in openclaw.html. Removed from
+  // the DOM if the app is already installed or no install path exists.
+  function setupInstallButton(el) {
+    if (!el) return;
+    var api = window.OpenClawInstall;
+    if (!api || api.isInstalled) {
+      el.remove();
+      return;
+    }
+    el.addEventListener("pointerdown", function (e) {
+      markTouchInput(e);
+      vibrate(HAPTIC.light);
+      e.preventDefault();
+      if (typeof api.trigger === "function") api.trigger();
+    });
+    // Hide it for good once the app gets installed mid-session.
+    window.addEventListener("appinstalled", function () { el.remove(); });
+  }
+
   // ---- Init -----------------------------------------------------------------
 
   function init() {
@@ -583,6 +618,7 @@
     setupHoldButton(document.getElementById("tcDleft"), KEY.left, HAPTIC.light);
     setupHoldButton(document.getElementById("tcDright"), KEY.right, HAPTIC.light);
     setupMoveToggle(root, document.getElementById("tcMoveToggle"));
+    setupInstallButton(document.getElementById("tcInstall"));
     // Gameplay buttons
     setupHoldButton(document.getElementById("tcJump"), KEY.jump, HAPTIC.jump);
     setupHoldButton(document.getElementById("tcFire"), KEY.fire, HAPTIC.attack);
