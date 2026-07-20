@@ -89,6 +89,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        /* Keep the canvas clear of the notch/Dynamic Island/home indicator in
+           both orientations. box-sizing:border-box so the padding shrinks the
+           inner area rather than overflowing. */
+        box-sizing: border-box;
+        padding:
+          env(safe-area-inset-top, 0px)
+          env(safe-area-inset-right, 0px)
+          env(safe-area-inset-bottom, 0px)
+          env(safe-area-inset-left, 0px);
       }
 
       .game-header {
@@ -1049,6 +1058,19 @@
         }
       });
       window.addEventListener("resize", updateGameResolution);
+
+      // Orientation change on iOS reports stale viewport dimensions during the
+      // resize event (dimensions settle a frame or two later), which leaves the
+      // canvas fitted to the OLD orientation and looking zoomed. Re-apply after
+      // the viewport settles. visualViewport.resize is the most reliable signal.
+      window.addEventListener("orientationchange", function () {
+        updateGameResolution();
+        setTimeout(updateGameResolution, 100);
+        setTimeout(updateGameResolution, 300);
+      });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", updateGameResolution);
+      }
 
       // Initialize resolution on load
       updateGameResolution();
