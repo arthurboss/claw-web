@@ -31,48 +31,83 @@ function hideAssetUpload() {
 /**
  * Validate CLAW.REZ file selection and enable/disable upload button
  */
-function validateClawRezFile() {
+// CLAW.REZ is a Monolith resource archive. Known-valid releases carry one of
+// two header signatures near the start (confirmed against original discs):
+//   - "RezMgr Version 1"  (118,033,115 bytes)
+//   - "WinRez 2.4"         (119,321,886 bytes)
+// A commonly mis-uploaded file carries "WinRez LT 3.0" and is only ~168 bytes,
+// so the size gate rejects it — but we also reject the "LT" signature outright.
+const REZ_VALID_SIGNATURES = ['RezMgr Version 1', 'WinRez 2.4'];
+const REZ_MIN_SIZE = 100 * 1024 * 1024; // ~100MB; real files are ~113MB
+const REZ_MAX_SIZE = 130 * 1024 * 1024; // generous upper bound
+
+function rejectRezFile(message) {
+  const fileInput = document.getElementById('clawRezFile');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const drop = document.getElementById('fileDrop');
+  const name = document.getElementById('fileDropName');
+  if (fileInput) fileInput.value = '';
+  if (uploadBtn) uploadBtn.disabled = true;
+  if (drop) drop.classList.remove('has-file');
+  if (name) name.textContent = '';
+  alert(message);
+}
+
+function acceptRezFile(file) {
+  const uploadBtn = document.getElementById('uploadBtn');
+  const drop = document.getElementById('fileDrop');
+  const name = document.getElementById('fileDropName');
+  if (uploadBtn) uploadBtn.disabled = false;
+  if (drop) drop.classList.add('has-file');
+  if (name) name.textContent = file.name + ' ✓';
+}
+
+// Read the header and confirm it carries one of the known-valid signatures.
+async function hasRezSignature(file) {
+  try {
+    const head = await file.slice(0, 64).arrayBuffer();
+    const text = new TextDecoder('latin1').decode(new Uint8Array(head));
+    return REZ_VALID_SIGNATURES.some(function (sig) { return text.indexOf(sig) !== -1; });
+  } catch (e) {
+    console.error('Failed to read CLAW.REZ header:', e);
+    return false;
+  }
+}
+
+// Validate the selected file. Hard-rejects anything that is not a real
+// CLAW.REZ (wrong name, empty, wildly wrong size, or missing the RezMgr
+// signature) — no "continue anyway" escape hatch. Async: enables the upload
+// button only after the header check passes.
+async function validateClawRezFile() {
   const fileInput = document.getElementById('clawRezFile');
   const uploadBtn = document.getElementById('uploadBtn');
   const file = fileInput.files[0];
 
-  if (!file) {
-    uploadBtn.disabled = true;
-    return false;
-  }
+  if (uploadBtn) uploadBtn.disabled = true;
+  if (!file) return false;
 
-  // Validate file name (case-insensitive) - must be exactly CLAW.REZ
   if (!file.name.match(/^CLAW\.REZ$/i)) {
-    alert('Error: File must be named CLAW.REZ (case-insensitive)\n\nYou selected: ' + file.name);
-    fileInput.value = ''; // Clear the selection
-    uploadBtn.disabled = true;
+    rejectRezFile('That file is not CLAW.REZ.\n\nThe file must be named CLAW.REZ (from the original Captain Claw game).\n\nYou selected: ' + file.name);
     return false;
   }
 
-  // Validate file size (approximately 113MB)
-  const expectedSize = 113 * 1024 * 1024; // 113MB
-  const tolerance = 10 * 1024 * 1024; // 10MB tolerance
-  const sizeMB = (file.size / 1024 / 1024).toFixed(2);
-
-  if (Math.abs(file.size - expectedSize) > tolerance) {
-    const proceed = window.confirm(
-      `Warning: File size is ${sizeMB}MB. Expected ~113MB.\n\n` +
-      `This might not be the correct CLAW.REZ file.\n\n` +
-      `Continue anyway?`
-    );
-    if (!proceed) {
-      fileInput.value = ''; // Clear the selection
-      uploadBtn.disabled = true;
-      return false;
-    }
+  if (file.size === 0) {
+    rejectRezFile('That file is empty.\n\nPlease select the real CLAW.REZ from the original Captain Claw (1997) game.');
+    return false;
   }
 
-  // File is valid, enable upload button and reflect it in the drop zone
-  uploadBtn.disabled = false;
-  var drop = document.getElementById('fileDrop');
-  var name = document.getElementById('fileDropName');
-  if (drop) drop.classList.add('has-file');
-  if (name) name.textContent = file.name + ' ✓';
+  const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+  if (file.size < REZ_MIN_SIZE || file.size > REZ_MAX_SIZE) {
+    rejectRezFile('That does not look like CLAW.REZ.\n\nIts size is ' + sizeMB + 'MB but CLAW.REZ is about 113MB. Please select the correct file from the original Captain Claw (1997) game.');
+    return false;
+  }
+
+  if (!(await hasRezSignature(file))) {
+    rejectRezFile('That file is not a valid CLAW.REZ.\n\nIt is missing the expected archive header. Please select the correct CLAW.REZ from the original Captain Claw (1997) game.');
+    return false;
+  }
+
+  acceptRezFile(file);
   return true;
 }
 
