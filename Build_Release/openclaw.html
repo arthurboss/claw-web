@@ -435,6 +435,9 @@
 
       /* Floating install button for touch devices only */
       /* ---- Onboarding screens (install prompt + asset upload) ---- */
+      /* Onboarding screens. All sizing uses fluid units (clamp/min tied to
+         viewport height) so the card scales down on short/landscape screens
+         and never needs a breakpoint. */
       .onboard {
         position: fixed;
         inset: 0;
@@ -443,37 +446,42 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 22px;
-        padding: 24px;
+        padding: clamp(12px, 3vmin, 24px);
         background: radial-gradient(circle at 50% 30%, #1a2230 0%, #0a0d12 70%);
         color: #fff;
         text-align: center;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
       .onboard.visible { display: flex; }
       .onboard .onboard-card {
         width: 100%;
         max-width: 440px;
+        /* Never taller than the viewport; content shrinks via clamp() so this
+           is rarely hit, but it guarantees no clipping. */
+        max-height: calc(100dvh - clamp(24px, 6vmin, 48px));
+        overflow-y: auto;
         background: rgba(255,255,255,0.04);
         border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 16px;
-        padding: 28px 26px;
+        border-radius: clamp(12px, 2vmin, 16px);
+        padding: clamp(16px, 4vmin, 28px) clamp(16px, 3.5vmin, 26px);
         box-shadow: 0 12px 40px rgba(0,0,0,0.5);
       }
-      .onboard .onboard-emoji { font-size: 44px; line-height: 1; }
+      .onboard .onboard-emoji { font-size: clamp(30px, 7vmin, 44px); line-height: 1; }
       .onboard h2 {
-        margin: 14px 0 6px;
-        font-size: 1.5em;
+        margin: clamp(8px, 2vmin, 14px) 0 6px;
+        font-size: clamp(1.2em, 4vmin, 1.5em);
         color: #fff;
       }
       .onboard .onboard-badge {
         display: inline-block;
-        font-size: 11px;
+        font-size: clamp(10px, 2.4vmin, 11px);
         font-weight: 700;
         letter-spacing: 0.5px;
         text-transform: uppercase;
         padding: 3px 10px;
         border-radius: 999px;
-        margin-bottom: 12px;
+        margin-bottom: clamp(6px, 1.6vmin, 12px);
       }
       .onboard .onboard-badge.recommended {
         background: rgba(82, 196, 26, 0.18); color: #7ee06a;
@@ -484,24 +492,24 @@
         border: 1px solid rgba(255,255,255,0.2);
       }
       .onboard p {
-        margin: 8px 0;
-        font-size: 0.98em;
-        line-height: 1.55;
+        margin: clamp(5px, 1.4vmin, 8px) 0;
+        font-size: clamp(0.9em, 2.6vmin, 0.98em);
+        line-height: 1.5;
         color: #cdd3db;
       }
       .onboard .onboard-actions {
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        margin-top: 22px;
+        gap: clamp(8px, 1.6vmin, 10px);
+        margin-top: clamp(14px, 3vmin, 22px);
       }
       .onboard .btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        padding: 13px 20px;
-        font-size: 1em;
+        padding: clamp(10px, 2.4vmin, 13px) 20px;
+        font-size: clamp(0.92em, 2.6vmin, 1em);
         font-weight: 600;
         border: none;
         border-radius: 10px;
@@ -517,8 +525,8 @@
       }
       .onboard .btn-ghost:hover { background: rgba(255,255,255,0.06); color: #fff; }
       .onboard .onboard-legal {
-        margin-top: 20px;
-        font-size: 11px;
+        margin-top: clamp(12px, 2.4vmin, 20px);
+        font-size: clamp(10px, 2.2vmin, 11px);
         color: #6b7280;
         line-height: 1.5;
         max-width: 420px;
@@ -527,11 +535,13 @@
       /* Custom file picker for the upload screen */
       .file-drop {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 8px;
+        justify-content: center;
+        gap: clamp(8px, 2vmin, 14px);
         width: 100%;
-        padding: 22px 16px;
+        padding: clamp(14px, 3vmin, 20px) clamp(16px, 3vmin, 22px);
         margin: 4px 0 6px;
         border: 2px dashed rgba(226,59,46,0.5);
         border-radius: 12px;
@@ -542,13 +552,17 @@
       }
       .file-drop:hover { border-color: rgba(226,59,46,0.9); background: rgba(226,59,46,0.14); }
       .file-drop.has-file { border-style: solid; border-color: #52c41a; background: rgba(82,196,26,0.1); }
-      .file-drop .file-drop-icon { font-size: 30px; }
-      .file-drop .file-drop-label { font-size: 0.95em; }
-      .file-drop .file-drop-name { font-size: 0.82em; color: #7ee06a; word-break: break-all; }
+      .file-drop .file-drop-icon {
+        font-size: clamp(15px, 3vmin, 18px); line-height: 1; flex: 0 0 auto;
+        width: clamp(30px, 6vmin, 38px); height: clamp(30px, 6vmin, 38px);
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%; background: rgba(226,59,46,0.18); color: #ff7a6e;
+      }
+      .file-drop .file-drop-label { font-size: clamp(0.88em, 2.4vmin, 0.95em); }
+      .file-drop .file-drop-name { flex: 1 1 100%; text-align: center; font-size: clamp(0.78em, 2vmin, 0.82em); color: #7ee06a; word-break: break-all; }
       .file-drop input[type="file"] {
         position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;
       }
-
     </style>
   </head>
   <body>
@@ -584,7 +598,7 @@
 
         <div id="uploadArea">
           <label class="file-drop" id="fileDrop" for="clawRezFile">
-            <span class="file-drop-icon">📁</span>
+            <span class="file-drop-icon">↑</span>
             <span class="file-drop-label">Choose or drop your CLAW.REZ file</span>
             <span class="file-drop-name" id="fileDropName"></span>
             <input type="file" id="clawRezFile" accept=".REZ,.rez" onchange="validateClawRezFile()" />
