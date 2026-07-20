@@ -1295,8 +1295,13 @@
         var desktopBtn = document.getElementById('pwa-install-control');
         var deferredPrompt = null;
 
+        // Evaluated once at load, before the game can invoke the Fullscreen
+        // API — so display-mode: fullscreen here means the app was LAUNCHED as
+        // an installed PWA (manifest uses display: fullscreen), not a tab that
+        // toggled fullscreen. Both fullscreen and standalone indicate installed.
         var isStandalone =
           window.matchMedia('(display-mode: standalone)').matches ||
+          window.matchMedia('(display-mode: fullscreen)').matches ||
           window.navigator.standalone === true;
 
         var ua = navigator.userAgent;
