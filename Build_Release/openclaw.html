@@ -700,6 +700,22 @@
         </div>
       </div>
     </section>
+
+    <!-- Load-failure recovery: shown if the WASM runtime aborts or the game
+         never starts (usually a wrong/corrupt CLAW.REZ that passed the size
+         check). Lets the user clear the stored file and re-upload. -->
+    <section id="loadError" class="onboard">
+      <div class="onboard-card">
+        <div class="onboard-emoji">⚠️</div>
+        <h2>Game failed to load</h2>
+        <p>This usually means the uploaded <strong>CLAW.REZ</strong> is not the
+           correct file from Captain Claw (1997), or it was corrupted.</p>
+        <div class="onboard-actions">
+          <button class="btn btn-primary" id="loadErrorClearBtn">Clear file &amp; re-upload</button>
+          <button class="btn btn-ghost" id="loadErrorReloadBtn">Reload</button>
+        </div>
+      </div>
+    </section>
     <div class="debug_panel" style="display: none">
       <div class="cheats">
         <div>
@@ -1081,6 +1097,12 @@
 
       // Emscripten structure
       var Module = {
+        // If the WASM runtime aborts (e.g. bad CLAW.REZ that passed the size
+        // check), surface the recovery overlay instead of a dead black screen.
+        onAbort: function (what) {
+          console.error('[Game] Aborted:', what);
+          if (window.showLoadError) window.showLoadError();
+        },
         // Canvas dimensions are dynamic based on fullscreen state
         // Default: 640x480 (4:3), Fullscreen: calculated from screen aspect ratio
         preRun: [
@@ -1092,6 +1114,7 @@
                 console.error('Failed to mount CLAW.REZ');
               }
             }
+            if (window.startLoadWatchdog) window.startLoadWatchdog();
 
             // Set initial canvas dimensions (may be overridden by fullscreen)
             var canvas = Module.canvas;
@@ -1105,6 +1128,7 @@
         ],
         postRun: [
           function () {
+            if (window.markGameRunning) window.markGameRunning();
             // Disable Emscripten's automatic canvas resizing
             if (typeof Browser !== 'undefined') {
               Browser.resizeCanvas = false;
@@ -1398,6 +1422,50 @@
           recommendation: recommendation(),
           trigger: trigger
         };
+      })();
+    </script>
+
+    <!-- Load-failure recovery controller -->
+    <script>
+      (function () {
+        var overlay = document.getElementById('loadError');
+        var shown = false;
+        var watchdog = null;
+
+        window.showLoadError = function () {
+          if (shown) return;
+          shown = true;
+          if (watchdog) { clearTimeout(watchdog); watchdog = null; }
+          if (overlay) overlay.classList.add('visible');
+        };
+
+        // Backstop: if the game hasn't reported a running frame within 20s of
+        // the module starting, assume it hung on a bad file and offer recovery.
+        window.startLoadWatchdog = function () {
+          if (watchdog || shown) return;
+          watchdog = setTimeout(function () {
+            if (!window.__openClawRunning) window.showLoadError();
+          }, 20000);
+        };
+        // The game sets this once it is actually rendering (postRun); if that
+        // never happens, the watchdog fires.
+        window.markGameRunning = function () {
+          window.__openClawRunning = true;
+          if (watchdog) { clearTimeout(watchdog); watchdog = null; }
+        };
+
+        var clearBtn = document.getElementById('loadErrorClearBtn');
+        var reloadBtn = document.getElementById('loadErrorReloadBtn');
+        if (clearBtn) clearBtn.addEventListener('click', function () {
+          if (typeof window.reuploadClawRez === 'function') {
+            window.reuploadClawRez();
+          } else {
+            location.reload();
+          }
+        });
+        if (reloadBtn) reloadBtn.addEventListener('click', function () {
+          location.reload();
+        });
       })();
     </script>
 
