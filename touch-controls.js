@@ -75,6 +75,11 @@
     Object.keys(heldKeys).forEach(function (code) {
       if (heldKeys[code]) releaseKey(code);
     });
+    // Safety net: clear any stuck visual highlight. A button's pointerup can be
+    // lost when its action triggers a fullscreen/resize transition (the pointer
+    // is retargeted mid-gesture), leaving .active stuck on e.g. the OK button.
+    var stuck = document.querySelectorAll('#touchControls .active');
+    for (var i = 0; i < stuck.length; i++) stuck[i].classList.remove('active');
   }
 
   function getGameState() {
@@ -128,8 +133,8 @@
       // Formula: clamp(min, preferred, max) where preferred scales from 320px to 1920px
       // 320px (phone portrait/landscape) → 1.0x, 820px (tablet portrait) → 1.32x, 1920px+ → 2.0x
       ":root{",
-      "  --tc-scale: clamp(1, (100vmin - 320px) / 1600px + 1, 2);",
-      "  --tc-corner-dist: calc(30px * var(--tc-scale));",
+      "  --tc-scale: clamp(0.72, (100vmin - 320px) / 1600px + 0.72, 2);",
+      "  --tc-corner-dist: calc(40px * var(--tc-scale));",
       "}",
       "",
       "#touchControls{position:fixed;inset:0;z-index:9000;pointer-events:none;",
@@ -146,8 +151,8 @@
       // FILL alpha kept low (~0.4) for transparency; borders are solid black.
       // Joystick base (bottom-left) — same score-system bands, kept subtler
       // (lower alpha) as it covers more play area.
-      "#tcJoyBase{position:absolute;left:var(--tc-corner-dist);bottom:var(--tc-corner-dist);width:calc(140px * var(--tc-scale));height:calc(140px * var(--tc-scale));",
-      "  border-radius:50%;border:2px solid #000;box-shadow:0 0 0 1px rgba(0,0,0,0.5);",
+      "#tcJoyBase{position:absolute;left:var(--tc-corner-dist);bottom:var(--tc-corner-dist);width:calc(180px * var(--tc-scale));height:calc(180px * var(--tc-scale));",
+      "  border-radius:50%;border:1px solid #000;box-shadow:0 0 0 1px rgba(0,0,0,0.5);",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
       "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
@@ -155,8 +160,8 @@
       "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
       "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
       "  pointer-events:auto;touch-action:none;}",
-      "#tcJoyThumb{position:absolute;left:50%;top:50%;width:calc(60px * var(--tc-scale));height:calc(60px * var(--tc-scale));",
-      "  margin:calc(-30px * var(--tc-scale)) 0 0 calc(-30px * var(--tc-scale));border-radius:50%;border:2px solid #000;",
+      "#tcJoyThumb{position:absolute;left:50%;top:50%;width:calc(77px * var(--tc-scale));height:calc(77px * var(--tc-scale));",
+      "  margin:calc(-38px * var(--tc-scale)) 0 0 calc(-38px * var(--tc-scale));border-radius:50%;border:1px solid #000;",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
       "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
@@ -164,10 +169,10 @@
       "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
       "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);}",
       // Action buttons (bottom-right cluster)
-      "#tcButtons{position:absolute;right:calc(24px * var(--tc-scale));bottom:calc(24px * var(--tc-scale));width:calc(180px * var(--tc-scale));height:calc(180px * var(--tc-scale));pointer-events:none;}",
+      "#tcButtons{position:absolute;right:var(--tc-corner-dist);bottom:var(--tc-corner-dist);width:calc(200px * var(--tc-scale));height:calc(200px * var(--tc-scale));pointer-events:none;}",
       // 10-band hard-stop gradient sampled from the score display (top->bottom),
       // slightly translucent so gameplay still reads through. Black border.
-      ".tcBtn{position:absolute;width:calc(60px * var(--tc-scale));height:calc(60px * var(--tc-scale));border-radius:50%;border:2px solid #000;",
+      ".tcBtn{position:absolute;width:calc(68px * var(--tc-scale));height:calc(68px * var(--tc-scale));border-radius:50%;border:1px solid #000;",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
       "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
@@ -187,13 +192,13 @@
       "    rgb(249,237,146) 80% 90%,rgb(239,216,112) 90% 100%);}",
       // Diamond layout: 4 buttons at N/E/S/W of the cluster, scaled proportionally.
       // Offsets scale with the button size to maintain spacing ratios.
-      "#tcFire{right:calc(6px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}",     // E (outer right)
-      "#tcJump{right:calc(60px * var(--tc-scale));bottom:calc(6px * var(--tc-scale));}",     // S (bottom)
-      "#tcWeapon{right:calc(60px * var(--tc-scale));bottom:calc(114px * var(--tc-scale));}", // N (top)
-      "#tcAttack{right:calc(114px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}", // W (inner left)
+      "#tcFire{right:calc(11px * var(--tc-scale));bottom:calc(66px * var(--tc-scale));}",     // E (outer right)
+      "#tcJump{right:calc(66px * var(--tc-scale));bottom:calc(11px * var(--tc-scale));}",     // S (bottom)
+      "#tcWeapon{right:calc(66px * var(--tc-scale));bottom:calc(121px * var(--tc-scale));}", // N (top)
+      "#tcAttack{right:calc(121px * var(--tc-scale));bottom:calc(66px * var(--tc-scale));}", // W (inner left)
       // Pause (top-center)
       "#tcPause{position:absolute;left:50%;top:calc(6px * var(--tc-scale));transform:translateX(-50%);",
-      "  width:calc(42px * var(--tc-scale));height:calc(30px * var(--tc-scale));border-radius:4px;border:2px solid #000;",
+      "  width:calc(42px * var(--tc-scale));height:calc(30px * var(--tc-scale));border-radius:4px;border:1px solid #000;",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.8) 0 10%,rgba(248,232,110,0.8) 10% 20%,",
       "    rgba(253,253,183,0.8) 20% 30%,rgba(251,244,214,0.8) 30% 40%,",
@@ -211,8 +216,8 @@
       "    rgb(249,237,146) 80% 90%,rgb(239,216,112) 90% 100%);}",
       // Menu buttons (Select / Back) — reuse the JUMP / ATK slots so switching
       // modes doesn't shift button positions. Scaled proportionally.
-      "#tcBack{right:calc(6px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}",     // E (same slot as Fire)
-      "#tcSelect{right:calc(60px * var(--tc-scale));bottom:calc(6px * var(--tc-scale));}",   // S (same slot as Jump)
+      "#tcBack{right:calc(12px * var(--tc-scale));bottom:calc(66px * var(--tc-scale));}",     // E (same slot as Fire)
+      "#tcSelect{right:calc(66px * var(--tc-scale));bottom:calc(12px * var(--tc-scale));}",   // S (same slot as Jump)
       // Mode-based visibility: gameplay shows action buttons + pause; menu shows
       // Select/Back only. Movement control (joystick/d-pad) shows in both.
       "#touchControls.mode-gameplay #tcSelect,#touchControls.mode-gameplay #tcBack{display:none;}",
@@ -221,9 +226,9 @@
       "#touchControls.mode-menu #tcPause{display:none;}",
       // D-pad — plus layout, 4 directions only (no diagonals), same footprint
       // as the joystick base. Button size and layout scaled proportionally.
-      "#tcDpad{position:absolute;left:var(--tc-corner-dist);bottom:var(--tc-corner-dist);width:calc(140px * var(--tc-scale));height:calc(140px * var(--tc-scale));",
+      "#tcDpad{position:absolute;left:var(--tc-corner-dist);bottom:var(--tc-corner-dist);width:calc(200px * var(--tc-scale));height:calc(200px * var(--tc-scale));",
       "  pointer-events:none;}",
-      ".tcDbtn{position:absolute;width:calc(46px * var(--tc-scale));height:calc(46px * var(--tc-scale));border-radius:8px;border:2px solid #000;",
+      ".tcDbtn{position:absolute;width:calc(60px * var(--tc-scale));height:calc(60px * var(--tc-scale));border-radius:8px;border:1px solid #000;",
       "  background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
       "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
@@ -234,27 +239,41 @@
       "  text-shadow:calc(-1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(-1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;",
       "  touch-action:none;padding:0;}",
-      ".tcDbtn svg{width:24px;height:24px;flex-shrink:0;}",
+      ".tcDbtn svg{width:calc(26px * var(--tc-scale));height:calc(26px * var(--tc-scale));flex-shrink:0;}",
       ".tcDbtn.active{background:linear-gradient(to bottom,",
       "    rgb(252,239,82) 0 10%,rgb(248,232,110) 10% 20%,",
       "    rgb(253,253,183) 20% 30%,rgb(251,244,214) 30% 40%,",
       "    rgb(172,120,53) 40% 50%,rgb(208,170,62) 50% 60%,",
       "    rgb(242,204,77) 60% 70%,rgb(244,219,99) 70% 80%,",
       "    rgb(249,237,146) 80% 90%,rgb(239,216,112) 90% 100%);}",
-      "#tcDup{left:calc(47px * var(--tc-scale));top:0;}",
-      "#tcDdown{left:calc(47px * var(--tc-scale));top:calc(94px * var(--tc-scale));}",
-      "#tcDleft{left:0;top:calc(47px * var(--tc-scale));}",
-      "#tcDright{left:calc(94px * var(--tc-scale));top:calc(47px * var(--tc-scale));}",
+      "#tcDup{left:calc(70px * var(--tc-scale));top:calc(8px * var(--tc-scale));}",
+      "#tcDdown{left:calc(70px * var(--tc-scale));top:calc(132px * var(--tc-scale));}",
+      "#tcDleft{left:calc(8px * var(--tc-scale));top:calc(70px * var(--tc-scale));}",
+      "#tcDright{left:calc(132px * var(--tc-scale));top:calc(70px * var(--tc-scale));}",
       // Movement-mode toggle — small button above the movement control, scaled.
-      "#tcMoveToggle{position:absolute;left:var(--tc-corner-dist);bottom:calc(178px * var(--tc-scale));width:calc(48px * var(--tc-scale));height:calc(48px * var(--tc-scale));",
-      "  border-radius:50%;border:2px solid #000;",
+      "#tcMoveToggle{position:absolute;left:var(--tc-corner-dist);bottom:calc(var(--tc-corner-dist) + 190px * var(--tc-scale));width:calc(42px * var(--tc-scale));height:calc(42px * var(--tc-scale));opacity:0.85;",
+      "  border-radius:50%;border:1px solid #000;",
       "  background:linear-gradient(to bottom,",
-      "    rgba(252,239,82,0.25) 0 10%,rgba(248,232,110,0.25) 10% 20%,",
-      "    rgba(253,253,183,0.25) 20% 30%,rgba(251,244,214,0.25) 30% 40%,",
-      "    rgba(172,120,53,0.25) 40% 50%,rgba(208,170,62,0.25) 50% 60%,",
-      "    rgba(242,204,77,0.25) 60% 70%,rgba(244,219,99,0.25) 70% 80%,",
-      "    rgba(249,237,146,0.25) 80% 90%,rgba(239,216,112,0.25) 90% 100%);",
+      "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
+      "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
+      "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
+      "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
+      "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
       "  color:#fff;font:bold calc(10px * var(--tc-scale)) sans-serif;",
+      "  text-shadow:calc(-1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(-1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000;",
+      "  display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;}",
+      // Install button — mirrors the movement toggle on the right side, same
+      // gold-band style and bottom distance. Hidden once the app is installed
+      // (JS removes it) or on desktop.
+      "#tcInstall{position:absolute;right:var(--tc-corner-dist);bottom:calc(var(--tc-corner-dist) + 190px * var(--tc-scale));width:calc(42px * var(--tc-scale));height:calc(42px * var(--tc-scale));opacity:0.85;",
+      "  border-radius:50%;border:1px solid #000;",
+      "  background:linear-gradient(to bottom,",
+      "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
+      "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
+      "    rgba(172,120,53,0.4) 40% 50%,rgba(208,170,62,0.4) 50% 60%,",
+      "    rgba(242,204,77,0.4) 60% 70%,rgba(244,219,99,0.4) 70% 80%,",
+      "    rgba(249,237,146,0.4) 80% 90%,rgba(239,216,112,0.4) 90% 100%);",
+      "  color:#fff;font:bold calc(18px * var(--tc-scale)) sans-serif;",
       "  text-shadow:calc(-1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(-1px * var(--tc-scale)) 0 #000,calc(-1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000,calc(1px * var(--tc-scale)) calc(1px * var(--tc-scale)) 0 #000;",
       "  display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;}",
       // Show joystick OR d-pad based on the movement mode class on the root.
@@ -264,9 +283,9 @@
       // ---- Portrait placement -------------------------------------------------
       // Adjust button spacing slightly when in portrait orientation
       "@media (orientation: portrait) {",
-      "  #tcJoyBase, #tcDpad{left:calc(15px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}",
-      "  #tcButtons{right:calc(15px * var(--tc-scale));bottom:calc(60px * var(--tc-scale));}",
-      "  #tcMoveToggle{bottom:calc(208px * var(--tc-scale));}",
+      "  #tcJoyBase, #tcDpad{left:var(--tc-corner-dist);bottom:calc(72px * var(--tc-scale));}",
+      "  #tcButtons{right:var(--tc-corner-dist);bottom:calc(72px * var(--tc-scale));}",
+      "  #tcMoveToggle, #tcInstall{bottom:calc(262px * var(--tc-scale));}",
       "  #tcPause{background:linear-gradient(to bottom,",
       "    rgba(252,239,82,0.4) 0 10%,rgba(248,232,110,0.4) 10% 20%,",
       "    rgba(253,253,183,0.4) 20% 30%,rgba(251,244,214,0.4) 30% 40%,",
@@ -317,6 +336,7 @@
       '  <div class="tcDbtn" id="tcDright"></div>' +
       "</div>" +
       '<div id="tcMoveToggle">STICK</div>' +
+      '<div id="tcInstall">\u2b07</div>' +
       '<div id="tcButtons">' +
       '  <div class="tcBtn" id="tcJump">JUMP</div>' +
       '  <div class="tcBtn" id="tcAttack">ATK</div>' +
@@ -445,6 +465,8 @@
     }
     el.addEventListener("pointerup", up);
     el.addEventListener("pointercancel", up);
+    el.addEventListener("pointerleave", up);
+    el.addEventListener("lostpointercapture", up);
   }
 
   // Tap-style button: quick down+up (attack, weapon, pause, select, back).
@@ -463,6 +485,8 @@
     }
     el.addEventListener("pointerup", up);
     el.addEventListener("pointercancel", up);
+    el.addEventListener("pointerleave", up);
+    el.addEventListener("lostpointercapture", up);
   }
 
   // ---- Visibility -----------------------------------------------------------
@@ -567,6 +591,26 @@
     });
   }
 
+  // ---- Install button -------------------------------------------------------
+  // Delegates to the shared install API defined in openclaw.html. Removed from
+  // the DOM if the app is already installed or no install path exists.
+  function setupInstallButton(el) {
+    if (!el) return;
+    var api = window.OpenClawInstall;
+    if (!api || api.isInstalled) {
+      el.remove();
+      return;
+    }
+    el.addEventListener("pointerdown", function (e) {
+      markTouchInput(e);
+      vibrate(HAPTIC.light);
+      e.preventDefault();
+      if (typeof api.trigger === "function") api.trigger();
+    });
+    // Hide it for good once the app gets installed mid-session.
+    window.addEventListener("appinstalled", function () { el.remove(); });
+  }
+
   // ---- Init -----------------------------------------------------------------
 
   function init() {
@@ -583,6 +627,7 @@
     setupHoldButton(document.getElementById("tcDleft"), KEY.left, HAPTIC.light);
     setupHoldButton(document.getElementById("tcDright"), KEY.right, HAPTIC.light);
     setupMoveToggle(root, document.getElementById("tcMoveToggle"));
+    setupInstallButton(document.getElementById("tcInstall"));
     // Gameplay buttons
     setupHoldButton(document.getElementById("tcJump"), KEY.jump, HAPTIC.jump);
     setupHoldButton(document.getElementById("tcFire"), KEY.fire, HAPTIC.attack);

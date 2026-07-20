@@ -67,8 +67,12 @@ function validateClawRezFile() {
     }
   }
 
-  // File is valid, enable upload button
+  // File is valid, enable upload button and reflect it in the drop zone
   uploadBtn.disabled = false;
+  var drop = document.getElementById('fileDrop');
+  var name = document.getElementById('fileDropName');
+  if (drop) drop.classList.add('has-file');
+  if (name) name.textContent = file.name + ' ✓';
   return true;
 }
 
