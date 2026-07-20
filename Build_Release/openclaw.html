@@ -1483,22 +1483,68 @@
       })();
     </script>
 
-    <!-- Service Worker: enables PWA installability and offline shell caching -->
+    <!-- Service Worker: installability + offline shell, with self-heal safety
+         net so a bad deploy can never permanently strand a client (important
+         on mobile, where clearing a stuck SW by hand is painful). -->
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function () {
-          navigator.serviceWorker
-            .register('./sw.js', { scope: './' })
-            .then(function (reg) {
-              // Check for updates periodically (once per day)
-              setInterval(function () {
-                reg.update();
-              }, 24 * 60 * 60 * 1000);
-            })
-            .catch(function (err) {
-              console.warn('[SW] Registration failed:', err);
+        (function () {
+          // --- Remote kill-switch -------------------------------------------
+          // sw-control.json carries an "unregister" id. When that id changes,
+          // every client unregisters its SW + clears caches exactly once (we
+          // remember the last-handled id), then reloads clean. Page-side on
+          // purpose: it works even if the installed SW is broken. Fetched
+          // network-fresh (no-store) and bypassed by the SW.
+          function checkKillSwitch() {
+            return fetch('./sw-control.json', { cache: 'no-store' })
+              .then(function (r) { return r.ok ? r.json() : null; })
+              .then(function (ctl) {
+                if (!ctl) return false;
+                var id = String(ctl.unregister || '');
+                if (!id) return false;
+                var seen = localStorage.getItem('sw_unregister_id');
+                if (id === seen) return false; // already handled this signal
+                localStorage.setItem('sw_unregister_id', id);
+                console.warn('[SW] Kill-switch tripped (' + id + ') — clearing.');
+                return navigator.serviceWorker.getRegistrations()
+                  .then(function (regs) {
+                    return Promise.all(regs.map(function (r) { return r.unregister(); }));
+                  })
+                  .then(function () {
+                    return (self.caches ? caches.keys() : Promise.resolve([]));
+                  })
+                  .then(function (keys) {
+                    return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                  })
+                  .then(function () { location.reload(); return true; });
+              })
+              .catch(function () { return false; });
+          }
+
+          // --- Auto-reload when a new SW takes control ----------------------
+          // Guarded so it fires at most once (no reload loop).
+          var refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (refreshing) return;
+            refreshing = true;
+            location.reload();
+          });
+
+          window.addEventListener('load', function () {
+            checkKillSwitch().then(function (tripped) {
+              if (tripped) return; // reloading; skip registration this pass
+              navigator.serviceWorker
+                .register('./sw.js', { scope: './' })
+                .then(function (reg) {
+                  // Periodic update check (once per day) + on focus.
+                  setInterval(function () { reg.update(); }, 24 * 60 * 60 * 1000);
+                })
+                .catch(function (err) {
+                  console.warn('[SW] Registration failed:', err);
+                });
             });
-        });
+          });
+        })();
       }
     </script>
   </body>
