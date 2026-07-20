@@ -1331,6 +1331,11 @@
         var ua = navigator.userAgent;
         var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
         var isAndroid = /Android/.test(ua);
+        // Samsung Internet mints WebAPKs with an old targetSdkVersion, so
+        // Android flags installs from it as "unsafe / built for an older
+        // Android version". Chrome's WebAPK does not trip this, so we steer
+        // Samsung users to Chrome. Not fixable site-side (see PWA notes).
+        var isSamsungBrowser = /SamsungBrowser/.test(ua);
         var isSafari =
           /Safari/.test(ua) && !/Chrome|Chromium|Edg|CriOS|FxiOS|OPR/.test(ua);
         var isIOSSafari = isIOS && isSafari;
@@ -1343,6 +1348,14 @@
             return {
               level: 'recommended',
               reason: 'On iPhone/iPad, installing is the only way to play truly fullscreen and launch OpenClaw straight from your home screen.'
+            };
+          }
+          if (isSamsungBrowser) {
+            return {
+              level: 'recommended',
+              reason: 'For the best install on Android, open this page in Chrome. '
+                + 'Samsung Internet can install it too, but Android may warn '
+                + 'that the app is unsafe — that warning does not appear with Chrome.'
             };
           }
           if (isAndroid) {
@@ -1417,6 +1430,7 @@
             isIOSSafari: isIOSSafari,
             isMacSafari: isMacSafari,
             isAndroid: isAndroid,
+            isSamsungBrowser: isSamsungBrowser,
             isMobile: isIOS || isAndroid
           },
           recommendation: recommendation(),
