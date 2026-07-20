@@ -336,7 +336,7 @@
       '  <div class="tcDbtn" id="tcDright"></div>' +
       "</div>" +
       '<div id="tcMoveToggle">STICK</div>' +
-      '<div id="tcInstall">\u2b07</div>' +
+      '<div id="tcInstall"><svg class=\"icon-download\" viewBox=\"0 0 24 24\" width=\"1em\" height=\"1em\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3v12\"/><path d=\"m7 10 5 5 5-5\"/><path d=\"M5 21h14\"/></svg></div>' +
       '<div id="tcButtons">' +
       '  <div class="tcBtn" id="tcJump">JUMP</div>' +
       '  <div class="tcBtn" id="tcAttack">ATK</div>' +
