@@ -89,6 +89,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        /* Keep the canvas clear of the notch/Dynamic Island/home indicator in
+           both orientations. box-sizing:border-box so the padding shrinks the
+           inner area rather than overflowing. */
+        box-sizing: border-box;
+        padding:
+          env(safe-area-inset-top, 0px)
+          env(safe-area-inset-right, 0px)
+          env(safe-area-inset-bottom, 0px)
+          env(safe-area-inset-left, 0px);
       }
 
       .game-header {
@@ -327,7 +336,7 @@
       #assetUpload p { text-align: left; }
 
       #uploadArea {
-        margin-top: 18px;
+        margin-top: 8px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -560,6 +569,7 @@
       }
       .file-drop .file-drop-label { font-size: clamp(0.88em, 2.4vmin, 0.95em); }
       .file-drop .file-drop-name { flex: 1 1 100%; text-align: center; font-size: clamp(0.78em, 2vmin, 0.82em); color: #7ee06a; word-break: break-all; }
+      .file-drop .file-drop-name:empty { display: none; }
       .file-drop input[type="file"] {
         position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;
       }
@@ -1049,6 +1059,19 @@
         }
       });
       window.addEventListener("resize", updateGameResolution);
+
+      // Orientation change on iOS reports stale viewport dimensions during the
+      // resize event (dimensions settle a frame or two later), which leaves the
+      // canvas fitted to the OLD orientation and looking zoomed. Re-apply after
+      // the viewport settles. visualViewport.resize is the most reliable signal.
+      window.addEventListener("orientationchange", function () {
+        updateGameResolution();
+        setTimeout(updateGameResolution, 100);
+        setTimeout(updateGameResolution, 300);
+      });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", updateGameResolution);
+      }
 
       // Initialize resolution on load
       updateGameResolution();

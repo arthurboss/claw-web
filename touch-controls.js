@@ -137,7 +137,7 @@
       "  --tc-corner-dist: calc(40px * var(--tc-scale));",
       "}",
       "",
-      "#touchControls{position:fixed;inset:0;z-index:9000;pointer-events:none;",
+      "#touchControls{position:fixed;z-index:9000;pointer-events:none;","  top:env(safe-area-inset-top,0px);right:env(safe-area-inset-right,0px);","  bottom:env(safe-area-inset-bottom,0px);left:env(safe-area-inset-left,0px);",
       "  display:none;touch-action:none;user-select:none;-webkit-user-select:none;",
       "  -webkit-touch-callout:none;}",
       "#touchControls.visible{display:block;}",
