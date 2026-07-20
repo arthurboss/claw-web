@@ -1,12 +1,11 @@
 // PWA shell cache — includes all app bootstrap assets
 // Vite will serve these with consistent, deterministic paths
-const CACHE_NAME = "openclaw-v2";
+const CACHE_NAME = "openclaw-v3";
 
 // Essential assets needed to boot the game
 // These are served by Vite and have stable, hashed filenames in production
 const SHELL_ASSETS = [
   "./openclaw.html",
-  "./openclaw.js",
   "./game-init.js",
   "./asset-storage.js",
   "./asset-loader.js",
