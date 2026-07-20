@@ -2118,13 +2118,26 @@ void ScreenElementMenuItem::ReEvaluateVisibilityCondition()
     else if (m_VisibilityConditionType == "FullscreenOn")
     {
 #ifdef __EMSCRIPTEN__
-        m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 1 : 0; });
+        // Hide fullscreen controls on iOS: the browser Fullscreen API is
+        // unsupported there and toggling it crashes the game. Both the ON and
+        // OFF variants stay hidden so no fullscreen button shows on iOS.
+        m_bVisible = (bool)EM_ASM_INT({
+            var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+            if (iOS) return 0;
+            return document.fullscreenElement ? 1 : 0;
+        });
 #endif
     }
     else if (m_VisibilityConditionType == "FullscreenOff")
     {
 #ifdef __EMSCRIPTEN__
-        m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 0 : 1; });
+        m_bVisible = (bool)EM_ASM_INT({
+            var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+            if (iOS) return 0;
+            return document.fullscreenElement ? 0 : 1;
+        });
 #else
         m_bVisible = true;
 #endif
