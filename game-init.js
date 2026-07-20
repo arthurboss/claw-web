@@ -46,21 +46,16 @@ function prewarmAudioContext() {
 }
 
 function waitForStartClick() {
-  // Reveals the in-game controls (.bottom-controls, touch install button),
-  // which stay hidden until the start overlay is gone so their clicks can't
-  // fall through to the overlay and start the game prematurely.
-  const markStarted = () => document.body.classList.add('game-started');
   return new Promise((resolve) => {
     if (window.audioContext && window.audioContext.state === 'running') {
-      markStarted(); resolve(); return;
+      resolve(); return;
     }
     const overlay = document.getElementById('startOverlay');
-    if (!overlay) { markStarted(); resolve(); return; }
+    if (!overlay) { resolve(); return; }
     overlay.style.display = 'flex';
     window._startOverlayClick = function() {
       prewarmAudioContext();
       overlay.style.display = 'none';
-      markStarted();
       window._startOverlayClick = null;
       resolve();
     };
@@ -77,53 +72,10 @@ async function checkClawRezCached() {
   }
 }
 
-// Show the install onboarding screen once, before first-run upload. Resolves
-// when the user chooses Install or Not now (or immediately if not applicable).
-function runInstallOnboarding() {
-  return new Promise((resolve) => {
-    var api = window.OpenClawInstall;
-    var screen = document.getElementById('installScreen');
-    var SEEN_KEY = 'pwa_install_onboarded';
-
-    // Skip if: no API, already installed, or the user already saw this screen.
-    if (!api || api.isInstalled || !screen || localStorage.getItem(SEEN_KEY)) {
-      resolve(); return;
-    }
-
-    var badge = document.getElementById('installBadge');
-    var reason = document.getElementById('installReason');
-    var yesBtn = document.getElementById('installYesBtn');
-    var skipBtn = document.getElementById('installSkipBtn');
-    var rec = api.recommendation || { level: 'optional', reason: '' };
-
-    if (badge) {
-      badge.textContent = rec.level === 'recommended' ? 'Recommended' : 'Optional';
-      badge.classList.add(rec.level === 'recommended' ? 'recommended' : 'optional');
-    }
-    if (reason) reason.textContent = rec.reason;
-
-    function finish() {
-      localStorage.setItem(SEEN_KEY, '1');
-      screen.classList.remove('visible');
-      resolve();
-    }
-
-    if (yesBtn) yesBtn.addEventListener('click', function () {
-      Promise.resolve(api.trigger()).then(finish);
-    });
-    if (skipBtn) skipBtn.addEventListener('click', finish);
-
-    screen.classList.add('visible');
-  });
-}
-
 // Initialize game (called from inline script)
 window.initGameWhenReady = async function() {
 
   try {
-    // Offer install before first-run upload (once, when applicable).
-    await runInstallOnboarding();
-
     const hasCached = await checkClawRezCached();
 
     let success;

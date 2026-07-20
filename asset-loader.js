@@ -67,12 +67,8 @@ function validateClawRezFile() {
     }
   }
 
-  // File is valid, enable upload button and reflect it in the drop zone
+  // File is valid, enable upload button
   uploadBtn.disabled = false;
-  var drop = document.getElementById('fileDrop');
-  var name = document.getElementById('fileDropName');
-  if (drop) drop.classList.add('has-file');
-  if (name) name.textContent = file.name + ' ✓';
   return true;
 }
 
@@ -239,16 +235,7 @@ async function uploadClawRez() {
       }
     }
 
-    // IndexedDB is disabled or quota-limited in some browsers' private/
-    // incognito modes, which is the most common cause of storage failures.
-    var failMsg = `Upload failed: ${error.message}`;
-    var errName = (error && error.name) || '';
-    if (/Quota|Security|InvalidState|Unknown/i.test(errName) ||
-        /quota|storage|indexeddb|database/i.test((error && error.message) || '')) {
-      failMsg += '\n\nTip: private / incognito browsing often blocks local '
-               + 'storage. Try again in a normal browser window.';
-    }
-    alert(failMsg);
+    alert(`Upload failed: ${error.message}`);
 
     // Reset UI
     progressDiv.style.display = 'none';
