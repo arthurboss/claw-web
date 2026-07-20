@@ -1468,6 +1468,26 @@
           if (watchdog) { clearTimeout(watchdog); watchdog = null; }
         };
 
+        // Catch fatal WASM boot failures that are thrown rather than routed
+        // through Module.onAbort — e.g. a corrupt/empty CLAW.REZ makes the
+        // runtime throw "ASM_CONSTS[...] is not a function" or a "null
+        // function" RuntimeError. We only treat these as load failures BEFORE
+        // the game has reported running, and only when the message matches the
+        // Emscripten/WASM boot-failure signatures, so we never hijack benign
+        // runtime errors (e.g. Vite's HMR websocket) or post-boot glitches.
+        var BOOT_FAIL = /ASM_CONSTS|null function|RuntimeError|abort\(|table index is out of bounds|memory access out of bounds/i;
+        function maybeBootFailure(msg) {
+          if (window.__openClawRunning || shown) return;
+          if (msg && BOOT_FAIL.test(String(msg))) window.showLoadError();
+        }
+        window.addEventListener('error', function (e) {
+          maybeBootFailure((e && e.message) || (e && e.error && e.error.message));
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          var r = e && e.reason;
+          maybeBootFailure(r && (r.message || r));
+        });
+
         var clearBtn = document.getElementById('loadErrorClearBtn');
         var reloadBtn = document.getElementById('loadErrorReloadBtn');
         if (clearBtn) clearBtn.addEventListener('click', function () {
