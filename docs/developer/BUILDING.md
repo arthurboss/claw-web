@@ -7,7 +7,7 @@ This guide covers building the WebAssembly version of OpenClaw from source.
 ### Required Tools
 
 - **Emscripten SDK** - Compiles C++ to WebAssembly
-- **CMake** 4.10+
+- **CMake** 4.3.2+
 - **Python 3** - For local testing server
 - **Git** - For cloning dependencies
 

@@ -1,6 +1,22 @@
 // PWA shell cache — includes all app bootstrap assets
 // Vite will serve these with consistent, deterministic paths
-const CACHE_NAME = "openclaw-v3";
+
+// Self-scope the cache name to this SW's own directory so multiple
+// deployments sharing one origin (e.g. production at /WASM-OpenClaw/ and
+// staging at /WASM-OpenClaw/staging/) get DISTINCT caches. Without this they
+// share the origin's Cache Storage, and a version bump in one environment
+// would run activate -> caches.keys() -> delete the OTHER environment's cache.
+// registration.scope is the source of truth; fall back to the SW's own path.
+const CACHE_VERSION = "v3";
+const SCOPE_PATH = (function () {
+  try {
+    return new URL(self.registration.scope).pathname;
+  } catch (e) {
+    return self.location.pathname.replace(/[^/]*$/, ""); // strip "sw.js"
+  }
+})();
+const CACHE_PREFIX = "openclaw::" + SCOPE_PATH + "::";
+const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 
 // Essential assets needed to boot the game
 // These are served by Vite and have stable, hashed filenames in production
@@ -15,6 +31,8 @@ const SHELL_ASSETS = [
   "./save-storage.js",
   "./gamepad-bridge.js",
   "./keyboard-capture.js",
+  "./sw-register.js",
+  "./env-marker.js",
   "./site.webmanifest",
   "./android-chrome-192x192.png",
   "./android-chrome-512x512.png",
@@ -40,7 +58,13 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// On activate: remove old caches if CACHE_NAME changes
+// On activate: prune only THIS scope's stale caches. We must never delete a
+// sibling deployment's cache, so we only touch keys under our own CACHE_PREFIX
+// (plus the legacy pre-scoping "openclaw-*" names). Legacy caches are only
+// reclaimed by non-staging scopes: production created them before scoping
+// existed, and staging never ran the old scheme, so staging must leave them
+// for production to clean up.
+var IS_STAGING = /\/staging\//.test(SCOPE_PATH);
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
@@ -48,7 +72,12 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((k) => k !== CACHE_NAME)
+            .filter((k) => {
+              if (k === CACHE_NAME) return false; // keep current
+              var ours = k.indexOf(CACHE_PREFIX) === 0;
+              var legacy = /^openclaw-/.test(k) && !IS_STAGING;
+              return ours || legacy;
+            })
             .map((k) => {
               console.log("[SW] Deleting old cache:", k);
               return caches.delete(k);
