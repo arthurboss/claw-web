@@ -26,9 +26,9 @@
         // unscoped clear would unregister production's SW and delete its
         // caches when only staging's switch was flipped. We match our own
         // scope path (the page's directory) for registrations and the sw.js
-        // cache-name convention ("captain-claw-web::<scope>::") for caches.
+        // cache-name convention ("claw-web::<scope>::") for caches.
         var scopeDir = location.pathname.replace(/[^/]*$/, '');
-        var cachePrefix = 'captain-claw-web::' + scopeDir + '::';
+        var cachePrefix = 'claw-web::' + scopeDir + '::';
         return navigator.serviceWorker.getRegistrations()
           .then(function (regs) {
             return Promise.all(regs
