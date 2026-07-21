@@ -100,6 +100,43 @@ The dev server starts on `http://localhost:5173/`
 - No certificate warnings
 
 
+## Deployment (GitHub Pages)
+
+GitHub Actions is unavailable on this account (billing), so deploys are manual via the committed scripts in `scripts/`. Both environments live on the single `gh-pages` branch — **production at the root**, **staging under `/staging/`** — and neither script can clobber the other (`deploy-prod.sh` excludes `staging/` from its `--delete`; `deploy-staging.sh` writes only `/staging/`).
+
+- **Production:** <https://arthurboss.github.io/WASM-OpenClaw/>
+- **Staging:** <https://arthurboss.github.io/WASM-OpenClaw/staging/>
+
+```bash
+# Deploy current Build_Release/ to production (root)
+./scripts/deploy-prod.sh ["commit msg"]
+
+# Deploy current Build_Release/ to staging (/staging/ only)
+./scripts/deploy-staging.sh ["commit msg"]
+```
+
+Both scripts verify the WASM artifact set is fresh (guarding the `ASM_CONSTS` boot crash from a stale/mismatched loader+wasm pair) and clean up their temp worktree on exit.
+
+### Default workflow: deploy every branch to staging
+
+**When working on a new branch, deploy it to staging by default** so it can be tested on a real device (especially mobile) before merging. Staging never touches production, so this is safe. The loop:
+
+1. Build on the VM; make changes in `Build_Release/`.
+2. `./scripts/deploy-staging.sh` → test at the staging URL.
+3. Once verified, merge the PR, then `./scripts/deploy-prod.sh` to promote to production.
+
+Skip staging only for deploy-only/non-visual changes, or when the change cannot be exercised in the browser.
+
+### Environment isolation
+
+Production and staging share one origin (`arthurboss.github.io`), so origin-scoped web storage is isolated deliberately:
+
+- **Service worker cache** is named per deployment scope (`openclaw::<scope>::<version>`), so a version bump in one environment cannot delete the other's cache. The kill-switch teardown is likewise scoped to its own environment.
+- **`localStorage`** is namespaced by scope: production keeps bare keys (preserving existing users' saves); `/staging/` gets a `staging:` prefix. This covers game saves, the install-onboarding flag, touch-mode, and the SW kill-switch id. Implemented as a `Storage.prototype` shim inlined in `<head>` (must run before the save glue baked into `openclaw.js`), so it stays inline while `sw-register.js`/`env-marker.js` are external.
+- **`IndexedDB`** (the uploaded `CLAW.REZ` and assets) is intentionally **shared**, so staging does not require re-uploading the game file.
+- A gold **STAGING** badge marks non-production builds so they can't be confused with prod.
+
+
 ## Code Architecture
 
 ### Directory Structure
