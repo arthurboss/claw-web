@@ -5,7 +5,7 @@
 (function () {
   var m = location.pathname.match(/\/staging\//);
   var env = m ? 'staging' : 'production';
-  console.info('[env] OpenClaw environment: ' + env + ' (' + location.pathname + ')');
+  console.info('[env] Captain Claw Web environment: ' + env + ' (' + location.pathname + ')');
   if (env === 'production') return;
   window.addEventListener('load', function () {
     var b = document.createElement('div');

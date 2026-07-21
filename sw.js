@@ -2,8 +2,8 @@
 // Vite will serve these with consistent, deterministic paths
 
 // Self-scope the cache name to this SW's own directory so multiple
-// deployments sharing one origin (e.g. production at /WASM-OpenClaw/ and
-// staging at /WASM-OpenClaw/staging/) get DISTINCT caches. Without this they
+// deployments sharing one origin (e.g. production at /captain-claw-web/ and
+// staging at /captain-claw-web/staging/) get DISTINCT caches. Without this they
 // share the origin's Cache Storage, and a version bump in one environment
 // would run activate -> caches.keys() -> delete the OTHER environment's cache.
 // registration.scope is the source of truth; fall back to the SW's own path.
@@ -15,13 +15,13 @@ const SCOPE_PATH = (function () {
     return self.location.pathname.replace(/[^/]*$/, ""); // strip "sw.js"
   }
 })();
-const CACHE_PREFIX = "openclaw::" + SCOPE_PATH + "::";
+const CACHE_PREFIX = "captain-claw-web::" + SCOPE_PATH + "::";
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 
 // Essential assets needed to boot the game
 // These are served by Vite and have stable, hashed filenames in production
 const SHELL_ASSETS = [
-  "./openclaw.html",
+  "./captain-claw-web.html",
   "./game-init.js",
   "./asset-storage.js",
   "./asset-loader.js",
@@ -60,7 +60,7 @@ self.addEventListener("install", (event) => {
 
 // On activate: prune only THIS scope's stale caches. We must never delete a
 // sibling deployment's cache, so we only touch keys under our own CACHE_PREFIX
-// (plus the legacy pre-scoping "openclaw-*" names). Legacy caches are only
+// (plus the legacy pre-scoping "captain-claw-web-*" names). Legacy caches are only
 // reclaimed by non-staging scopes: production created them before scoping
 // existed, and staging never ran the old scheme, so staging must leave them
 // for production to clean up.
@@ -75,7 +75,7 @@ self.addEventListener("activate", (event) => {
             .filter((k) => {
               if (k === CACHE_NAME) return false; // keep current
               var ours = k.indexOf(CACHE_PREFIX) === 0;
-              var legacy = /^openclaw-/.test(k) && !IS_STAGING;
+              var legacy = /^captain-claw-web-/.test(k) && !IS_STAGING;
               return ours || legacy;
             })
             .map((k) => {

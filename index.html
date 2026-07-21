@@ -5,7 +5,7 @@
 
     <!-- Per-environment localStorage isolation. GitHub Pages serves every
          deployment from ONE origin, and localStorage is origin-scoped, so
-         production (/WASM-OpenClaw/) and staging (/WASM-OpenClaw/staging/)
+         production (/captain-claw-web/) and staging (/captain-claw-web/staging/)
          would otherwise share one key space: game saves, install-onboarding
          flag, touch-mode, and the SW kill-switch id would all collide.
          We namespace keys by scope. PRODUCTION KEEPS BARE KEYS so existing
@@ -21,33 +21,60 @@
         var m = path.match(/\/staging\//);
         // Only sub-path environments get a prefix; production stays bare.
         var PREFIX = m ? "staging:" : "";
-        if (!PREFIX) return; // production: no-op, native localStorage
-        try {
-          var proto = Object.getPrototypeOf(window.localStorage);
-          var raw = {
-            get: proto.getItem,
-            set: proto.setItem,
-            remove: proto.removeItem,
-          };
-          var wrap = function (k) { return PREFIX + k; };
-          proto.getItem = function (k) { return raw.get.call(this, wrap(k)); };
-          proto.setItem = function (k, v) { return raw.set.call(this, wrap(k), v); };
-          proto.removeItem = function (k) { return raw.remove.call(this, wrap(k)); };
-          console.info("[env] localStorage namespaced with prefix \"" + PREFIX + "\"");
-        } catch (e) {
-          console.warn("[env] Could not namespace localStorage:", e);
+        if (PREFIX) {
+          try {
+            var proto = Object.getPrototypeOf(window.localStorage);
+            var raw = {
+              get: proto.getItem,
+              set: proto.setItem,
+              remove: proto.removeItem,
+            };
+            var wrap = function (k) { return PREFIX + k; };
+            proto.getItem = function (k) { return raw.get.call(this, wrap(k)); };
+            proto.setItem = function (k, v) { return raw.set.call(this, wrap(k), v); };
+            proto.removeItem = function (k) { return raw.remove.call(this, wrap(k)); };
+            console.info("[env] localStorage namespaced with prefix \"" + PREFIX + "\"");
+          } catch (e) {
+            console.warn("[env] Could not namespace localStorage:", e);
+          }
         }
       })();
     </script>
 
-    <title>OpenClaw</title>
+    <!-- One-time save-data migration. The save key was renamed from the
+         pre-rebrand 'openclaw:saves' to 'captain-claw-web:saves' (matched in
+         SaveBridge.cpp). Copy an existing legacy save into the new key once so
+         returning players keep their progress, then remove the old key. Runs
+         AFTER the env shim above so the prefix (on staging) applies to both
+         keys consistently. Guarded to act only when the new key is empty and a
+         legacy value exists. -->
+    <script>
+      (function () {
+        try {
+          var OLD = "openclaw:saves";
+          var NEW = "captain-claw-web:saves";
+          if (localStorage.getItem(NEW) === null) {
+            var legacy = localStorage.getItem(OLD);
+            if (legacy !== null) {
+              localStorage.setItem(NEW, legacy);
+              localStorage.removeItem(OLD);
+              console.info("[migrate] Copied legacy save data to '" + NEW + "'.");
+            }
+          }
+        } catch (e) {
+          console.warn("[migrate] Save-data migration skipped:", e);
+        }
+      })();
+    </script>
+
+    <title>Captain Claw Web</title>
     <meta
       name="description"
       content="Reimplementation of Captain Claw (1997) platformer"
     />
 
-    <meta property="og:title" content="OpenClaw project" />
-    <meta property="og:description" content="OpenClaw open source project" />
+    <meta property="og:title" content="Captain Claw Web" />
+    <meta property="og:description" content="Play Captain Claw (1997) in your web browser" />
     <!--<meta property="og:image" content="preview.png">-->
 
     <!-- Favicons -->
@@ -60,7 +87,7 @@
     <!-- iOS PWA: standalone fullscreen mode, hides Safari chrome when added to Home Screen -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="OpenClaw" />
+    <meta name="apple-mobile-web-app-title" content="Captain Claw Web" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#000000" />
 
@@ -707,7 +734,7 @@
               class="control-btn"
               id="pwa-install-control"
               title="Install App"
-              aria-label="Install OpenClaw"
+              aria-label="Install Captain Claw Web"
               style="display: none"
             >
               <svg class="icon-download" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
@@ -729,10 +756,10 @@
       <div class="onboard-card">
         <div class="onboard-emoji">🎮</div>
         <span id="installBadge" class="onboard-badge">&nbsp;</span>
-        <h2>Install OpenClaw?</h2>
-        <p id="installReason">Install OpenClaw for the best experience.</p>
+        <h2>Install Captain Claw Web?</h2>
+        <p id="installReason">Install Captain Claw Web for the best experience.</p>
         <div class="onboard-actions">
-          <button class="btn btn-primary" id="installYesBtn"><svg class="icon-download" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> Install OpenClaw</button>
+          <button class="btn btn-primary" id="installYesBtn"><svg class="icon-download" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> Install Captain Claw Web</button>
           <button class="btn btn-ghost" id="installSkipBtn">Not now</button>
         </div>
       </div>
@@ -1384,7 +1411,7 @@
           if (isIOSSafari) {
             return {
               level: 'recommended',
-              reason: 'On iPhone/iPad, installing is the only way to play truly fullscreen and launch OpenClaw straight from your home screen.'
+              reason: 'On iPhone/iPad, installing is the only way to play truly fullscreen and launch Captain Claw Web straight from your home screen.'
             };
           }
           if (isSamsungBrowser) {
@@ -1403,7 +1430,7 @@
           }
           return {
             level: 'optional',
-            reason: 'On desktop, OpenClaw already runs great in the browser. Installing simply opens it in its own dedicated window.'
+            reason: 'On desktop, Captain Claw Web already runs great in the browser. Installing simply opens it in its own dedicated window.'
           };
         }
 
@@ -1424,21 +1451,21 @@
           }
           if (isIOSSafari) {
             alert(
-              'Install OpenClaw on iOS:\n\n' +
+              'Install Captain Claw Web on iOS:\n\n' +
               '1. Tap the Share button at the bottom of Safari\n' +
               '2. Choose “Add to Home Screen”\n' +
               '3. Tap “Add” — the game launches fullscreen.'
             );
           } else if (isMacSafari) {
             alert(
-              'Install OpenClaw on Mac:\n\n' +
+              'Install Captain Claw Web on Mac:\n\n' +
               '1. Open the File menu in Safari\n' +
               '2. Choose “Add to Dock…”\n' +
               '3. Confirm — the game opens in its own window.'
             );
           } else {
             alert(
-              'Install OpenClaw:\n\n' +
+              'Install Captain Claw Web:\n\n' +
               'Open your browser menu and choose “Install app”,\n' +
               '“Add to Home Screen”, or “Create shortcut”.\n\n' +
               'The game will then open in its own fullscreen window.'
@@ -1461,7 +1488,7 @@
         }
 
         // Public API for the onboarding flow (game-init.js).
-        window.OpenClawInstall = {
+        window.CaptainClawWebInstall = {
           isInstalled: isStandalone,
           platform: {
             isIOSSafari: isIOSSafari,
@@ -1495,13 +1522,13 @@
         window.startLoadWatchdog = function () {
           if (watchdog || shown) return;
           watchdog = setTimeout(function () {
-            if (!window.__openClawRunning) window.showLoadError();
+            if (!window.__captainClawWebRunning) window.showLoadError();
           }, 20000);
         };
         // The game sets this once it is actually rendering (postRun); if that
         // never happens, the watchdog fires.
         window.markGameRunning = function () {
-          window.__openClawRunning = true;
+          window.__captainClawWebRunning = true;
           if (watchdog) { clearTimeout(watchdog); watchdog = null; }
         };
 
@@ -1514,7 +1541,7 @@
         // runtime errors (e.g. Vite's HMR websocket) or post-boot glitches.
         var BOOT_FAIL = /ASM_CONSTS|null function|RuntimeError|abort\(|table index is out of bounds|memory access out of bounds/i;
         function maybeBootFailure(msg) {
-          if (window.__openClawRunning || shown) return;
+          if (window.__captainClawWebRunning || shown) return;
           if (msg && BOOT_FAIL.test(String(msg))) window.showLoadError();
         }
         window.addEventListener('error', function (e) {
