@@ -105,9 +105,9 @@ Original game assets (CLAW.REZ) remain copyright Monolith Productions.
 ## Credits
 
 - **Original Game:** Monolith Productions (1997)
-- **OpenClaw Engine:** [pjasicek](https://github.com/pjasicek/OpenClaw)
+- **OpenClaw Engine:** pjasicek
 - **WASM Port:** Arthur Boss
 
 ---
 
-**Note:** This is a WASM-only fork optimized for browsers. For native desktop builds, visit the [original OpenClaw repository](https://github.com/pjasicek/OpenClaw).
+**Note:** This is a WASM-only port optimized for browsers.

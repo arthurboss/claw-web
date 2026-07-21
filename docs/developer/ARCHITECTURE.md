@@ -332,6 +332,5 @@ Potential improvements for even better performance:
 
 ## References
 
-- Original Captain Claw: <https://github.com/pjasicek/OpenClaw>
 - Emscripten Documentation: <https://emscripten.org/docs/>
 - IndexedDB API: <https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API>

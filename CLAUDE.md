@@ -2,7 +2,7 @@
 
 Guidance for Claude Code when working in this repository.
 
-> **Never touch the upstream / original repository.** This is a fork. All pushes, branches, PRs, and deploys go to the fork (`arthurboss/captain-claw-web`) only. Never push to, open PRs against, or otherwise modify upstream (`pjasicek/OpenClaw`); it is read-only reference. When using `gh`, always pass `--repo arthurboss/captain-claw-web`.
+> **Repository:** all pushes, branches, PRs, and deploys go to `arthurboss/captain-claw-web`. When using `gh`, pass `--repo arthurboss/captain-claw-web`.
 
 ## Overview
 
@@ -132,4 +132,4 @@ Emscripten flags live in `CMakeLists.txt` (SDL2 + image/ttf/gfx/mixer, `ASYNCIFY
 ## Docs & References
 
 - `docs/` — player (`GAMEPAD.md`, `TROUBLESHOOTING.md`), developer (`BUILDING.md`, `ARCHITECTURE.md`, `SAVE_SYSTEM.md`, `HAPTIC_FEEDBACK.md`, `SCREEN_RENDERING.md`, `GENERIC_GRAPHICS.md`).
-- Original Captain Claw: <https://github.com/pjasicek/OpenClaw> · Emscripten: <https://emscripten.org/docs/> · SDL2: <https://wiki.libsdl.org/>
+- Emscripten: <https://emscripten.org/docs/> · SDL2: <https://wiki.libsdl.org/>

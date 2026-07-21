@@ -430,4 +430,3 @@ Strip debug symbols (done by default):
 
 - Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues
 - Review Emscripten documentation: <https://emscripten.org/docs/>
-- Original Captain Claw: <https://github.com/pjasicek/OpenClaw>
