@@ -1,5 +1,5 @@
 /**
- * Gamepad Bridge for Captain Claw Web
+ * Gamepad Bridge for Claw Web
  *
  * Behavior changes based on game state:
  * - Menu/Paused: Simulate keyboard for navigation (single press)

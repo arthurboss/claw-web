@@ -1,5 +1,5 @@
 /**
- * On-screen touch controls (joystick + action buttons) for Captain Claw Web.
+ * On-screen touch controls (joystick + action buttons) for Claw Web.
  *
  * Renders an HTML/CSS overlay on top of the canvas and drives the game by
  * dispatching KeyboardEvents on the window — the same input path the engine's
@@ -557,7 +557,7 @@
 
   // ---- Movement mode toggle (joystick <-> d-pad) ----------------------------
 
-  var MOVE_STORAGE_KEY = "captain-claw-web.touchMoveMode";
+  var MOVE_STORAGE_KEY = "claw-web.touchMoveMode";
   function loadMoveMode() {
     try {
       var v = localStorage.getItem(MOVE_STORAGE_KEY);
@@ -591,11 +591,11 @@
   }
 
   // ---- Install button -------------------------------------------------------
-  // Delegates to the shared install API defined in captain-claw-web.html. Removed from
+  // Delegates to the shared install API defined in claw-web.html. Removed from
   // the DOM if the app is already installed or no install path exists.
   function setupInstallButton(el) {
     if (!el) return;
-    var api = window.CaptainClawWebInstall;
+    var api = window.ClawWebInstall;
     if (!api || api.isInstalled) {
       el.remove();
       return;
