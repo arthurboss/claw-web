@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <title>OpenClaw</title>
+    <meta
+      name="description"
+      content="Reimplementation of Captain Claw (1997) platformer"
+    />
+
+    <meta property="og:title" content="OpenClaw project" />
+    <meta property="og:description" content="OpenClaw open source project" />
+    <!--<meta property="og:image" content="preview.png">-->
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+
+    <!-- iOS PWA: standalone fullscreen mode, hides Safari chrome when added to Home Screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="OpenClaw" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#000000" />
+
+    <!-- Viewport adapts to device width, allowing responsive scaling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Preload critical ES modules for faster loading -->
+    <link rel="modulepreload" href="game-init.js" />
+    <link rel="modulepreload" href="asset-storage.js" />
+    <link rel="modulepreload" href="asset-loader.js" />
+    <link rel="modulepreload" href="resource-loader.js" />
+
+    <!-- Prefetch non-critical modules (low priority) -->
+    <link rel="prefetch" as="script" href="graphics-bridge.js" />
+    <link rel="prefetch" as="script" href="texture-bridge.js" />
+    <link rel="prefetch" as="script" href="gamepad-bridge.js" />
+
+    <style>
+      :root {
+        color-scheme: light dark;
+        --primary-color: #4a90e2;
+        --primary-hover: #357abd;
+        --success-color: #52c41a;
+        --warning-color: #ff9800;
+        --danger-color: #f5222d;
+        --bg-primary: light-dark(#ffffff, #1a1a1a);
+        --bg-secondary: light-dark(#f5f5f5, #2a2a2a);
+        --text-primary: light-dark(#1a1a1a, #e0e0e0);
+        --text-secondary: light-dark(#666666, #999999);
+        --border-color: light-dark(#d0d0d0, #404040);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: #000;
+        color: var(--text-primary);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica",
+          "Arial", sans-serif;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        /* vw/vh fallback; dvw/dvh track the actually-visible viewport (100vw/vh
+           extend under the mobile browser UI + safe-area insets with
+           viewport-fit=cover, cutting the canvas off in landscape and shifting
+           it right). On desktop dvh == vh, so it's a no-op there. */
+        width: 100vw;
+        height: 100vh;
+        width: 100dvw;
+        height: 100dvh;
+        transition:
+          background-color 0.3s,
+          color 0.3s;
+      }
+
+      .game-container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* Keep the canvas clear of the notch/Dynamic Island/home indicator in
+           both orientations. box-sizing:border-box so the padding shrinks the
+           inner area rather than overflowing. */
+        box-sizing: border-box;
+        padding:
+          env(safe-area-inset-top, 0px)
+          env(safe-area-inset-right, 0px)
+          env(safe-area-inset-bottom, 0px)
+          env(safe-area-inset-left, 0px);
+      }
+
+      .game-header {
+        display: none; /* Hidden in fullscreen mobile mode */
+      }
+
+      .canvas-wrapper {
+        position: relative;
+        display: flex;
+        width: 100%;
+        height: 100%;
+        align-items: center;
+        justify-content: center;
+        background-color: #000;
+        container-type: size;
+      }
+
+      /* Portrait: pin the canvas to the top instead of vertically centering.
+         Both the wrapper AND #canvasContainer are full-height flex boxes that
+         center by default, so the inner one must also align to start. Desktop
+         monitors are landscape, so this effectively only affects mobile. */
+      @media (orientation: portrait) {
+        /* Prefix with .game-container to out-specify the base #canvasContainer
+           rule (equal specificity would lose on source order, leaving it
+           centered). */
+        .game-container .canvas-wrapper,
+        .game-container #canvasContainer {
+          align-items: flex-start;
+        }
+      }
+
+      /* Rotate prompt: browsers can't force device rotation from a tab, so on
+         very narrow portrait screens (< 375px wide) show a full-screen overlay
+         asking the player to rotate. Hidden otherwise. */
+      #rotatePrompt {
+        display: none;
+      }
+      @media (orientation: portrait) and (max-width: 374px) {
+        #rotatePrompt {
+          position: fixed;
+          inset: 0;
+          z-index: 10000;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          background: #000;
+          color: #fde46b;
+          font-family: sans-serif;
+          font-weight: bold;
+          text-align: center;
+          padding: 24px;
+        }
+        #rotatePrompt .rotate-icon {
+          font-size: 48px;
+          animation: rotateHint 1.6s ease-in-out infinite;
+        }
+      }
+      @keyframes rotateHint {
+        0%, 40% { transform: rotate(0deg); }
+        60%, 100% { transform: rotate(-90deg); }
+      }
+
+      #loading {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #fff;
+        font-size: 1.2em;
+        text-align: center;
+      }
+
+      #canvasContainer {
+        position: relative;
+        display: flex;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        justify-content: center;
+        align-items: center;
+      }
+
+      /* Canvas element is sized in JS (fitCanvasToContainer) so the element box
+         exactly matches the rendered bitmap. This keeps SDL's cursor mapping
+         (getBoundingClientRect vs canvas.width) accurate — no object-fit
+         letterboxing inside a larger box, which would offset the in-game cursor. */
+      canvas {
+        display: block;
+        image-rendering: pixelated;
+        outline: none;
+        /* Suppress browser scroll/pinch/double-tap gestures so Pointer Events
+           reach the game unmodified. */
+        touch-action: none;
+        /* Repeatedly tapping the touch buttons was selecting the canvas on
+           mobile — disable text selection and the iOS callout on it. */
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+      }
+
+      canvas:focus {
+        outline: none;
+      }
+
+      .bottom-controls {
+        position: absolute;
+        bottom: 1%;
+        right: 1%;
+        z-index: 1000;
+        display: none;
+        gap: clamp(5px, 1cqw, 10px);
+        align-items: center;
+      }
+      /* Controls appear only after the player dismisses the start overlay.
+         The overlay is a full-screen z-index:10000 layer; showing the controls
+         (z-index:1000) beneath it earlier let their clicks fall through and
+         start the game. */
+      body.game-started .bottom-controls {
+        display: flex;
+      }
+
+      /* Delay button appearance only when intro video is playing */
+      body:has(video) .bottom-controls {
+        opacity: 0;
+        animation: fadeInControls 0.3s ease-in 3.5s forwards;
+      }
+
+      /* On touch devices the fullscreen button is hidden — it's desktop chrome,
+         and the same settings are reachable through the in-game menu.
+         (Class set from JS via maxTouchPoints.) */
+      body.touch-device .bottom-controls {
+        display: none !important;
+      }
+
+      @keyframes fadeInControls {
+        to {
+          opacity: 1;
+        }
+      }
+
+      .control-btn {
+        width: clamp(24px, 4cqw, 43px);
+        height: clamp(24px, 4cqw, 43px);
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: clamp(0.7em, 1.5cqw, 1.2em);
+        border-radius: 50%;
+        background-color: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        cursor: pointer;
+        transition: all 0.2s;
+        outline: none;
+        color: white;
+      }
+
+      .control-btn:hover {
+        background-color: rgba(0, 0, 0, 0.7);
+        transform: scale(1.1);
+      }
+
+      .control-btn:active {
+        transform: scale(0.95);
+      }
+
+      .control-btn.active {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
+
+      .divider {
+        height: 1px;
+        background-color: var(--border-color);
+        margin: 15px 0;
+      }
+
+      #console {
+        width: 100%;
+        height: 200px;
+        display: block;
+        background-color: light-dark(#f5f5f5, #0a0a0a);
+        color: var(--text-primary);
+        font-family: "Consolas", "Monaco", "Courier New", monospace;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 10px;
+        font-size: 0.85em;
+        resize: vertical;
+        outline: none;
+      }
+
+      .debug_panel {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      .cheats {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .cheats > div {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .cheats label {
+        font-weight: 600;
+        min-width: 120px;
+      }
+
+      .cheats button {
+        background-color: var(--danger-color);
+        font-size: 0.85em;
+        padding: 8px 16px;
+      }
+
+      .cheats button:hover {
+        background-color: #d32029;
+      }
+
+      /* Asset Upload UI */
+      /* CLAW.REZ strong text accent (used inside the onboarding card) */
+      #assetUpload strong { color: #e23b2e; font-weight: 600; }
+      /* Left-align body copy on the upload screen (title stays centered) */
+      #assetUpload p { text-align: left; }
+
+      #uploadArea {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      #uploadBtn:disabled {
+        background: #3a4250;
+        color: #7b828c;
+        cursor: not-allowed;
+      }
+
+      #uploadProgress {
+        margin-top: 30px;
+        text-align: center;
+      }
+
+      #uploadProgressBar {
+        width: 220px;
+        max-width: 80%;
+        height: 3px;
+        border-radius: 999px;
+        overflow: hidden;
+        border: none;
+        background-color: rgba(255, 255, 255, 0.15);
+      }
+
+      #uploadProgressBar::-webkit-progress-bar {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-radius: 999px;
+      }
+
+      #uploadProgressBar::-webkit-progress-value {
+        background-color: #e23b2e;
+        border-radius: 999px;
+      }
+
+      #uploadProgressBar::-moz-progress-bar {
+        background-color: #e23b2e;
+        border-radius: 999px;
+      }
+
+      #uploadStatus {
+        display: block;
+        margin-top: 15px;
+        font-size: 1.2em;
+        color: #fff;
+      }
+
+      /* Loading Indicator */
+      #loadingIndicator {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        padding: 15px 20px;
+        border-radius: 8px;
+        z-index: 9999;
+        display: none;
+        min-width: 250px;
+      }
+
+      #loadingText {
+        font-size: 1em;
+        margin-bottom: 10px;
+      }
+
+      #loadingBar {
+        width: 100%;
+        height: 20px;
+        border-radius: 3px;
+      }
+
+      #loadingPercent {
+        display: block;
+        margin-top: 5px;
+        text-align: right;
+        font-size: 0.9em;
+      }
+
+      #startOverlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        background: transparent;
+      }
+
+      #startOverlay svg {
+        width: 120px;
+        height: 120px;
+        opacity: 0.85;
+        filter: drop-shadow(0 0 12px rgba(0,0,0,0.8));
+        transition: opacity 0.15s;
+      }
+
+      #startOverlay:hover svg {
+        opacity: 1;
+      }
+
+      /* Floating install button for touch devices only */
+      /* ---- Onboarding screens (install prompt + asset upload) ---- */
+      /* Onboarding screens. All sizing uses fluid units (clamp/min tied to
+         viewport height) so the card scales down on short/landscape screens
+         and never needs a breakpoint. */
+      .onboard {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: clamp(12px, 3vmin, 24px);
+        background: radial-gradient(circle at 50% 30%, #1a2230 0%, #0a0d12 70%);
+        color: #fff;
+        text-align: center;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .onboard.visible { display: flex; }
+      .onboard .onboard-card {
+        width: 100%;
+        max-width: 440px;
+        /* Never taller than the viewport; content shrinks via clamp() so this
+           is rarely hit, but it guarantees no clipping. */
+        max-height: calc(100dvh - clamp(24px, 6vmin, 48px));
+        overflow-y: auto;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: clamp(12px, 2vmin, 16px);
+        padding: clamp(16px, 4vmin, 28px) clamp(16px, 3.5vmin, 26px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      }
+      .onboard .onboard-emoji { font-size: clamp(30px, 7vmin, 44px); line-height: 1; }
+      .onboard h2 {
+        margin: clamp(8px, 2vmin, 14px) 0 6px;
+        font-size: clamp(1.2em, 4vmin, 1.5em);
+        color: #fff;
+      }
+      .onboard .onboard-badge {
+        display: inline-block;
+        font-size: clamp(10px, 2.4vmin, 11px);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border-radius: 999px;
+        margin-bottom: clamp(6px, 1.6vmin, 12px);
+      }
+      .onboard .onboard-badge.recommended {
+        background: rgba(82, 196, 26, 0.18); color: #7ee06a;
+        border: 1px solid rgba(82,196,26,0.4);
+      }
+      .onboard .onboard-badge.optional {
+        background: rgba(255,255,255,0.1); color: #bbb;
+        border: 1px solid rgba(255,255,255,0.2);
+      }
+      .onboard p {
+        margin: clamp(5px, 1.4vmin, 8px) 0;
+        font-size: clamp(0.9em, 2.6vmin, 0.98em);
+        line-height: 1.5;
+        color: #cdd3db;
+      }
+      .onboard .onboard-actions {
+        display: flex;
+        flex-direction: column;
+        gap: clamp(8px, 1.6vmin, 10px);
+        margin-top: clamp(14px, 3vmin, 22px);
+      }
+      .onboard .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: clamp(10px, 2.4vmin, 13px) 20px;
+        font-size: clamp(0.92em, 2.6vmin, 1em);
+        font-weight: 600;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.15s ease, background 0.2s ease;
+      }
+      .onboard .btn:active { transform: scale(0.98); }
+      .onboard .btn-primary { background: #e23b2e; color: #fff; }
+      .onboard .btn-primary:hover { background: #c62f24; }
+      .onboard .btn-ghost {
+        background: transparent; color: #aab2bd;
+        border: 1px solid rgba(255,255,255,0.18);
+      }
+      .onboard .btn-ghost:hover { background: rgba(255,255,255,0.06); color: #fff; }
+      .onboard .onboard-legal {
+        margin-top: clamp(12px, 2.4vmin, 20px);
+        font-size: clamp(10px, 2.2vmin, 11px);
+        color: #6b7280;
+        line-height: 1.5;
+        max-width: 420px;
+      }
+
+      /* Custom file picker for the upload screen */
+      .file-drop {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: clamp(8px, 2vmin, 14px);
+        width: 100%;
+        padding: clamp(14px, 3vmin, 20px) clamp(16px, 3vmin, 22px);
+        margin: 4px 0 6px;
+        border: 2px dashed rgba(226,59,46,0.5);
+        border-radius: 12px;
+        background: rgba(226,59,46,0.07);
+        color: #cdd3db;
+        cursor: pointer;
+        transition: border-color 0.2s ease, background 0.2s ease;
+      }
+      .file-drop:hover { border-color: rgba(226,59,46,0.9); background: rgba(226,59,46,0.14); }
+      .file-drop.has-file { border-style: solid; border-color: #52c41a; background: rgba(82,196,26,0.1); }
+      .file-drop .file-drop-icon {
+        font-size: clamp(15px, 3vmin, 18px); line-height: 1; flex: 0 0 auto;
+        width: clamp(30px, 6vmin, 38px); height: clamp(30px, 6vmin, 38px);
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%; background: rgba(226,59,46,0.18); color: #ff7a6e;
+      }
+      .file-drop .file-drop-label { font-size: clamp(0.88em, 2.4vmin, 0.95em); }
+      .file-drop .file-drop-name { flex: 1 1 100%; text-align: center; font-size: clamp(0.78em, 2vmin, 0.82em); color: #7ee06a; word-break: break-all; }
+      .file-drop .file-drop-name:empty { display: none; }
+      .file-drop input[type="file"] {
+        position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      // Tag touch devices so desktop-only chrome (the fullscreen button) can be
+      // hidden via CSS. maxTouchPoints is the canonical touch-capability check.
+      if ((navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+          "ontouchstart" in window) {
+        document.body.classList.add("touch-device");
+      }
+    </script>
+
+    <!-- Rotate prompt: shown on narrow portrait screens (< 375px wide) -->
+    <div id="rotatePrompt">
+      <div class="rotate-icon">📱</div>
+      <div>Please rotate your device to landscape to play.</div>
+    </div>
+
+    <div id="startOverlay" style="display: none;" onclick="window._startOverlayClick && window._startOverlayClick()">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="50" cy="50" r="47" fill="rgba(0,0,0,0.55)" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+        <polygon points="40,33 70,50 40,67" fill="white"/>
+      </svg>
+    </div>
+
+    <!-- Asset Upload UI (shown after the install screen, on first run) -->
+    <section id="assetUpload" class="onboard">
+      <div class="onboard-card">
+        <div class="onboard-emoji">📦</div>
+        <h2>One-time setup</h2>
+        <p>The game requires <strong>CLAW.REZ</strong> from the original Captain Claw (1997) game.</p>
+        <p>The file only needs to be uploaded once.</p>
+
+        <div id="uploadArea">
+          <label class="file-drop" id="fileDrop" for="clawRezFile">
+            <span class="file-drop-icon"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M5 3h14"/></svg></span>
+            <span class="file-drop-label">Choose or drop your CLAW.REZ file</span>
+            <span class="file-drop-name" id="fileDropName"></span>
+            <input type="file" id="clawRezFile" accept=".REZ,.rez" onchange="validateClawRezFile()" />
+          </label>
+          <button class="btn btn-primary" id="uploadBtn" onclick="uploadClawRez()" disabled>Upload CLAW.REZ</button>
+        </div>
+
+        <div id="uploadProgress" style="display: none;">
+          <progress id="uploadProgressBar" max="100" value="0"></progress>
+          <span id="uploadStatus">Storing assets...</span>
+        </div>
+
+        <p class="onboard-legal">You must own Captain Claw (1997) to use this file legally.</p>
+      </div>
+    </section>
+
+    <!-- Loading Indicator (for level loading) -->
+    <div id="loadingIndicator">
+      <div id="loadingText">Loading...</div>
+      <progress id="loadingBar" max="100" value="0"></progress>
+      <span id="loadingPercent">0%</span>
+    </div>
+
+    <div class="game-container">
+      <div class="canvas-wrapper" id="gameContainer">
+        <span id="loading"></span>
+        <div id="canvasContainer">
+          <canvas
+            id="canvas" class="force-4-3"
+            oncontextmenu="event.preventDefault()"
+            tabindex="-1"
+          ></canvas>
+          <script>
+            // Set canvas dimensions IMMEDIATELY before any game code runs
+            // This ensures the game initializes with correct resolution
+            (function() {
+              var canvas = document.getElementById('canvas');
+              var BASE_HEIGHT = 480;
+              var MIN_WIDTH = 640;
+              var MAX_WIDTH = 1664;
+              var MIN_ASPECT = 4/3;
+
+              var w = window.innerWidth;
+              var h = window.innerHeight;
+              var aspect = Math.max(w / h, MIN_ASPECT);
+              var gameWidth = Math.round(BASE_HEIGHT * aspect);
+              gameWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, gameWidth));
+
+              canvas.width = gameWidth;
+              canvas.height = BASE_HEIGHT;
+              canvas.style.setProperty('--game-aspect-ratio', gameWidth + ' / ' + BASE_HEIGHT);
+              console.log('[Resolution] Initial canvas: ' + gameWidth + 'x' + BASE_HEIGHT);
+            })();
+          </script>
+
+          <!-- Bottom controls - inside canvasContainer so they're positioned relative to canvas -->
+          <div class="bottom-controls">
+            <button
+              class="control-btn"
+              id="pwa-install-control"
+              title="Install App"
+              aria-label="Install OpenClaw"
+              style="display: none"
+            >
+              <svg class="icon-download" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            </button>
+            <button
+              class="control-btn"
+              id="fullscreenBtn"
+              onclick="toggleFullscreen()"
+              title="Enter Fullscreen"
+            >
+              ⛶
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Install onboarding screen (shown first, before upload, when installable) -->
+    <section id="installScreen" class="onboard">
+      <div class="onboard-card">
+        <div class="onboard-emoji">🎮</div>
+        <span id="installBadge" class="onboard-badge">&nbsp;</span>
+        <h2>Install OpenClaw?</h2>
+        <p id="installReason">Install OpenClaw for the best experience.</p>
+        <div class="onboard-actions">
+          <button class="btn btn-primary" id="installYesBtn"><svg class="icon-download" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> Install OpenClaw</button>
+          <button class="btn btn-ghost" id="installSkipBtn">Not now</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Load-failure recovery: shown if the WASM runtime aborts or the game
+         never starts (usually a wrong/corrupt CLAW.REZ that passed the size
+         check). Lets the user clear the stored file and re-upload. -->
+    <section id="loadError" class="onboard">
+      <div class="onboard-card">
+        <div class="onboard-emoji">⚠️</div>
+        <h2>Game failed to load</h2>
+        <p>This usually means the uploaded <strong>CLAW.REZ</strong> is not the
+           correct file from Captain Claw (1997), or it was corrupted.</p>
+        <div class="onboard-actions">
+          <button class="btn btn-primary" id="loadErrorClearBtn">Clear file &amp; re-upload</button>
+          <button class="btn btn-ghost" id="loadErrorReloadBtn">Reload</button>
+        </div>
+      </div>
+    </section>
+    <div class="debug_panel" style="display: none">
+      <div class="cheats">
+        <div>
+          Cheat codes:
+          <button onclick="CheatCodeManager.infiniteJumps()">
+            Infinite Jumps
+          </button>
+          <button onclick="CheatCodeManager.invincible()">God Mode</button>
+          <button onclick="CheatCodeManager.physicsDebug()">
+            Physics Debug
+          </button>
+          <button onclick="CheatCodeManager.infiniteAmmo()">
+            Infinite Ammo
+          </button>
+        </div>
+        <div>
+          Powerups:
+          <button
+            onclick="
+              CheatCodeManager.write('catnip'.toUpperCase(), Module.canvas)
+            "
+          >
+            Catnip
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write('firesword'.toUpperCase(), Module.canvas)
+            "
+          >
+            Fire Sword
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write('frostsword'.toUpperCase(), Module.canvas)
+            "
+          >
+            Frost Sword
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write(
+                'lightningsword'.toUpperCase(),
+                Module.canvas,
+              )
+            "
+          >
+            Lightning Sword
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write('invisible'.toUpperCase(), Module.canvas)
+            "
+          >
+            Invisible
+          </button>
+          <button
+            onclick="
+              CheatCodeManager.write(
+                'invulnerable'.toUpperCase(),
+                Module.canvas,
+              )
+            "
+          >
+            Invulnerable
+          </button>
+        </div>
+      </div>
+      <button onclick="Console.clear()">Clear Console</button>
+      <textarea id="console" rows="12"></textarea>
+    </div>
+
+    <script type="text/javascript">
+      var CheatCodeManager = {
+        jumps: false,
+        god: false,
+        physics: false,
+        ammo: false,
+        winsize: "640 480",
+        scale: -1,
+        pushEvent: function (key, event, target) {
+          return target.dispatchEvent(
+            new KeyboardEvent(event, {
+              keyCode: key,
+              charCode: key,
+              view: window,
+              bubbles: true,
+              cancelable: true,
+            }),
+          );
+        },
+        click: function (key, target) {
+          if (CheatCodeManager.pushEvent(key, "keydown", target)) {
+            CheatCodeManager.pushEvent(key, "keypress", target);
+          }
+          CheatCodeManager.pushEvent(key, "keyup", target);
+        },
+        openOrCloseConsole: function (target) {
+          CheatCodeManager.click(192, target); // "`"
+          CheatCodeManager.click(8, target); // Backspace
+          CheatCodeManager.click(8, target); // Backspace
+        },
+        write: function (cheat, target) {
+          CheatCodeManager.openOrCloseConsole(target);
+          for (var i = 0; i < cheat.length; i++) {
+            //            	console.log("Writing: " + cheat.charCodeAt(i));
+            CheatCodeManager.click(cheat.charCodeAt(i), target);
+          }
+          CheatCodeManager.click(13, target); // "Enter"
+          CheatCodeManager.openOrCloseConsole(target);
+        },
+        infiniteJumps: function () {
+          CheatCodeManager.jumps = !CheatCodeManager.jumps;
+          CheatCodeManager.write(
+            "INFINITEJUMP " + (CheatCodeManager.jumps ? "ON" : "OFF"),
+            Module.canvas,
+          );
+        },
+        invincible: function () {
+          CheatCodeManager.god = !CheatCodeManager.god;
+          CheatCodeManager.write(
+            "INVINCIBLE " + (CheatCodeManager.god ? "ON" : "OFF"),
+            Module.canvas,
+          );
+        },
+        physicsDebug: function () {
+          CheatCodeManager.physics = !CheatCodeManager.physics;
+          CheatCodeManager.write(
+            "PHYSICSDEBUG " + (CheatCodeManager.physics ? "ON" : "OFF"),
+            Module.canvas,
+          );
+        },
+        infiniteAmmo: function () {
+          CheatCodeManager.ammo = !CheatCodeManager.ammo;
+          CheatCodeManager.write(
+            "INFINITEAMMO " + (CheatCodeManager.ammo ? "ON" : "OFF"),
+            Module.canvas,
+          );
+        },
+      };
+    </script>
+    <script type="text/javascript">
+      var Console = {
+        elem: document.getElementById("console"),
+        enabled: false,
+        toggleConsole: function () {
+          Console.enabled = !Console.enabled;
+          Console.elem.parentNode.style.display = Console.enabled
+            ? "block"
+            : "none";
+        },
+        printToConsole: function (text) {
+          if (arguments.length > 1)
+            text = Array.prototype.slice.call(arguments).join(" ");
+          console.log(text);
+          Console.elem.value += text + "\n";
+        },
+        clear: function () {
+          Console.elem.value = "";
+        },
+      };
+    </script>
+    <script type="text/javascript">
+      // Dynamic resolution system
+      // Base height is always 480px, width varies by aspect ratio
+      var GameResolution = {
+        BASE_HEIGHT: 480,
+        MIN_WIDTH: 640,   // 4:3 minimum (640/480 = 1.333)
+        MAX_WIDTH: 1664,  // 32:9 maximum (matches widescreen assets)
+        MIN_ASPECT_RATIO: 4/3,  // Never narrower than 4:3
+
+        // Calculate game width based on aspect ratio
+        calculateWidth: function(width, height) {
+          var aspectRatio = Math.max(width / height, this.MIN_ASPECT_RATIO);
+          var gameWidth = Math.round(this.BASE_HEIGHT * aspectRatio);
+          // Clamp to reasonable bounds
+          return Math.max(this.MIN_WIDTH, Math.min(this.MAX_WIDTH, gameWidth));
+        },
+
+        // Get current window dimensions (for windowed mode)
+        getWindowSize: function() {
+          return {
+            width: window.innerWidth,
+            height: window.innerHeight
+          };
+        },
+
+        // Get screen dimensions (for fullscreen mode)
+        getScreenSize: function() {
+          var container = document.getElementById('gameContainer');
+          return {
+            width: container ? container.clientWidth : window.screen.width,
+            height: container ? container.clientHeight : window.screen.height
+          };
+        },
+
+        // Fit the canvas ELEMENT (CSS pixels) inside its container while
+        // preserving aspect ratio. The element box ends up exactly matching the
+        // rendered bitmap (letterbox is empty container space, not padding
+        // inside the canvas), so SDL's cursor mapping stays accurate.
+        fitCanvasToContainer: function(bufferWidth, bufferHeight) {
+          var canvas = document.getElementById("canvas");
+          var container = document.getElementById("gameContainer");
+          if (!canvas || !container) return;
+
+          var availW = container.clientWidth;
+          var availH = container.clientHeight;
+          var aspect = bufferWidth / bufferHeight;
+
+          // Fit within container: constrain by whichever dimension is limiting
+          var cssW = availW;
+          var cssH = Math.round(cssW / aspect);
+          if (cssH > availH) {
+            cssH = availH;
+            cssW = Math.round(cssH * aspect);
+          }
+
+          canvas.style.width = cssW + "px";
+          canvas.style.height = cssH + "px";
+        },
+
+        // Apply resolution change
+        apply: function(width, height) {
+          var canvas = document.getElementById("canvas");
+
+          if (canvas) {
+            canvas.width = width;
+            canvas.height = height;
+            // Update CSS aspect ratio to match game resolution
+            canvas.style.setProperty('--game-aspect-ratio', width + ' / ' + height);
+            // Size the element box to exactly fit the rendered bitmap
+            this.fitCanvasToContainer(width, height);
+          }
+
+          // Notify C++ of resolution change if game is running
+          if (typeof Module !== "undefined" && Module._OnJSResolutionChange) {
+            Module._OnJSResolutionChange(width, height);
+          }
+
+          console.log("[Resolution] Applied: " + width + "x" + height);
+
+          // Force SDL to recalculate mouse position after resolution change
+          if (canvas) {
+            canvas.dispatchEvent(new MouseEvent('mousemove', {
+              clientX: window._lastMouseX || 0,
+              clientY: window._lastMouseY || 0
+            }));
+          }
+        }
+      };
+
+      // Smart fullscreen function - always fullscreens the game container
+      // Uses Keyboard Lock API to capture ESC key in fullscreen (Chrome/Edge)
+      function toggleFullscreen() {
+        var gameContainer = document.getElementById("gameContainer");
+        if (!gameContainer) return;
+
+        if (!document.fullscreenElement) {
+          gameContainer.requestFullscreen().then(function() {
+            if (navigator.keyboard && navigator.keyboard.lock) {
+              navigator.keyboard.lock(['Escape']).then(function() {
+                console.log('[Keyboard] Locked ESC key in fullscreen');
+              }).catch(function(err) {
+                console.log('[Keyboard] Could not lock ESC:', err.message);
+              });
+            }
+            syncCursorAfterFullscreenChange();
+          }).catch(function (err) {
+            console.error("Fullscreen request failed:", err);
+          });
+        } else {
+          if (navigator.keyboard && navigator.keyboard.unlock) {
+            navigator.keyboard.unlock();
+          }
+          document.exitFullscreen().then(function() {
+            syncCursorAfterFullscreenChange();
+          });
+        }
+      }
+      window.toggleFullscreen = toggleFullscreen;
+
+      // Aspect ratio state - false = widescreen (dynamic), true = force 4:3 original
+      window.forceOriginalAspect = true;
+
+      window.toggleAspectRatio = function() {
+        window.forceOriginalAspect = !window.forceOriginalAspect;
+        var canvas = document.getElementById("canvas");
+        if (canvas) canvas.classList.toggle("force-4-3", window.forceOriginalAspect);
+        updateGameResolution();
+      };
+
+      // Handle fullscreen/resize - adjust resolution based on current dimensions
+      function updateGameResolution() {
+        var btn = document.getElementById("fullscreenBtn");
+        var size;
+
+        if (document.fullscreenElement) {
+          // Fullscreen - use screen dimensions
+          size = GameResolution.getScreenSize();
+          if (btn) {
+            btn.textContent = "✕";
+            btn.title = "Exit Fullscreen (ESC)";
+          }
+        } else {
+          // Windowed - use window dimensions
+          size = GameResolution.getWindowSize();
+          if (btn) {
+            btn.textContent = "⛶";
+            btn.title = "Enter Fullscreen";
+          }
+          // Release keyboard lock when leaving fullscreen
+          if (navigator.keyboard && navigator.keyboard.unlock) {
+            navigator.keyboard.unlock();
+          }
+        }
+
+        var newWidth;
+        if (window.forceOriginalAspect) {
+          newWidth = Math.round(GameResolution.BASE_HEIGHT * (4 / 3));
+        } else {
+          newWidth = GameResolution.calculateWidth(size.width, size.height);
+        }
+        GameResolution.apply(newWidth, GameResolution.BASE_HEIGHT);
+      }
+
+      // Alias for backward compatibility
+      var onFullscreenChange = updateGameResolution;
+
+      // Listen for fullscreen changes
+      // Track both client and screen coords. In fullscreen clientX == screenX
+      // (viewport fills screen), so after a fullscreen transition we dispatch
+      // with screenX/Y to get the correct viewport-relative position.
+      document.addEventListener("mousemove", function(e) {
+        window._lastMouseX = e.clientX;
+        window._lastMouseY = e.clientY;
+        window._lastMouseScreenX = e.screenX;
+        window._lastMouseScreenY = e.screenY;
+      });
+      // screenX/Y are physical coords that equal clientX/Y in fullscreen,
+      // so using them after a fullscreen transition gives the correct position.
+      function syncCursorAfterFullscreenChange() {
+        var canvas = document.getElementById("canvas");
+        if (!canvas) return;
+        GameResolution.fitCanvasToContainer(canvas.width, canvas.height);
+        var cx = document.fullscreenElement
+          ? (window._lastMouseScreenX || 0)
+          : (window._lastMouseX || 0);
+        var cy = document.fullscreenElement
+          ? (window._lastMouseScreenY || 0)
+          : (window._lastMouseY || 0);
+        canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: cx, clientY: cy }));
+      }
+
+      document.addEventListener("fullscreenchange", updateGameResolution);
+      document.addEventListener("fullscreenchange", function() {
+        if (typeof Module !== "undefined" && Module._OnJSFullscreenChange) {
+          Module._OnJSFullscreenChange();
+        }
+      });
+      window.addEventListener("resize", updateGameResolution);
+
+      // Orientation change on iOS reports stale viewport dimensions during the
+      // resize event (dimensions settle a frame or two later), which leaves the
+      // canvas fitted to the OLD orientation and looking zoomed. Re-apply after
+      // the viewport settles. visualViewport.resize is the most reliable signal.
+      window.addEventListener("orientationchange", function () {
+        updateGameResolution();
+        setTimeout(updateGameResolution, 100);
+        setTimeout(updateGameResolution, 300);
+      });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", updateGameResolution);
+      }
+
+      // Initialize resolution on load
+      updateGameResolution();
+    </script>
+    <script type="text/javascript">
+      var loadingElement = document.getElementById("loading");
+
+      // Emscripten structure
+      var Module = {
+        // If the WASM runtime aborts (e.g. bad CLAW.REZ that passed the size
+        // check), surface the recovery overlay instead of a dead black screen.
+        onAbort: function (what) {
+          console.error('[Game] Aborted:', what);
+          if (window.showLoadError) window.showLoadError();
+        },
+        // Canvas dimensions are dynamic based on fullscreen state
+        // Default: 640x480 (4:3), Fullscreen: calculated from screen aspect ratio
+        preRun: [
+          function () {
+            // Mount CLAW.REZ to virtual filesystem before game starts
+            if (window.mountClawRezToFS) {
+              const success = mountClawRezToFS();
+              if (!success) {
+                console.error('Failed to mount CLAW.REZ');
+              }
+            }
+            if (window.startLoadWatchdog) window.startLoadWatchdog();
+
+            // Set initial canvas dimensions (may be overridden by fullscreen)
+            var canvas = Module.canvas;
+            Module.canvas.widthNative = canvas.width;
+            Module.canvas.heightNative = canvas.height;
+
+            loadingElement.remove();
+            loadingElement = null;
+            Module.canvas.style.display = "block";
+          },
+        ],
+        postRun: [
+          function () {
+            if (window.markGameRunning) window.markGameRunning();
+            // Disable Emscripten's automatic canvas resizing
+            if (typeof Browser !== 'undefined') {
+              Browser.resizeCanvas = false;
+              // Override resize functions to prevent any canvas manipulation
+              Browser.setFullscreenCanvasSize = function() {};
+              Browser.setWindowedCanvasSize = function() {};
+              Browser.updateCanvasDimensions = function() {};
+            }
+
+            // Canvas dimensions were set before game loaded (inline script in HTML)
+            // Sync C++ side with canvas dimensions
+            var canvas = Module.canvas;
+            if (typeof Module._OnJSResolutionChange === 'function') {
+              Module._OnJSResolutionChange(canvas.width, canvas.height);
+            }
+          },
+        ],
+        canvas: (function () {
+          var canvas = document.getElementById("canvas");
+
+          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+          // application robust, you may want to override this behavior before shipping!
+          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+          canvas.addEventListener(
+            "webglcontextlost",
+            function (e) {
+              alert("WebGL context lost. You will need to reload the page.");
+              e.preventDefault();
+            },
+            false,
+          );
+
+          return canvas;
+        })(),
+
+        dataFileDownloads: {
+          "openclaw.data": {
+            total: 0,
+            loaded: 0,
+          },
+        },
+        setStatus: function (text) {
+          if (loadingElement) {
+            Module.canvas.style.display = "none";
+            var progress =
+              ((Module.dataFileDownloads["openclaw.data"].loaded /
+                Module.dataFileDownloads["openclaw.data"].total) *
+                100) |
+              0;
+            if (progress < 100) {
+              loadingElement.innerHTML =
+                "Game resources are downloading... " + (progress | 0) + "%";
+            } else {
+              loadingElement.innerHTML =
+                "Game resources have been downloaded. Game is loading...";
+            }
+          }
+        },
+
+        // Could be removed. This code for debug build only
+        print: Console.printToConsole,
+        printErr: Console.printToConsole,
+      };
+
+      function loadGame() {
+        var script = document.createElement("script");
+        script.async = !0;
+        script.type = "text/javascript";
+        script.src = "openclaw.js";
+        script.onerror = function (t) {
+          console.error("Script Error");
+          console.error(t);
+        };
+        var r = document.getElementsByTagName("script")[0];
+        r.parentNode.insertBefore(script, r);
+      }
+
+      // Canvas dimensions are dynamic (default 640x480, changes in fullscreen)
+      CheatCodeManager.winsize = "640 480";
+      CheatCodeManager.scale = -1;
+
+      if (
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent,
+        )
+      ) {
+        //document.getElementById('viewport').width = "100%"
+        //        document.getElementById('canvas').width = "640"
+        //        document.getElementById('canvas').height = "480"
+      }
+
+      //    console.log("CW: " + document.getElementById('canvas').width + ", CH: " + document.getElementById('canvas').height);
+
+      // Note: window.initGameWhenReady will be defined by game-init.js module
+    </script>
+
+    <!-- Main ES Module - loads all dependencies and exposes functions to window -->
+    <script type="module" src="game-init.js"></script>
+
+    <!-- Keyboard capture - prevents OS shortcuts from interfering with game -->
+    <script src="keyboard-capture.js"></script>
+
+    <!-- Initialize game after modules are loaded -->
+    <script>
+      // Wait for DOMContentLoaded to ensure game-init.js module has loaded
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          if (typeof window.initResourceLoader === 'function') {
+            window.initResourceLoader(Module);
+          }
+          if (typeof window.initGameWhenReady === 'function') {
+            window.initGameWhenReady();
+          } else {
+            console.error('[Init] initGameWhenReady not found. game-init.js may not have loaded.');
+          }
+        });
+      } else {
+        // DOM already loaded
+        if (typeof window.initResourceLoader === 'function') {
+          window.initResourceLoader(Module);
+        }
+        if (typeof window.initGameWhenReady === 'function') {
+          window.initGameWhenReady();
+        } else {
+          console.error('[Init] initGameWhenReady not found. game-init.js may not have loaded.');
+        }
+      }
+    </script>
+
+    <!-- Graphics Bridges for WASM Module (optional - loaded by game-init.js) -->
+    <script type="module" src="graphics-bridge.js"></script>
+    <script type="module" src="texture-bridge.js"></script>
+
+    <!-- Save Storage Bridge for IndexedDB game saves -->
+    <script type="module" src="save-storage.js"></script>
+
+    <!-- Gamepad Bridge - polls browser Gamepad API and sends events to C++ -->
+    <script src="gamepad-bridge.js"></script>
+
+    <!-- Pointer Bridge - forwards Pointer Events (mouse/touch/pen) to C++ -->
+    <script src="pointer-bridge.js"></script>
+
+    <!-- On-screen touch controls (joystick + buttons), shown during gameplay on touch -->
+    <script src="touch-controls.js"></script>
+
+    <!-- Level music via soundfont MIDI synth (spessasynth). Exposes
+         window.playLevelMidi / stopLevelMidi, used by the WASM audio system to
+         play the .mid level tracks the browser cannot decode from .XMI. -->
+    <script type="module" src="music/midi-player.js"></script>
+
+    <!-- Browser Support Check -->
+    <script>
+      function checkBrowserSupport() {
+        const required = {
+          wasm: typeof WebAssembly !== 'undefined',
+          indexeddb: 'indexedDB' in window,
+          file: 'File' in window && 'Blob' in window,
+        };
+
+        const unsupported = Object.entries(required)
+          .filter(([name, supported]) => !supported)
+          .map(([name]) => name);
+
+        if (unsupported.length > 0) {
+          alert(
+            `Your browser doesn't support: ${unsupported.join(', ')}\n\n` +
+            `Please use a modern browser:\n` +
+            `- Chrome 105+\n` +
+            `- Firefox 121+\n` +
+            `- Safari 16.4+\n` +
+            `- Edge 105+`
+          );
+          return false;
+        }
+        return true;
+      }
+
+      // Check browser support on load
+      if (!checkBrowserSupport()) {
+        document.getElementById('loading').textContent = 'Browser not supported';
+        throw new Error('Browser not supported');
+      }
+    </script>
+    <!-- PWA install: shared API used by the onboarding screen and the
+         persistent install buttons (desktop toolbar + touch floating). -->
+    <script>
+      (function () {
+        var desktopBtn = document.getElementById('pwa-install-control');
+        var deferredPrompt = null;
+
+        // Evaluated once at load, before the game can invoke the Fullscreen
+        // API — so display-mode: fullscreen here means the app was LAUNCHED as
+        // an installed PWA (manifest uses display: fullscreen), not a tab that
+        // toggled fullscreen. Both fullscreen and standalone indicate installed.
+        var isStandalone =
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.matchMedia('(display-mode: fullscreen)').matches ||
+          window.navigator.standalone === true;
+
+        var ua = navigator.userAgent;
+        var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        var isAndroid = /Android/.test(ua);
+        // Samsung Internet mints WebAPKs with an old targetSdkVersion, so
+        // Android flags installs from it as "unsafe / built for an older
+        // Android version". Chrome's WebAPK does not trip this, so we steer
+        // Samsung users to Chrome. Not fixable site-side (see PWA notes).
+        var isSamsungBrowser = /SamsungBrowser/.test(ua);
+        var isSafari =
+          /Safari/.test(ua) && !/Chrome|Chromium|Edg|CriOS|FxiOS|OPR/.test(ua);
+        var isIOSSafari = isIOS && isSafari;
+        var isMacSafari = isSafari && /Macintosh/.test(ua) && !isIOS;
+
+        // Why installing is (or isn't) worth it, tuned per platform. Mobile
+        // benefits most (fullscreen, home-screen launch); desktop is optional.
+        function recommendation() {
+          if (isIOSSafari) {
+            return {
+              level: 'recommended',
+              reason: 'On iPhone/iPad, installing is the only way to play truly fullscreen and launch OpenClaw straight from your home screen.'
+            };
+          }
+          if (isSamsungBrowser) {
+            return {
+              level: 'recommended',
+              reason: 'For the best install on Android, open this page in Chrome. '
+                + 'Samsung Internet can install it too, but Android may warn '
+                + 'that the app is unsafe — that warning does not appear with Chrome.'
+            };
+          }
+          if (isAndroid) {
+            return {
+              level: 'recommended',
+              reason: 'On Android, installing gives you a real fullscreen, app-like experience launched from your home screen.'
+            };
+          }
+          return {
+            level: 'optional',
+            reason: 'On desktop, OpenClaw already runs great in the browser. Installing simply opens it in its own dedicated window.'
+          };
+        }
+
+        function hideAllInstallUI() {
+          if (desktopBtn) desktopBtn.style.display = 'none';
+        }
+
+        // Native prompt when available, else per-platform manual instructions.
+        // Returns a promise resolving true if a native install was accepted.
+        function trigger() {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            return deferredPrompt.userChoice.then(function (result) {
+              deferredPrompt = null;
+              if (result.outcome === 'accepted') hideAllInstallUI();
+              return result.outcome === 'accepted';
+            });
+          }
+          if (isIOSSafari) {
+            alert(
+              'Install OpenClaw on iOS:\n\n' +
+              '1. Tap the Share button at the bottom of Safari\n' +
+              '2. Choose “Add to Home Screen”\n' +
+              '3. Tap “Add” — the game launches fullscreen.'
+            );
+          } else if (isMacSafari) {
+            alert(
+              'Install OpenClaw on Mac:\n\n' +
+              '1. Open the File menu in Safari\n' +
+              '2. Choose “Add to Dock…”\n' +
+              '3. Confirm — the game opens in its own window.'
+            );
+          } else {
+            alert(
+              'Install OpenClaw:\n\n' +
+              'Open your browser menu and choose “Install app”,\n' +
+              '“Add to Home Screen”, or “Create shortcut”.\n\n' +
+              'The game will then open in its own fullscreen window.'
+            );
+          }
+          return Promise.resolve(false);
+        }
+
+        window.addEventListener('beforeinstallprompt', function (e) {
+          e.preventDefault();
+          deferredPrompt = e;
+        });
+        window.addEventListener('appinstalled', hideAllInstallUI);
+
+        // Persistent desktop button (bottom toolbar). The touch install
+        // button lives inside #touchControls and is wired in touch-controls.js.
+        if (!isStandalone && desktopBtn) {
+          desktopBtn.style.display = '';
+          desktopBtn.addEventListener('click', trigger);
+        }
+
+        // Public API for the onboarding flow (game-init.js).
+        window.OpenClawInstall = {
+          isInstalled: isStandalone,
+          platform: {
+            isIOSSafari: isIOSSafari,
+            isMacSafari: isMacSafari,
+            isAndroid: isAndroid,
+            isSamsungBrowser: isSamsungBrowser,
+            isMobile: isIOS || isAndroid
+          },
+          recommendation: recommendation(),
+          trigger: trigger
+        };
+      })();
+    </script>
+
+    <!-- Load-failure recovery controller -->
+    <script>
+      (function () {
+        var overlay = document.getElementById('loadError');
+        var shown = false;
+        var watchdog = null;
+
+        window.showLoadError = function () {
+          if (shown) return;
+          shown = true;
+          if (watchdog) { clearTimeout(watchdog); watchdog = null; }
+          if (overlay) overlay.classList.add('visible');
+        };
+
+        // Backstop: if the game hasn't reported a running frame within 20s of
+        // the module starting, assume it hung on a bad file and offer recovery.
+        window.startLoadWatchdog = function () {
+          if (watchdog || shown) return;
+          watchdog = setTimeout(function () {
+            if (!window.__openClawRunning) window.showLoadError();
+          }, 20000);
+        };
+        // The game sets this once it is actually rendering (postRun); if that
+        // never happens, the watchdog fires.
+        window.markGameRunning = function () {
+          window.__openClawRunning = true;
+          if (watchdog) { clearTimeout(watchdog); watchdog = null; }
+        };
+
+        // Catch fatal WASM boot failures that are thrown rather than routed
+        // through Module.onAbort — e.g. a corrupt/empty CLAW.REZ makes the
+        // runtime throw "ASM_CONSTS[...] is not a function" or a "null
+        // function" RuntimeError. We only treat these as load failures BEFORE
+        // the game has reported running, and only when the message matches the
+        // Emscripten/WASM boot-failure signatures, so we never hijack benign
+        // runtime errors (e.g. Vite's HMR websocket) or post-boot glitches.
+        var BOOT_FAIL = /ASM_CONSTS|null function|RuntimeError|abort\(|table index is out of bounds|memory access out of bounds/i;
+        function maybeBootFailure(msg) {
+          if (window.__openClawRunning || shown) return;
+          if (msg && BOOT_FAIL.test(String(msg))) window.showLoadError();
+        }
+        window.addEventListener('error', function (e) {
+          maybeBootFailure((e && e.message) || (e && e.error && e.error.message));
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          var r = e && e.reason;
+          maybeBootFailure(r && (r.message || r));
+        });
+
+        var clearBtn = document.getElementById('loadErrorClearBtn');
+        var reloadBtn = document.getElementById('loadErrorReloadBtn');
+        if (clearBtn) clearBtn.addEventListener('click', function () {
+          if (typeof window.reuploadClawRez === 'function') {
+            window.reuploadClawRez();
+          } else {
+            location.reload();
+          }
+        });
+        if (reloadBtn) reloadBtn.addEventListener('click', function () {
+          location.reload();
+        });
+      })();
+    </script>
+
+    <!-- Service Worker: installability + offline shell, with self-heal safety
+         net so a bad deploy can never permanently strand a client (important
+         on mobile, where clearing a stuck SW by hand is painful). -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        (function () {
+          // --- Remote kill-switch -------------------------------------------
+          // sw-control.json carries an "unregister" id. When that id changes,
+          // every client unregisters its SW + clears caches exactly once (we
+          // remember the last-handled id), then reloads clean. Page-side on
+          // purpose: it works even if the installed SW is broken. Fetched
+          // network-fresh (no-store) and bypassed by the SW.
+          function checkKillSwitch() {
+            return fetch('./sw-control.json', { cache: 'no-store' })
+              .then(function (r) { return r.ok ? r.json() : null; })
+              .then(function (ctl) {
+                if (!ctl) return false;
+                var id = String(ctl.unregister || '');
+                if (!id) return false;
+                var seen = localStorage.getItem('sw_unregister_id');
+                if (id === seen) return false; // already handled this signal
+                localStorage.setItem('sw_unregister_id', id);
+                console.warn('[SW] Kill-switch tripped (' + id + ') — clearing.');
+                return navigator.serviceWorker.getRegistrations()
+                  .then(function (regs) {
+                    return Promise.all(regs.map(function (r) { return r.unregister(); }));
+                  })
+                  .then(function () {
+                    return (self.caches ? caches.keys() : Promise.resolve([]));
+                  })
+                  .then(function (keys) {
+                    return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                  })
+                  .then(function () { location.reload(); return true; });
+              })
+              .catch(function () { return false; });
+          }
+
+          // --- Auto-reload when a new SW takes control ----------------------
+          // Guarded so it fires at most once (no reload loop).
+          var refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function () {
+            if (refreshing) return;
+            refreshing = true;
+            location.reload();
+          });
+
+          window.addEventListener('load', function () {
+            checkKillSwitch().then(function (tripped) {
+              if (tripped) return; // reloading; skip registration this pass
+              navigator.serviceWorker
+                .register('./sw.js', { scope: './' })
+                .then(function (reg) {
+                  // Periodic update check (once per day) + on focus.
+                  setInterval(function () { reg.update(); }, 24 * 60 * 60 * 1000);
+                })
+                .catch(function (err) {
+                  console.warn('[SW] Registration failed:', err);
+                });
+            });
+          });
+        })();
+      }
+    </script>
+  </body>
+</html>
