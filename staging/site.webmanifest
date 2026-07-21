@@ -1,8 +1,8 @@
 {
-  "name": "Captain Claw Web",
-  "short_name": "Captain Claw Web",
+  "name": "Claw Web",
+  "short_name": "Claw Web",
   "description": "Captain Claw (1997) platformer reimplementation",
-  "start_url": "./captain-claw-web.html",
+  "start_url": "./claw-web.html",
   "display": "fullscreen",
   "orientation": "landscape",
   "background_color": "#000000",
