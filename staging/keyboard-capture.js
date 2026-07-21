@@ -1,5 +1,5 @@
 /**
- * Keyboard Capture for OpenClaw WASM
+ * Keyboard Capture for Captain Claw WASM
  *
  * Prevents browser/OS shortcuts from interfering with game controls.
  * - Blocks Ctrl/Cmd + common shortcuts when game is focused
