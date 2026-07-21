@@ -4,12 +4,10 @@
  */
 export class AssetStorage {
   constructor() {
-    this.dbName = 'ClawWebAssets';
-    // Pre-rename database names across rebrands, NEWEST FIRST. Existing users
-    // have their uploaded CLAW.REZ under one of these; init() migrates it once
-    // so nobody has to re-upload ~113MB, regardless of which version they came
-    // from (OpenClawAssets -> CaptainClawWebAssets -> ClawWebAssets).
-    this.legacyDbNames = ['CaptainClawWebAssets', 'OpenClawAssets'];
+    this.dbName = 'CaptainClawWebAssets';
+    // Pre-rename database name. Existing users have their uploaded CLAW.REZ
+    // here; init() migrates it once so nobody has to re-upload ~113MB.
+    this.legacyDbName = 'OpenClawAssets';
     this.storeName = 'files';
     this.db = null;
     this.chunkSize = 1024 * 1024 * 5; // 5MB chunks to prevent memory issues
@@ -43,13 +41,11 @@ export class AssetStorage {
   }
 
   /**
-   * One-time migration of all records from a legacy DB into the current DB.
-   * Runs only when the current DB is empty; walks legacyDbNames newest-first
-   * and migrates from the first one that holds data, so a user coming from ANY
-   * prior version keeps their upload. No-op for new users and for anyone
-   * already migrated. All prior DBs are deleted afterwards. Any failure is
-   * swallowed: migration is best-effort and must never block startup (the user
-   * can always re-upload as a fallback).
+   * One-time migration of all records from the legacy DB into the current DB.
+   * Runs only when the current DB is empty and the legacy DB has data, so it
+   * is a no-op for new users and for anyone already migrated. The legacy DB is
+   * deleted afterwards. Any failure is swallowed: migration is best-effort and
+   * must never block startup (the user can always re-upload as a fallback).
    */
   async _migrateFromLegacy() {
     try {
@@ -62,50 +58,40 @@ export class AssetStorage {
       });
       if (existing.length > 0) return;
 
-      // If databases() is available (not in every browser), use it to skip
-      // legacy names that don't exist and avoid creating empty phantom DBs.
-      let present = null;
+      // Does the legacy DB exist? databases() isn't in every browser, so fall
+      // back to opening it and checking for our store.
       if (indexedDB.databases) {
-        try {
-          const dbs = await indexedDB.databases();
-          present = new Set(dbs.map((d) => d.name));
-        } catch (e) { present = null; }
+        const dbs = await indexedDB.databases();
+        if (!dbs.some((d) => d.name === this.legacyDbName)) return;
       }
 
-      let migrated = false;
-      for (const name of this.legacyDbNames) {
-        if (present && !present.has(name)) continue;
-
-        const legacy = await this._open(name);
-        if (!legacy.objectStoreNames.contains(this.storeName)) {
-          legacy.close();
-          continue;
-        }
-
-        const records = await new Promise((resolve) => {
-          const tx = legacy.transaction([this.storeName], 'readonly');
-          const req = tx.objectStore(this.storeName).getAll();
-          req.onsuccess = (e) => resolve(e.target.result || []);
-          req.onerror = () => resolve([]);
-        });
+      const legacy = await this._open(this.legacyDbName);
+      if (!legacy.objectStoreNames.contains(this.storeName)) {
         legacy.close();
-
-        if (!migrated && records.length > 0) {
-          await new Promise((resolve, reject) => {
-            const tx = this.db.transaction([this.storeName], 'readwrite');
-            const store = tx.objectStore(this.storeName);
-            records.forEach((r) => store.put(r));
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-          });
-          console.info('[migrate] Moved ' + records.length + ' asset record(s) from ' + name + '.');
-          migrated = true;
-        }
-
-        // Delete every legacy DB (whether or not it was the source) now that
-        // the current DB is authoritative.
-        indexedDB.deleteDatabase(name);
+        return;
       }
+
+      const records = await new Promise((resolve) => {
+        const tx = legacy.transaction([this.storeName], 'readonly');
+        const req = tx.objectStore(this.storeName).getAll();
+        req.onsuccess = (e) => resolve(e.target.result || []);
+        req.onerror = () => resolve([]);
+      });
+
+      if (records.length > 0) {
+        await new Promise((resolve, reject) => {
+          const tx = this.db.transaction([this.storeName], 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          records.forEach((r) => store.put(r));
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        });
+        console.info('[migrate] Moved ' + records.length + ' asset record(s) from ' + this.legacyDbName + '.');
+      }
+
+      legacy.close();
+      // Remove the old DB now that its contents are safely copied.
+      indexedDB.deleteDatabase(this.legacyDbName);
     } catch (e) {
       console.warn('[migrate] Legacy IndexedDB migration skipped:', e);
     }

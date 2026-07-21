@@ -1,5 +1,5 @@
 /**
- * Keyboard Capture for Claw Web
+ * Keyboard Capture for Captain Claw Web
  *
  * Prevents browser/OS shortcuts from interfering with game controls.
  * - Blocks Ctrl/Cmd + common shortcuts when game is focused
