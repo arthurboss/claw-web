@@ -7,6 +7,9 @@
   "orientation": "landscape",
   "background_color": "#000000",
   "theme_color": "#000000",
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  },
   "icons": [
     {
       "src": "favicon-16x16.png",
@@ -45,13 +48,15 @@
       "src": "android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "form_factor": "narrow"
+      "form_factor": "narrow",
+      "label": "Gameplay on mobile"
     },
     {
       "src": "android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "form_factor": "wide"
+      "form_factor": "wide",
+      "label": "Level 1 gameplay"
     }
   ]
 }
