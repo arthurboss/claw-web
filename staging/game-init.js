@@ -1,5 +1,5 @@
 /**
- * Main ES Module Coordinator for Captain Claw
+ * Main ES Module Coordinator for Captain Claw Web
  * Imports all modules and exposes necessary functions to window for HTML compatibility
  */
 
