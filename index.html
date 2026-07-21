@@ -3,6 +3,43 @@
   <head>
     <meta charset="UTF-8" />
 
+    <!-- Per-environment localStorage isolation. GitHub Pages serves every
+         deployment from ONE origin, and localStorage is origin-scoped, so
+         production (/WASM-OpenClaw/) and staging (/WASM-OpenClaw/staging/)
+         would otherwise share one key space: game saves, install-onboarding
+         flag, touch-mode, and the SW kill-switch id would all collide.
+         We namespace keys by scope. PRODUCTION KEEPS BARE KEYS so existing
+         users' saved games are preserved untouched; only sub-path
+         deployments (staging, previews) get a prefix. This runs before any
+         other script, so it also transparently covers the save-data glue
+         baked into openclaw.js (from SaveBridge.cpp) which we cannot edit
+         without a C++ rebuild. IndexedDB (CLAW.REZ + assets) is intentionally
+         NOT namespaced — it stays shared across environments. -->
+    <script>
+      (function () {
+        var path = location.pathname;
+        var m = path.match(/\/staging\//);
+        // Only sub-path environments get a prefix; production stays bare.
+        var PREFIX = m ? "staging:" : "";
+        if (!PREFIX) return; // production: no-op, native localStorage
+        try {
+          var proto = Object.getPrototypeOf(window.localStorage);
+          var raw = {
+            get: proto.getItem,
+            set: proto.setItem,
+            remove: proto.removeItem,
+          };
+          var wrap = function (k) { return PREFIX + k; };
+          proto.getItem = function (k) { return raw.get.call(this, wrap(k)); };
+          proto.setItem = function (k, v) { return raw.set.call(this, wrap(k), v); };
+          proto.removeItem = function (k) { return raw.remove.call(this, wrap(k)); };
+          console.info("[env] localStorage namespaced with prefix \"" + PREFIX + "\"");
+        } catch (e) {
+          console.warn("[env] Could not namespace localStorage:", e);
+        }
+      })();
+    </script>
+
     <title>OpenClaw</title>
     <meta
       name="description"
@@ -1503,69 +1540,12 @@
       })();
     </script>
 
-    <!-- Service Worker: installability + offline shell, with self-heal safety
-         net so a bad deploy can never permanently strand a client (important
-         on mobile, where clearing a stuck SW by hand is painful). -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        (function () {
-          // --- Remote kill-switch -------------------------------------------
-          // sw-control.json carries an "unregister" id. When that id changes,
-          // every client unregisters its SW + clears caches exactly once (we
-          // remember the last-handled id), then reloads clean. Page-side on
-          // purpose: it works even if the installed SW is broken. Fetched
-          // network-fresh (no-store) and bypassed by the SW.
-          function checkKillSwitch() {
-            return fetch('./sw-control.json', { cache: 'no-store' })
-              .then(function (r) { return r.ok ? r.json() : null; })
-              .then(function (ctl) {
-                if (!ctl) return false;
-                var id = String(ctl.unregister || '');
-                if (!id) return false;
-                var seen = localStorage.getItem('sw_unregister_id');
-                if (id === seen) return false; // already handled this signal
-                localStorage.setItem('sw_unregister_id', id);
-                console.warn('[SW] Kill-switch tripped (' + id + ') — clearing.');
-                return navigator.serviceWorker.getRegistrations()
-                  .then(function (regs) {
-                    return Promise.all(regs.map(function (r) { return r.unregister(); }));
-                  })
-                  .then(function () {
-                    return (self.caches ? caches.keys() : Promise.resolve([]));
-                  })
-                  .then(function (keys) {
-                    return Promise.all(keys.map(function (k) { return caches.delete(k); }));
-                  })
-                  .then(function () { location.reload(); return true; });
-              })
-              .catch(function () { return false; });
-          }
-
-          // --- Auto-reload when a new SW takes control ----------------------
-          // Guarded so it fires at most once (no reload loop).
-          var refreshing = false;
-          navigator.serviceWorker.addEventListener('controllerchange', function () {
-            if (refreshing) return;
-            refreshing = true;
-            location.reload();
-          });
-
-          window.addEventListener('load', function () {
-            checkKillSwitch().then(function (tripped) {
-              if (tripped) return; // reloading; skip registration this pass
-              navigator.serviceWorker
-                .register('./sw.js', { scope: './' })
-                .then(function (reg) {
-                  // Periodic update check (once per day) + on focus.
-                  setInterval(function () { reg.update(); }, 24 * 60 * 60 * 1000);
-                })
-                .catch(function (err) {
-                  console.warn('[SW] Registration failed:', err);
-                });
-            });
-          });
-        })();
-      }
-    </script>
+    <!-- Service Worker registration + self-heal, and the non-production env
+         marker. Both are defer-safe (they act on window 'load' or at end of
+         parse), so external + defer is fine. The localStorage-isolation shim
+         stays INLINE in <head> because it must patch Storage.prototype before
+         any other script (incl. the save glue baked into openclaw.js) runs. -->
+    <script src="sw-register.js" defer></script>
+    <script src="env-marker.js" defer></script>
   </body>
 </html>
