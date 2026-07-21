@@ -360,13 +360,13 @@ To add custom content:
 ### File Structure
 
 ```
-Captain Claw/
+OpenClaw/
 ├── build/                      # CMake build directory (gitignored)
 ├── build_wasm.sh              # Main build script
 ├── patch_sdl2_shaders.sh      # SDL2 shader patcher
 ├── CMakeLists.txt             # Build configuration
 ├── emsdk/                     # Emscripten SDK (gitignored)
-├── Captain Claw/Engine/           # C++ source code
+├── OpenClaw/Engine/           # C++ source code
 ├── libwap/                    # Game format parser
 ├── Box2D/                     # Physics engine
 ├── ThirdParty/                # Dependencies

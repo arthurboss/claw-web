@@ -269,13 +269,13 @@ INFO: Level assets loaded for LEVEL2
 
 ### Lazy Loading Implementation
 
-- `Captain Claw/Engine/GameApp/BaseGameApp.cpp:173` - Startup (skips eager metadata load)
-- `Captain Claw/Engine/GameApp/BaseGameApp.cpp:1356` - `LoadSingleLevelMetadata()`
-- `Captain Claw/Engine/GameApp/BaseGameApp.cpp:1545` - `GetLevelMetadata()` (with lazy load)
+- `OpenClaw/Engine/GameApp/BaseGameApp.cpp:173` - Startup (skips eager metadata load)
+- `OpenClaw/Engine/GameApp/BaseGameApp.cpp:1356` - `LoadSingleLevelMetadata()`
+- `OpenClaw/Engine/GameApp/BaseGameApp.cpp:1545` - `GetLevelMetadata()` (with lazy load)
 
 ### Resource Cache System
 
-- `Captain Claw/Engine/GameApp/BaseGameApp.cpp:186-196` - VPreload calls (startup assets)
+- `OpenClaw/Engine/GameApp/BaseGameApp.cpp:186-196` - VPreload calls (startup assets)
 - Resource cache system (default 150 items, configurable in config.xml)
 
 ### Asset Loading Implementation

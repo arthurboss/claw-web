@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deploy Build_Release/ to the ROOT of origin/gh-pages == PRODUCTION.
-#   https://arthurboss.github.io/WASM-OpenClaw/
+#   https://arthurboss.github.io/captain-claw-web/
 #
 # Safe against staging: the rsync --delete explicitly EXCLUDES staging/, so a
 # production deploy never touches the /staging/ subdirectory.
@@ -20,8 +20,8 @@ log "Syncing Build_Release/ -> gh-pages root (preserving staging/) ..."
 rsync -a --delete --exclude="staging/" "${RSYNC_EXCLUDES[@]}" \
   "$BUILD_DIR/" "$WORKTREE/"
 
-# GitHub Pages serves / from index.html; the game entry point is openclaw.html.
-cp "$BUILD_DIR/openclaw.html" "$WORKTREE/index.html"
+# GitHub Pages serves / from index.html; the game entry point is captain-claw-web.html.
+cp "$BUILD_DIR/captain-claw-web.html" "$WORKTREE/index.html"
 
 commit_and_push "$MSG"
-log "Production live at: https://arthurboss.github.io/WASM-OpenClaw/"
+log "Production live at: https://arthurboss.github.io/captain-claw-web/"

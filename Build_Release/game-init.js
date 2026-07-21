@@ -140,7 +140,7 @@ window.initGameWhenReady = async function() {
       // Small delay to ensure all async operations are complete
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // loadGame() is defined in inline script and handles captain-claw-web.js injection
+      // loadGame() is defined in inline script and handles openclaw.js injection
       if (typeof window.loadGame === 'function') {
         window.loadGame();
       } else {

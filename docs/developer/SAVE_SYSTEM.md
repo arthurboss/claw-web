@@ -2,7 +2,7 @@
 
 ## Overview
 
-Captain Claw Web stores game save data in localStorage under the key `openclaw:saves``. Save data is tiny (~1-5KB JSON).
+Captain Claw Web stores game save data in localStorage under the key `captain-claw-web:saves`. Save data is tiny (~1-5KB JSON).
 
 ## Architecture
 
@@ -17,7 +17,7 @@ Captain Claw Web stores game save data in localStorage under the key `openclaw:s
 
 ### 1. SaveBridge (C++)
 
-**Files:** `Captain Claw/Engine/GameApp/SaveBridge.h`, `SaveBridge.cpp`
+**Files:** `OpenClaw/Engine/GameApp/SaveBridge.h`, `SaveBridge.cpp`
 
 C++ interface for localStorage save operations using Emscripten's `EM_ASM` macro.
 
@@ -34,7 +34,7 @@ Note: function names retain the original `IndexedDB` naming for C++ call-site co
 
 ### 2. GameSaves JSON Serialization (C++)
 
-**File:** `Captain Claw/Engine/GameApp/GameSaves.h`
+**File:** `OpenClaw/Engine/GameApp/GameSaves.h`
 
 JSON serialization methods on save structures:
 
@@ -99,14 +99,14 @@ On startup (`BaseGameLogic::Initialize()`):
 
 ```javascript
 // In browser console
-JSON.parse(localStorage.getItem('openclaw:saves'));
+JSON.parse(localStorage.getItem('captain-claw-web:saves'));
 ```
 
 ### Clearing Save Data
 
 ```javascript
 // In browser console
-localStorage.removeItem('openclaw:saves');
+localStorage.removeItem('captain-claw-web:saves');
 ```
 
 ## References

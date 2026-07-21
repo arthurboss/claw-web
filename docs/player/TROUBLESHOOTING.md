@@ -231,7 +231,7 @@ If you're running low on disk space, the game may fail to store CLAW.REZ.
 2. Try a different browser (Chrome recommended)
 3. Ensure browser is up to date
 4. Disable browser extensions temporarily
-5. Report issues at: <https://github.com/arthurboss/Captain Claw/issues>
+5. Report issues at: <https://github.com/arthurboss/OpenClaw/issues>
 
 Include in your report:
 

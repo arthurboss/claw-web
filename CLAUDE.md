@@ -38,8 +38,8 @@ Vite gives hot reload and rewrites `/` → `/captain-claw-web.html``. Serve over
 
 Deploys are manual via `scripts/`. Both environments share the `gh-pages` branch: **production at root**, **staging under `/staging/`**. Neither script can clobber the other (prod excludes `staging/` from `--delete`; staging writes only `/staging/`). Both verify the WASM artifacts are fresh (guards the `ASM_CONSTS` crash from a stale loader+wasm pair) and self-clean their temp worktree.
 
-- **Production:** <https://arthurboss.github.io/WASM-Captain Claw/> — `./scripts/deploy-prod.sh ["msg"]`
-- **Staging:** <https://arthurboss.github.io/WASM-Captain Claw/staging/> — `./scripts/deploy-staging.sh ["msg"]`
+- **Production:** <https://arthurboss.github.io/captain-claw-web/> — `./scripts/deploy-prod.sh ["msg"]`
+- **Staging:** <https://arthurboss.github.io/captain-claw-web/staging/> — `./scripts/deploy-staging.sh ["msg"]`
 
 **Default workflow:** deploy every new branch to **staging first** (safe — never touches prod), test on a real device, then merge and run `deploy-prod.sh` to promote. Skip only for deploy-only/non-visual changes.
 
@@ -55,7 +55,7 @@ Deploys are manual via `scripts/`. Both environments share the `gh-pages` branch
 ### Layout
 
 ```text
-Captain Claw/Engine/       # Core C++ engine
+OpenClaw/Engine/       # Core C++ engine
   Actor/ Audio/ Events/ GameApp/ Physics/ Resource/ Scene/ UserInterface/ Process/ Logger/ Util/
   Graphics/WASM/       # WebGL renderer (Graphics/Generic/ = platform-agnostic abstraction)
 libwap/ Box2D/ ThirdParty/     # WAP parser, physics, deps (TinyXML, FastDelegate, sigc++)

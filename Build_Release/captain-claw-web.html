@@ -12,7 +12,7 @@
          users' saved games are preserved untouched; only sub-path
          deployments (staging, previews) get a prefix. This runs before any
          other script, so it also transparently covers the save-data glue
-         baked into captain-claw-web.js (from SaveBridge.cpp) which we cannot edit
+         baked into openclaw.js (from SaveBridge.cpp) which we cannot edit
          without a C++ rebuild. IndexedDB (CLAW.REZ + assets) is intentionally
          NOT namespaced — it stays shared across environments. -->
     <script>
@@ -21,21 +21,48 @@
         var m = path.match(/\/staging\//);
         // Only sub-path environments get a prefix; production stays bare.
         var PREFIX = m ? "staging:" : "";
-        if (!PREFIX) return; // production: no-op, native localStorage
+        if (PREFIX) {
+          try {
+            var proto = Object.getPrototypeOf(window.localStorage);
+            var raw = {
+              get: proto.getItem,
+              set: proto.setItem,
+              remove: proto.removeItem,
+            };
+            var wrap = function (k) { return PREFIX + k; };
+            proto.getItem = function (k) { return raw.get.call(this, wrap(k)); };
+            proto.setItem = function (k, v) { return raw.set.call(this, wrap(k), v); };
+            proto.removeItem = function (k) { return raw.remove.call(this, wrap(k)); };
+            console.info("[env] localStorage namespaced with prefix \"" + PREFIX + "\"");
+          } catch (e) {
+            console.warn("[env] Could not namespace localStorage:", e);
+          }
+        }
+      })();
+    </script>
+
+    <!-- One-time save-data migration. The save key was renamed from the
+         pre-rebrand 'openclaw:saves' to 'captain-claw-web:saves' (matched in
+         SaveBridge.cpp). Copy an existing legacy save into the new key once so
+         returning players keep their progress, then remove the old key. Runs
+         AFTER the env shim above so the prefix (on staging) applies to both
+         keys consistently. Guarded to act only when the new key is empty and a
+         legacy value exists. -->
+    <script>
+      (function () {
         try {
-          var proto = Object.getPrototypeOf(window.localStorage);
-          var raw = {
-            get: proto.getItem,
-            set: proto.setItem,
-            remove: proto.removeItem,
-          };
-          var wrap = function (k) { return PREFIX + k; };
-          proto.getItem = function (k) { return raw.get.call(this, wrap(k)); };
-          proto.setItem = function (k, v) { return raw.set.call(this, wrap(k), v); };
-          proto.removeItem = function (k) { return raw.remove.call(this, wrap(k)); };
-          console.info("[env] localStorage namespaced with prefix \"" + PREFIX + "\"");
+          var OLD = "openclaw:saves";
+          var NEW = "captain-claw-web:saves";
+          if (localStorage.getItem(NEW) === null) {
+            var legacy = localStorage.getItem(OLD);
+            if (legacy !== null) {
+              localStorage.setItem(NEW, legacy);
+              localStorage.removeItem(OLD);
+              console.info("[migrate] Copied legacy save data to '" + NEW + "'.");
+            }
+          }
         } catch (e) {
-          console.warn("[env] Could not namespace localStorage:", e);
+          console.warn("[migrate] Save-data migration skipped:", e);
         }
       })();
     </script>
@@ -1544,7 +1571,7 @@
          marker. Both are defer-safe (they act on window 'load' or at end of
          parse), so external + defer is fine. The localStorage-isolation shim
          stays INLINE in <head> because it must patch Storage.prototype before
-         any other script (incl. the save glue baked into captain-claw-web.js) runs. -->
+         any other script (incl. the save glue baked into openclaw.js) runs. -->
     <script src="sw-register.js" defer></script>
     <script src="env-marker.js" defer></script>
   </body>
