@@ -4,10 +4,6 @@
 
 > **⚠️ URL Changed:** Previously at `/captain-claw-web/` and `/WASM-OpenClaw/`. Old bookmarks redirect. Your `CLAW.REZ` and saves migrate automatically.
 
-**Unofficial fan project based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek:**
-
-Not affiliated with or endorsed by the rights holders. Captain Claw is a trademark of Monolith Productions / Warner Bros. This project ships no game content - you supply your own `CLAW.REZ` from a copy of the game you own.
-
 | Main Menu | Level 1 Gameplay (in ultra widescreen) |
 |-----------|------------------|
 | ![Game Menu](docs/screenshots/game-menu.jpeg) | ![Level 1 Gameplay](docs/screenshots/gameplay-level1.jpeg) |
@@ -16,9 +12,15 @@ Not affiliated with or endorsed by the rights holders. Captain Claw is a tradema
 - Supports gamepad with vibration/rumble
 - Supports save game progress
 
+## Disclaimer
+
+> **Unofficial fan project based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek:**
+ Not affiliated with or endorsed by the rights holders. Captain Claw is a trademark of Monolith Productions / Warner Bros. This project ships no game content - you supply your own `CLAW.REZ` from a copy of the game you own.
+
 ## Quick Start
 
 ### Requirements
+
 - **Browser:** Chrome 105+ / Firefox 121+ / Safari 16.4+ / Edge 105+
 - **Storage:** ~120MB free space in browser
 - **CLAW.REZ:** Original game assets from Captain Claw (1997) — you must own the game
