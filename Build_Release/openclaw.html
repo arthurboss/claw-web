@@ -1540,111 +1540,12 @@
       })();
     </script>
 
-    <!-- Service Worker: installability + offline shell, with self-heal safety
-         net so a bad deploy can never permanently strand a client (important
-         on mobile, where clearing a stuck SW by hand is painful). -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        (function () {
-          // --- Remote kill-switch -------------------------------------------
-          // sw-control.json carries an "unregister" id. When that id changes,
-          // every client unregisters its SW + clears caches exactly once (we
-          // remember the last-handled id), then reloads clean. Page-side on
-          // purpose: it works even if the installed SW is broken. Fetched
-          // network-fresh (no-store) and bypassed by the SW.
-          function checkKillSwitch() {
-            return fetch('./sw-control.json', { cache: 'no-store' })
-              .then(function (r) { return r.ok ? r.json() : null; })
-              .then(function (ctl) {
-                if (!ctl) return false;
-                var id = String(ctl.unregister || '');
-                if (!id) return false;
-                var seen = localStorage.getItem('sw_unregister_id');
-                if (id === seen) return false; // already handled this signal
-                localStorage.setItem('sw_unregister_id', id);
-                console.warn('[SW] Kill-switch tripped (' + id + ') — clearing.');
-                // Scope the teardown to THIS environment. On a shared origin,
-                // getRegistrations()/caches.keys() see sibling deployments too;
-                // an unscoped clear would unregister production's SW and delete
-                // its caches when only staging's switch was flipped. We match
-                // our own scope path (the page's directory) for registrations
-                // and the sw.js cache-name convention ("openclaw::<scope>::")
-                // for caches.
-                var scopeDir = location.pathname.replace(/[^/]*$/, '');
-                var cachePrefix = 'openclaw::' + scopeDir + '::';
-                return navigator.serviceWorker.getRegistrations()
-                  .then(function (regs) {
-                    return Promise.all(regs
-                      .filter(function (r) {
-                        try { return new URL(r.scope).pathname === scopeDir; }
-                        catch (e) { return false; }
-                      })
-                      .map(function (r) { return r.unregister(); }));
-                  })
-                  .then(function () {
-                    return (self.caches ? caches.keys() : Promise.resolve([]));
-                  })
-                  .then(function (keys) {
-                    return Promise.all(keys
-                      .filter(function (k) { return k.indexOf(cachePrefix) === 0; })
-                      .map(function (k) { return caches.delete(k); }));
-                  })
-                  .then(function () { location.reload(); return true; });
-              })
-              .catch(function () { return false; });
-          }
-
-          // --- Auto-reload when a new SW takes control ----------------------
-          // Guarded so it fires at most once (no reload loop).
-          var refreshing = false;
-          navigator.serviceWorker.addEventListener('controllerchange', function () {
-            if (refreshing) return;
-            refreshing = true;
-            location.reload();
-          });
-
-          window.addEventListener('load', function () {
-            checkKillSwitch().then(function (tripped) {
-              if (tripped) return; // reloading; skip registration this pass
-              navigator.serviceWorker
-                .register('./sw.js', { scope: './' })
-                .then(function (reg) {
-                  // Periodic update check (once per day) + on focus.
-                  setInterval(function () { reg.update(); }, 24 * 60 * 60 * 1000);
-                })
-                .catch(function (err) {
-                  console.warn('[SW] Registration failed:', err);
-                });
-            });
-          });
-        })();
-      }
-    </script>
-
-    <!-- Environment marker: makes non-production deployments unmistakable.
-         Production (served at the gh-pages root) shows nothing; any sub-path
-         deployment (staging, previews) logs its env and paints a small,
-         click-through corner badge so it can never be confused with prod. -->
-    <script>
-      (function () {
-        var m = location.pathname.match(/\/staging\//);
-        var env = m ? 'staging' : 'production';
-        console.info('[env] OpenClaw environment: ' + env + ' (' + location.pathname + ')');
-        if (env === 'production') return;
-        window.addEventListener('load', function () {
-          var b = document.createElement('div');
-          b.textContent = 'STAGING';
-          b.setAttribute('aria-hidden', 'true');
-          b.style.cssText =
-            'position:fixed;top:0;right:0;z-index:2147483647;pointer-events:none;' +
-            'font:700 11px/1 system-ui,sans-serif;letter-spacing:.08em;color:#fff;' +
-            'background:#b8860b;padding:3px 7px;border-bottom-left-radius:5px;' +
-            'opacity:.85;text-shadow:0 1px 1px rgba(0,0,0,.5);' +
-            'padding-top:calc(3px + env(safe-area-inset-top));' +
-            'padding-right:calc(7px + env(safe-area-inset-right));';
-          document.body.appendChild(b);
-        });
-      })();
-    </script>
+    <!-- Service Worker registration + self-heal, and the non-production env
+         marker. Both are defer-safe (they act on window 'load' or at end of
+         parse), so external + defer is fine. The localStorage-isolation shim
+         stays INLINE in <head> because it must patch Storage.prototype before
+         any other script (incl. the save glue baked into openclaw.js) runs. -->
+    <script src="sw-register.js" defer></script>
+    <script src="env-marker.js" defer></script>
   </body>
 </html>

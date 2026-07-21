@@ -31,6 +31,8 @@ const SHELL_ASSETS = [
   "./save-storage.js",
   "./gamepad-bridge.js",
   "./keyboard-capture.js",
+  "./sw-register.js",
+  "./env-marker.js",
   "./site.webmanifest",
   "./android-chrome-192x192.png",
   "./android-chrome-512x512.png",
