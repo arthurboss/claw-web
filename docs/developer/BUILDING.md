@@ -1,6 +1,6 @@
-# Building Captain Claw WASM
+# Building Captain Claw Web
 
-This guide covers building the WebAssembly version of Captain Claw from source.
+This guide covers building the WebAssembly version of Captain Claw Web from source.
 
 ## Prerequisites
 
@@ -42,11 +42,11 @@ source ./emsdk_env.sh
 
 **Note:** The `source ./emsdk_env.sh` command must be run in every new terminal before building.
 
-### 2. Clone Captain Claw
+### 2. Clone Captain Claw Web
 
 ```bash
 git clone [your-repo-url]
-cd Captain Claw
+cd captain-claw-web
 ```
 
 ### 3. Prepare Assets
@@ -430,4 +430,4 @@ Strip debug symbols (done by default):
 
 - Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for common issues
 - Review Emscripten documentation: <https://emscripten.org/docs/>
-- Original Captain Claw: <https://github.com/pjasicek/Captain Claw>
+- Original Captain Claw: <https://github.com/pjasicek/OpenClaw>

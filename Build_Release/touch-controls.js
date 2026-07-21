@@ -1,5 +1,5 @@
 /**
- * On-screen touch controls (joystick + action buttons) for Captain Claw WASM.
+ * On-screen touch controls (joystick + action buttons) for Captain Claw Web.
  *
  * Renders an HTML/CSS overlay on top of the canvas and drives the game by
  * dispatching KeyboardEvents on the window — the same input path the engine's

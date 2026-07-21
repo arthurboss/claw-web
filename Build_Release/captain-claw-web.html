@@ -67,13 +67,13 @@
       })();
     </script>
 
-    <title>Captain Claw</title>
+    <title>Captain Claw Web</title>
     <meta
       name="description"
       content="Reimplementation of Captain Claw (1997) platformer"
     />
 
-    <meta property="og:title" content="Captain Claw" />
+    <meta property="og:title" content="Captain Claw Web" />
     <meta property="og:description" content="Play Captain Claw (1997) in your web browser" />
     <!--<meta property="og:image" content="preview.png">-->
 
@@ -87,7 +87,7 @@
     <!-- iOS PWA: standalone fullscreen mode, hides Safari chrome when added to Home Screen -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Captain Claw" />
+    <meta name="apple-mobile-web-app-title" content="Captain Claw Web" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#000000" />
 
@@ -734,7 +734,7 @@
               class="control-btn"
               id="pwa-install-control"
               title="Install App"
-              aria-label="Install Captain Claw"
+              aria-label="Install Captain Claw Web"
               style="display: none"
             >
               <svg class="icon-download" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
@@ -756,10 +756,10 @@
       <div class="onboard-card">
         <div class="onboard-emoji">🎮</div>
         <span id="installBadge" class="onboard-badge">&nbsp;</span>
-        <h2>Install Captain Claw?</h2>
-        <p id="installReason">Install Captain Claw for the best experience.</p>
+        <h2>Install Captain Claw Web?</h2>
+        <p id="installReason">Install Captain Claw Web for the best experience.</p>
         <div class="onboard-actions">
-          <button class="btn btn-primary" id="installYesBtn"><svg class="icon-download" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> Install Captain Claw</button>
+          <button class="btn btn-primary" id="installYesBtn"><svg class="icon-download" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> Install Captain Claw Web</button>
           <button class="btn btn-ghost" id="installSkipBtn">Not now</button>
         </div>
       </div>
@@ -1411,7 +1411,7 @@
           if (isIOSSafari) {
             return {
               level: 'recommended',
-              reason: 'On iPhone/iPad, installing is the only way to play truly fullscreen and launch Captain Claw straight from your home screen.'
+              reason: 'On iPhone/iPad, installing is the only way to play truly fullscreen and launch Captain Claw Web straight from your home screen.'
             };
           }
           if (isSamsungBrowser) {
@@ -1430,7 +1430,7 @@
           }
           return {
             level: 'optional',
-            reason: 'On desktop, Captain Claw already runs great in the browser. Installing simply opens it in its own dedicated window.'
+            reason: 'On desktop, Captain Claw Web already runs great in the browser. Installing simply opens it in its own dedicated window.'
           };
         }
 
@@ -1451,21 +1451,21 @@
           }
           if (isIOSSafari) {
             alert(
-              'Install Captain Claw on iOS:\n\n' +
+              'Install Captain Claw Web on iOS:\n\n' +
               '1. Tap the Share button at the bottom of Safari\n' +
               '2. Choose “Add to Home Screen”\n' +
               '3. Tap “Add” — the game launches fullscreen.'
             );
           } else if (isMacSafari) {
             alert(
-              'Install Captain Claw on Mac:\n\n' +
+              'Install Captain Claw Web on Mac:\n\n' +
               '1. Open the File menu in Safari\n' +
               '2. Choose “Add to Dock…”\n' +
               '3. Confirm — the game opens in its own window.'
             );
           } else {
             alert(
-              'Install Captain Claw:\n\n' +
+              'Install Captain Claw Web:\n\n' +
               'Open your browser menu and choose “Install app”,\n' +
               '“Add to Home Screen”, or “Create shortcut”.\n\n' +
               'The game will then open in its own fullscreen window.'

@@ -2,8 +2,8 @@
 // Vite will serve these with consistent, deterministic paths
 
 // Self-scope the cache name to this SW's own directory so multiple
-// deployments sharing one origin (e.g. production at /WASM-Captain Claw/ and
-// staging at /WASM-Captain Claw/staging/) get DISTINCT caches. Without this they
+// deployments sharing one origin (e.g. production at /captain-claw-web/ and
+// staging at /captain-claw-web/staging/) get DISTINCT caches. Without this they
 // share the origin's Cache Storage, and a version bump in one environment
 // would run activate -> caches.keys() -> delete the OTHER environment's cache.
 // registration.scope is the source of truth; fall back to the SW's own path.

@@ -1,8 +1,8 @@
-# Captain Claw WASM Architecture
+# Captain Claw Web Architecture
 
 ## Overview
 
-Captain Claw WASM uses a lazy-loading architecture optimized for browser environments. Assets are loaded on-demand rather than all at startup, significantly reducing initial load time and memory usage.
+Captain Claw Web uses a lazy-loading architecture optimized for browser environments. Assets are loaded on-demand rather than all at startup, significantly reducing initial load time and memory usage.
 
 ## Asset Loading Strategy
 
@@ -332,6 +332,6 @@ Potential improvements for even better performance:
 
 ## References
 
-- Original Captain Claw: <https://github.com/pjasicek/Captain Claw>
+- Original Captain Claw: <https://github.com/pjasicek/OpenClaw>
 - Emscripten Documentation: <https://emscripten.org/docs/>
 - IndexedDB API: <https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API>
