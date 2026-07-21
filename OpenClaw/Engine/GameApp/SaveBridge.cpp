@@ -14,7 +14,7 @@ namespace SaveBridge {
 bool SaveToIndexedDB(const std::string& jsonData) {
     int result = EM_ASM_INT({
         try {
-            localStorage.setItem('openclaw:saves', UTF8ToString($0));
+            localStorage.setItem('captain-claw-web:saves', UTF8ToString($0));
             return 1;
         } catch (e) {
             console.error('[SaveBridge] Save error:', e);
@@ -28,7 +28,7 @@ bool SaveToIndexedDB(const std::string& jsonData) {
 std::string LoadFromIndexedDB() {
     char* result = (char*)EM_ASM_INT({
         try {
-            var jsonStr = localStorage.getItem('openclaw:saves');
+            var jsonStr = localStorage.getItem('captain-claw-web:saves');
             if (!jsonStr) return 0;
             var lengthBytes = lengthBytesUTF8(jsonStr) + 1;
             var ptr = _malloc(lengthBytes);
@@ -52,7 +52,7 @@ std::string LoadFromIndexedDB() {
 bool HasSaveData() {
     int result = EM_ASM_INT({
         try {
-            return localStorage.getItem('openclaw:saves') ? 1 : 0;
+            return localStorage.getItem('captain-claw-web:saves') ? 1 : 0;
         } catch (e) {
             return 0;
         }
@@ -64,7 +64,7 @@ bool HasSaveData() {
 bool DeleteSaveData() {
     int result = EM_ASM_INT({
         try {
-            localStorage.removeItem('openclaw:saves');
+            localStorage.removeItem('captain-claw-web:saves');
             return 1;
         } catch (e) {
             console.error('[SaveBridge] Delete error:', e);

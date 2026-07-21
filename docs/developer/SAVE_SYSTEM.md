@@ -2,7 +2,7 @@
 
 ## Overview
 
-OpenClaw stores game save data in `localStorage` under the key `openclaw:saves`. Save data is tiny (~1-5KB JSON).
+Captain Claw Web stores game save data in localStorage under the key `captain-claw-web:saves`. Save data is tiny (~1-5KB JSON).
 
 ## Architecture
 
@@ -99,14 +99,14 @@ On startup (`BaseGameLogic::Initialize()`):
 
 ```javascript
 // In browser console
-JSON.parse(localStorage.getItem('openclaw:saves'));
+JSON.parse(localStorage.getItem('captain-claw-web:saves'));
 ```
 
 ### Clearing Save Data
 
 ```javascript
 // In browser console
-localStorage.removeItem('openclaw:saves');
+localStorage.removeItem('captain-claw-web:saves');
 ```
 
 ## References

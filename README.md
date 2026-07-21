@@ -1,8 +1,10 @@
-# OpenClaw WASM
+# Captain Claw Web
 
 > Play Captain Claw (1997) in your web browser - no installation needed!
 
-**Play [here](https://arthurboss.github.io/WASM-OpenClaw/)** (requires you to upload the CLAW.REZ file)
+> **⚠️ URL Changed:** This project was renamed from `WASM-OpenClaw`. Old bookmarks to `/WASM-OpenClaw/` will redirect, but please update to [https://arthurboss.github.io/captain-claw-web/](https://arthurboss.github.io/captain-claw-web/). Your uploaded `CLAW.REZ` and saved progress are preserved automatically (they are stored per-origin and migrated on first load) — no re-upload needed.
+
+**Play [here](https://arthurboss.github.io/captain-claw-web/)** (requires you to upload the CLAW.REZ file)
 
 Browser-based version of the classic platformer. Based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek.
 
@@ -17,7 +19,6 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 ## Quick Start
 
 ### Requirements
-
 - **Browser:** Chrome 105+ / Firefox 121+ / Safari 16.4+ / Edge 105+
 - **Storage:** ~120MB free space in browser
 - **CLAW.REZ:** Original game assets from Captain Claw (1997) — you must own the game
@@ -27,8 +28,8 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 1. **Clone or download the repository:**
 
    ```bash
-   git clone https://github.com/arthurboss/WASM-OpenClaw.git
-   cd WASM-OpenClaw
+   git clone https://github.com/arthurboss/captain-claw-web.git
+   cd captain-claw-web
    ```
 
 2. **Build the game:**
@@ -104,9 +105,9 @@ Original game assets (CLAW.REZ) remain copyright Monolith Productions.
 ## Credits
 
 - **Original Game:** Monolith Productions (1997)
-- **OpenClaw Engine:** [pjasicek](https://github.com/pjasicek/OpenClaw)
+- **OpenClaw Engine:** pjasicek
 - **WASM Port:** Arthur Boss
 
 ---
 
-**Note:** This is a WASM-only fork optimized for browsers. For native desktop builds, visit the [original OpenClaw repository](https://github.com/pjasicek/OpenClaw).
+**Note:** This is a WASM-only port optimized for browsers.

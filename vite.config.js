@@ -23,7 +23,7 @@ export default defineConfig({
     outDir: resolve(import.meta.dirname, 'dist'),
     emptyOutDir: true,
     rollupOptions: {
-      input: resolve(import.meta.dirname, 'Build_Release/openclaw.html'),
+      input: resolve(import.meta.dirname, 'Build_Release/captain-claw-web.html'),
     },
     assetsInlineLimit: 0,
   },
@@ -39,7 +39,7 @@ export default defineConfig({
       name: 'rewrite-root',
       configureServer(server) {
         server.middlewares.use((req, _res, next) => {
-          if (req.url === '/') req.url = '/openclaw.html';
+          if (req.url === '/') req.url = '/captain-claw-web.html';
           next();
         });
       },

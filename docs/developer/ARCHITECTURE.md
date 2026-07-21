@@ -1,8 +1,8 @@
-# OpenClaw WASM Architecture
+# Captain Claw Web Architecture
 
 ## Overview
 
-OpenClaw WASM uses a lazy-loading architecture optimized for browser environments. Assets are loaded on-demand rather than all at startup, significantly reducing initial load time and memory usage.
+Captain Claw Web uses a lazy-loading architecture optimized for browser environments. Assets are loaded on-demand rather than all at startup, significantly reducing initial load time and memory usage.
 
 ## Asset Loading Strategy
 
@@ -190,7 +190,7 @@ Build_Release/
 ├─ openclaw.wasm        # Compiled game code (~48MB)
 ├─ openclaw.js          # Emscripten runtime loader (~413KB)
 ├─ openclaw.data        # Preloaded assets
-├─ openclaw.html        # Game entry point
+├─ captain-claw-web.html        # Game entry point
 ├─ *.js                 # Bridge modules (graphics, textures, asset loading)
 └─ config.xml           # Game configuration
 ```
@@ -332,6 +332,5 @@ Potential improvements for even better performance:
 
 ## References
 
-- Original OpenClaw: <https://github.com/pjasicek/OpenClaw>
 - Emscripten Documentation: <https://emscripten.org/docs/>
 - IndexedDB API: <https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API>

@@ -1,6 +1,6 @@
 # Gamepad Support
 
-OpenClaw supports Xbox, PlayStation, and most standard game controllers.
+Captain Claw Web supports Xbox, PlayStation, and most standard game controllers.
 
 ## Browser Support
 
