@@ -1,12 +1,12 @@
-# Captain Claw Web
+# Claw Web
 
-> Play Captain Claw (1997) in your web browser - no installation needed!
+**[Play here](https://arthurboss.github.io/claw-web/)** - the classic Claw platformer in your web browser (requires uploading CLAW.REZ).
 
-> **⚠️ URL Changed:** This project was renamed from `WASM-OpenClaw`. Old bookmarks to `/WASM-OpenClaw/` will redirect, but please update to [https://arthurboss.github.io/captain-claw-web/](https://arthurboss.github.io/captain-claw-web/). Your uploaded `CLAW.REZ` and saved progress are preserved automatically (they are stored per-origin and migrated on first load) — no re-upload needed.
+> **⚠️ URL Changed:** Previously at `/captain-claw-web/` and `/WASM-OpenClaw/`. Old bookmarks redirect. Your `CLAW.REZ` and saves migrate automatically.
 
-**Play [here](https://arthurboss.github.io/captain-claw-web/)** (requires you to upload the CLAW.REZ file)
+**Unofficial fan project based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek:**
 
-Browser-based version of the classic platformer. Based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek.
+Not affiliated with or endorsed by the rights holders. Captain Claw is a trademark of Monolith Productions / Warner Bros. This project ships no game content - you supply your own `CLAW.REZ` from a copy of the game you own.
 
 | Main Menu | Level 1 Gameplay (in ultra widescreen) |
 |-----------|------------------|
@@ -28,8 +28,8 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 1. **Clone or download the repository:**
 
    ```bash
-   git clone https://github.com/arthurboss/captain-claw-web.git
-   cd captain-claw-web
+   git clone https://github.com/arthurboss/claw-web.git
+   cd claw-web
    ```
 
 2. **Build the game:**
@@ -105,9 +105,7 @@ Original game assets (CLAW.REZ) remain copyright Monolith Productions.
 ## Credits
 
 - **Original Game:** Monolith Productions (1997)
-- **OpenClaw Engine:** pjasicek
-- **WASM Port:** Arthur Boss
+- **OpenClaw base project:** [Petr Jašíček](https://github.com/pjasicek/)
+- **This web-focused version:** [Arthur Boss](https://github.com/arthurboss)
 
 ---
-
-**Note:** This is a WASM-only port optimized for browsers.
