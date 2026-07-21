@@ -2,6 +2,8 @@
 
 Guidance for Claude Code when working in this repository.
 
+> **Never touch the upstream / original repository.** This is a fork. All pushes, branches, PRs, and deploys go to the fork (`arthurboss/WASM-OpenClaw`) only. Never push to, open PRs against, or otherwise modify upstream (`pjasicek/OpenClaw`); it is read-only reference. When using `gh`, always pass `--repo arthurboss/WASM-OpenClaw`.
+
 ## Overview
 
 OpenClaw WASM is a browser-based fork of Captain Claw (1997), focused on optimizing the WebAssembly build. The original archive (`CLAW.REZ`, ~113MB) is **not** bundled: the user uploads it once and it's stored compressed in IndexedDB. Startup is fast (~48MB download, 2-3s) because level assets lazy-load on demand.
@@ -117,8 +119,15 @@ Emscripten flags live in `CMakeLists.txt` (SDL2 + image/ttf/gfx/mixer, `ASYNCIFY
 ## Known Limitations
 
 - MIDI audio not supported on WASM (WAV/OGG fine).
-- Firefox: ALT opens the window menu (browser bug) — use fullscreen.
+- Firefox: ALT opens the window menu (browser bug); use fullscreen.
 - Death/teleport fade effects can have rendering quirks.
+
+**iOS / Apple:**
+
+- The browser Fullscreen API is unsupported on iOS (iPhone/iPad, and iPadOS Safari that reports as `MacIntel` with touch). Toggling it crashes the game, so the fullscreen menu controls are hidden on iOS (`UserInterface.cpp` `FullscreenOn`/`FullscreenOff`). True fullscreen on iOS is only available by installing the PWA to the home screen (standalone display mode) — hence the install prompt is `recommended` on iOS Safari.
+- On desktop Safari (macOS), pressing Ctrl+Arrow while fullscreen can switch Spaces and leave the game stuck in fullscreen; recovery is via the OS, not the game.
+- iOS Safari reports stale viewport dimensions during an orientation change, so layout must re-measure after a short delay on `orientationchange` (handled in `openclaw.html`).
+- Web Audio / AudioWorklet and Keyboard Lock require a secure context on iOS too, so local IP testing over plain HTTP will not have audio or key capture.
 
 ## Docs & References
 
