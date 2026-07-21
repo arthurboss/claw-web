@@ -3,6 +3,43 @@
   <head>
     <meta charset="UTF-8" />
 
+    <!-- Per-environment localStorage isolation. GitHub Pages serves every
+         deployment from ONE origin, and localStorage is origin-scoped, so
+         production (/WASM-OpenClaw/) and staging (/WASM-OpenClaw/staging/)
+         would otherwise share one key space: game saves, install-onboarding
+         flag, touch-mode, and the SW kill-switch id would all collide.
+         We namespace keys by scope. PRODUCTION KEEPS BARE KEYS so existing
+         users' saved games are preserved untouched; only sub-path
+         deployments (staging, previews) get a prefix. This runs before any
+         other script, so it also transparently covers the save-data glue
+         baked into openclaw.js (from SaveBridge.cpp) which we cannot edit
+         without a C++ rebuild. IndexedDB (CLAW.REZ + assets) is intentionally
+         NOT namespaced — it stays shared across environments. -->
+    <script>
+      (function () {
+        var path = location.pathname;
+        var m = path.match(/\/staging\//);
+        // Only sub-path environments get a prefix; production stays bare.
+        var PREFIX = m ? "staging:" : "";
+        if (!PREFIX) return; // production: no-op, native localStorage
+        try {
+          var proto = Object.getPrototypeOf(window.localStorage);
+          var raw = {
+            get: proto.getItem,
+            set: proto.setItem,
+            remove: proto.removeItem,
+          };
+          var wrap = function (k) { return PREFIX + k; };
+          proto.getItem = function (k) { return raw.get.call(this, wrap(k)); };
+          proto.setItem = function (k, v) { return raw.set.call(this, wrap(k), v); };
+          proto.removeItem = function (k) { return raw.remove.call(this, wrap(k)); };
+          console.info("[env] localStorage namespaced with prefix \"" + PREFIX + "\"");
+        } catch (e) {
+          console.warn("[env] Could not namespace localStorage:", e);
+        }
+      })();
+    </script>
+
     <title>OpenClaw</title>
     <meta
       name="description"
@@ -1526,15 +1563,31 @@
                 if (id === seen) return false; // already handled this signal
                 localStorage.setItem('sw_unregister_id', id);
                 console.warn('[SW] Kill-switch tripped (' + id + ') — clearing.');
+                // Scope the teardown to THIS environment. On a shared origin,
+                // getRegistrations()/caches.keys() see sibling deployments too;
+                // an unscoped clear would unregister production's SW and delete
+                // its caches when only staging's switch was flipped. We match
+                // our own scope path (the page's directory) for registrations
+                // and the sw.js cache-name convention ("openclaw::<scope>::")
+                // for caches.
+                var scopeDir = location.pathname.replace(/[^/]*$/, '');
+                var cachePrefix = 'openclaw::' + scopeDir + '::';
                 return navigator.serviceWorker.getRegistrations()
                   .then(function (regs) {
-                    return Promise.all(regs.map(function (r) { return r.unregister(); }));
+                    return Promise.all(regs
+                      .filter(function (r) {
+                        try { return new URL(r.scope).pathname === scopeDir; }
+                        catch (e) { return false; }
+                      })
+                      .map(function (r) { return r.unregister(); }));
                   })
                   .then(function () {
                     return (self.caches ? caches.keys() : Promise.resolve([]));
                   })
                   .then(function (keys) {
-                    return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                    return Promise.all(keys
+                      .filter(function (k) { return k.indexOf(cachePrefix) === 0; })
+                      .map(function (k) { return caches.delete(k); }));
                   })
                   .then(function () { location.reload(); return true; });
               })
@@ -1566,6 +1619,32 @@
           });
         })();
       }
+    </script>
+
+    <!-- Environment marker: makes non-production deployments unmistakable.
+         Production (served at the gh-pages root) shows nothing; any sub-path
+         deployment (staging, previews) logs its env and paints a small,
+         click-through corner badge so it can never be confused with prod. -->
+    <script>
+      (function () {
+        var m = location.pathname.match(/\/staging\//);
+        var env = m ? 'staging' : 'production';
+        console.info('[env] OpenClaw environment: ' + env + ' (' + location.pathname + ')');
+        if (env === 'production') return;
+        window.addEventListener('load', function () {
+          var b = document.createElement('div');
+          b.textContent = 'STAGING';
+          b.setAttribute('aria-hidden', 'true');
+          b.style.cssText =
+            'position:fixed;top:0;right:0;z-index:2147483647;pointer-events:none;' +
+            'font:700 11px/1 system-ui,sans-serif;letter-spacing:.08em;color:#fff;' +
+            'background:#b8860b;padding:3px 7px;border-bottom-left-radius:5px;' +
+            'opacity:.85;text-shadow:0 1px 1px rgba(0,0,0,.5);' +
+            'padding-top:calc(3px + env(safe-area-inset-top));' +
+            'padding-right:calc(7px + env(safe-area-inset-right));';
+          document.body.appendChild(b);
+        });
+      })();
     </script>
   </body>
 </html>
