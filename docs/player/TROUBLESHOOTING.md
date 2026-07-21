@@ -11,7 +11,7 @@ If you need to re-upload CLAW.REZ or encounter storage issues, you can clear the
 1. Press `F12` to open DevTools
 2. Go to **Application** tab
 3. Expand **IndexedDB** in the left sidebar
-4. Right-click on **CaptainClawWebAssets**
+4. Right-click on **ClawWebAssets**
 5. Select **Delete database**
 6. Refresh the page - you'll be prompted to upload CLAW.REZ again
 
@@ -20,15 +20,15 @@ If you need to re-upload CLAW.REZ or encounter storage issues, you can clear the
 1. Press `F12` to open DevTools
 2. Go to **Storage** tab
 3. Expand **IndexedDB** in the left sidebar
-4. Right-click on **CaptainClawWebAssets**
-5. Select **Delete "CaptainClawWebAssets"**
+4. Right-click on **ClawWebAssets**
+5. Select **Delete "ClawWebAssets"**
 6. Refresh the page - you'll be prompted to upload CLAW.REZ again
 
 **Safari:**
 
 1. Press `Option + Command + C` to open Web Inspector
 2. Go to **Storage** tab
-3. Select **IndexedDB** → **CaptainClawWebAssets**
+3. Select **IndexedDB** → **ClawWebAssets**
 4. Click the trash icon to delete
 5. Refresh the page - you'll be prompted to upload CLAW.REZ again
 
@@ -39,7 +39,7 @@ If you need to re-upload CLAW.REZ or encounter storage issues, you can clear the
 3. Paste this command and press Enter:
 
    ```javascript
-   indexedDB.deleteDatabase('CaptainClawWebAssets')
+   indexedDB.deleteDatabase('ClawWebAssets')
    ```
 
 4. Refresh the page - you'll be prompted to upload CLAW.REZ again

@@ -1,6 +1,6 @@
 # Gamepad Support
 
-Captain Claw Web supports Xbox, PlayStation, and most standard game controllers.
+Claw Web supports Xbox, PlayStation, and most standard game controllers.
 
 ## Browser Support
 

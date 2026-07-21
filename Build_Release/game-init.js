@@ -1,5 +1,5 @@
 /**
- * Main ES Module Coordinator for Captain Claw Web
+ * Main ES Module Coordinator for Claw Web
  * Imports all modules and exposes necessary functions to window for HTML compatibility
  */
 
@@ -81,7 +81,7 @@ async function checkClawRezCached() {
 // when the user chooses Install or Not now (or immediately if not applicable).
 function runInstallOnboarding() {
   return new Promise((resolve) => {
-    var api = window.CaptainClawWebInstall;
+    var api = window.ClawWebInstall;
     var screen = document.getElementById('installScreen');
     var SEEN_KEY = 'pwa_install_onboarded';
 

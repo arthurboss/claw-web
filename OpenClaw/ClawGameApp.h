@@ -5,7 +5,7 @@
 class ClawGameApp : public BaseGameApp
 {
 public:
-    virtual const char* VGetGameTitle() { return "Captain Claw Web"; }
+    virtual const char* VGetGameTitle() { return "Claw Web"; }
     virtual const char* VGetGameAppDirectory() { return SDL_GetBasePath(); }
     virtual BaseGameLogic* VCreateGameAndView();
 };

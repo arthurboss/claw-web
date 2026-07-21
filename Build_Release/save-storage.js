@@ -1,11 +1,11 @@
 /**
  * Save data export/import helpers (called from C++ via EM_ASM)
- * Save progress is stored in localStorage under 'captain-claw-web:saves'.
+ * Save progress is stored in localStorage under 'claw-web:saves'.
  */
 
 window.exportSaveData = function() {
   try {
-    var jsonStr = localStorage.getItem('captain-claw-web:saves');
+    var jsonStr = localStorage.getItem('claw-web:saves');
     if (!jsonStr) {
       console.warn('[SaveStorage] No save data to export');
       return;
@@ -14,7 +14,7 @@ window.exportSaveData = function() {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'captain-claw-web_save.json';
+    a.download = 'claw-web_save.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -40,7 +40,7 @@ window.importSaveData = function() {
       reader.onload = function(ev) {
         try {
           JSON.parse(ev.target.result);
-          localStorage.setItem('captain-claw-web:saves', ev.target.result);
+          localStorage.setItem('claw-web:saves', ev.target.result);
           console.log('[SaveStorage] Save data imported');
           if (Module && Module._OnJSSaveDataImported) {
             Module._OnJSSaveDataImported();
