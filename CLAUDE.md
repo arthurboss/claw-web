@@ -10,7 +10,7 @@ OpenClaw WASM is a browser-based fork of Captain Claw (1997), focused on optimiz
 
 - **`CLAW.REZ`** — original game archive (~113MB, uploaded at runtime, not in repo).
 - **`ASSETS.ZIP`** — custom assets, auto-generated from `Build_Release/ASSETS/`.
-- Emscripten SDK (`emsdk/`, gitignored), CMake 4.10+, Node.js 18+ (Vite).
+- Emscripten SDK (`emsdk/`, gitignored), CMake 4.3.2+, Node.js 18+ (Vite).
 - Browsers: Chrome 105+ / Firefox 121+ / Safari 16.4+ / Edge 105+.
 
 ## Build
