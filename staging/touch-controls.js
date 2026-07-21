@@ -497,7 +497,6 @@
         var result = Module._IsMenuVisibleJS() === 1;
         var gameState = getGameState();
         var scoreScreenVisible = (typeof Module._IsScoreScreenVisibleJS === "function") ? (Module._IsScoreScreenVisibleJS() === 1) : "N/A";
-        console.log("[touch-controls] isMenuVisible=" + result + ", gameState=" + gameState + ", scoreScreenVisible=" + scoreScreenVisible);
         return result;
       } catch (e) {
         console.error("[touch-controls] isMenuVisibleJS error:", e);
