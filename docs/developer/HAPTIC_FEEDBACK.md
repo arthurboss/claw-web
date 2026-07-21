@@ -56,5 +56,5 @@ setHapticEnabled(false) // Disable haptic feedback
 ## Files
 
 - `Build_Release/gamepad-bridge.js` - JavaScript haptic functions and presets
-- `OpenClaw/Engine/GameApp/HapticFeedback.h` - C++ API
-- `OpenClaw/Engine/GameApp/HapticFeedback.cpp` - C++ implementation (calls JS via EM_ASM)
+- `Captain Claw/Engine/GameApp/HapticFeedback.h` - C++ API
+- `Captain Claw/Engine/GameApp/HapticFeedback.cpp` - C++ implementation (calls JS via EM_ASM)

@@ -6,7 +6,7 @@ This document maps the various game screens to their rendering code locations. S
 
 ### 1. Main Menu
 - **Game State:** `GameState_Menu`
-- **Rendering Code:** `OpenClaw/Engine/UserInterface/UserInterface.cpp`
+- **Rendering Code:** `Captain Claw/Engine/UserInterface/UserInterface.cpp`
   - `ScreenElementMenu::VOnRender()` - Main menu rendering (line ~157)
   - `ScreenElementMenuItem::VOnRender()` - Individual menu items
 - **Configuration:** `Build_Release/ASSETS/MENU.xml`
@@ -15,24 +15,24 @@ This document maps the various game screens to their rendering code locations. S
 
 ### 2. In-Game (Gameplay)
 - **Game State:** `GameState_IngameRunning`
-- **Rendering Code:** `OpenClaw/Engine/UserInterface/HumanView.cpp`
+- **Rendering Code:** `Captain Claw/Engine/UserInterface/HumanView.cpp`
   - `HumanView::VOnRender()` - Main render loop (line ~62)
   - Iterates through `m_ScreenElements` and renders each
-- **Scene Rendering:** `OpenClaw/Engine/Scene/Scene.cpp`
+- **Scene Rendering:** `Captain Claw/Engine/Scene/Scene.cpp`
   - `Scene::OnRender()` - Renders all scene nodes
-- **Camera:** `OpenClaw/Engine/Scene/CameraNode.cpp`
+- **Camera:** `Captain Claw/Engine/Scene/CameraNode.cpp`
   - Controls visible area, supports dynamic width for widescreen
 - **Widescreen Support:** Yes - camera width adjusts based on window aspect ratio
 
 ### 3. In-Game HUD
-- **Rendering Code:** `OpenClaw/Engine/UserInterface/GameHUD.cpp`
+- **Rendering Code:** `Captain Claw/Engine/UserInterface/GameHUD.cpp`
   - `ScreenElementHUD` class
 - **Elements:** Score, health, lives, ammo, powerups, boss health bar
 - **Widescreen Support:** Needs verification
 
 ### 4. Quick Menu (In-Game Pause Menu)
 - **Game State:** `GameState_IngamePaused`
-- **Rendering Code:** `OpenClaw/Engine/UserInterface/UserInterface.cpp`
+- **Rendering Code:** `Captain Claw/Engine/UserInterface/UserInterface.cpp`
   - Same `ScreenElementMenu` class as main menu
   - `m_MenuType == MenuType_IngameMenu` for pause menu specific behavior
 - **Background:** Semi-transparent overlay (game visible behind)
@@ -40,7 +40,7 @@ This document maps the various game screens to their rendering code locations. S
 
 ### 5. Loading Screen (Level Load)
 - **Game State:** `GameState_LoadingLevel`
-- **Rendering Code:** `OpenClaw/Engine/GameApp/BaseGameLogic.cpp`
+- **Rendering Code:** `Captain Claw/Engine/GameApp/BaseGameLogic.cpp`
   - `RenderLoadingScreen()` function (line ~190)
 - **Background Image:** `/LEVEL{N}/SCREENS/LOADING.PCX` (per-level from CLAW.REZ)
 - **Progress Bar:** Rendered programmatically (red bar on black background)
@@ -48,7 +48,7 @@ This document maps the various game screens to their rendering code locations. S
 
 ### 6. End Level Score Screen
 - **Game State:** `GameState_ScoreScreen`
-- **Rendering Code:** `OpenClaw/Engine/UserInterface/ScoreScreen/EndLevelScoreScreen.cpp`
+- **Rendering Code:** `Captain Claw/Engine/UserInterface/ScoreScreen/EndLevelScoreScreen.cpp`
   - `ScreenElementScoreScreen::VOnRender()` (line ~368)
 - **Configuration:** `Build_Release/ASSETS/FINISHED_LEVEL_SCENES/LEVEL{N}.XML`
 - **Background Images:**
@@ -58,12 +58,12 @@ This document maps the various game screens to their rendering code locations. S
 
 ### 7. Cutscenes
 - **Game State:** `GameState_Cutscene`
-- **Rendering Code:** `OpenClaw/Engine/Video/` directory
+- **Rendering Code:** `Captain Claw/Engine/Video/` directory
 - **Video Files:** AVI format from CLAW.REZ
 - **Widescreen Support:** Unknown - needs investigation
 
 ### 8. Console Overlay
-- **Rendering Code:** `OpenClaw/Engine/UserInterface/Console.cpp`
+- **Rendering Code:** `Captain Claw/Engine/UserInterface/Console.cpp`
   - `Console::OnRender()` (line ~641 in HumanView.cpp calls it)
 - **Activation:** Press `~` key
 - **Widescreen Support:** Renders at full window width

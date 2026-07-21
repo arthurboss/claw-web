@@ -1,8 +1,8 @@
-# OpenClaw WASM Architecture
+# Captain Claw WASM Architecture
 
 ## Overview
 
-OpenClaw WASM uses a lazy-loading architecture optimized for browser environments. Assets are loaded on-demand rather than all at startup, significantly reducing initial load time and memory usage.
+Captain Claw WASM uses a lazy-loading architecture optimized for browser environments. Assets are loaded on-demand rather than all at startup, significantly reducing initial load time and memory usage.
 
 ## Asset Loading Strategy
 
@@ -190,7 +190,7 @@ Build_Release/
 ├─ openclaw.wasm        # Compiled game code (~48MB)
 ├─ openclaw.js          # Emscripten runtime loader (~413KB)
 ├─ openclaw.data        # Preloaded assets
-├─ openclaw.html        # Game entry point
+├─ captain-claw-web.html        # Game entry point
 ├─ *.js                 # Bridge modules (graphics, textures, asset loading)
 └─ config.xml           # Game configuration
 ```
@@ -269,13 +269,13 @@ INFO: Level assets loaded for LEVEL2
 
 ### Lazy Loading Implementation
 
-- `OpenClaw/Engine/GameApp/BaseGameApp.cpp:173` - Startup (skips eager metadata load)
-- `OpenClaw/Engine/GameApp/BaseGameApp.cpp:1356` - `LoadSingleLevelMetadata()`
-- `OpenClaw/Engine/GameApp/BaseGameApp.cpp:1545` - `GetLevelMetadata()` (with lazy load)
+- `Captain Claw/Engine/GameApp/BaseGameApp.cpp:173` - Startup (skips eager metadata load)
+- `Captain Claw/Engine/GameApp/BaseGameApp.cpp:1356` - `LoadSingleLevelMetadata()`
+- `Captain Claw/Engine/GameApp/BaseGameApp.cpp:1545` - `GetLevelMetadata()` (with lazy load)
 
 ### Resource Cache System
 
-- `OpenClaw/Engine/GameApp/BaseGameApp.cpp:186-196` - VPreload calls (startup assets)
+- `Captain Claw/Engine/GameApp/BaseGameApp.cpp:186-196` - VPreload calls (startup assets)
 - Resource cache system (default 150 items, configurable in config.xml)
 
 ### Asset Loading Implementation
@@ -332,6 +332,6 @@ Potential improvements for even better performance:
 
 ## References
 
-- Original OpenClaw: <https://github.com/pjasicek/OpenClaw>
+- Original Captain Claw: <https://github.com/pjasicek/Captain Claw>
 - Emscripten Documentation: <https://emscripten.org/docs/>
 - IndexedDB API: <https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API>

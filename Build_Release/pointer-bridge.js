@@ -1,5 +1,5 @@
 /**
- * Pointer Events Bridge for OpenClaw WASM
+ * Pointer Events Bridge for Captain Claw WASM
  *
  * Single modern input path for mouse, touch and pen. Listens to the browser's
  * Pointer Events API on the canvas and forwards each event to C++ via the

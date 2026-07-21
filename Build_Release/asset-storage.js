@@ -4,7 +4,7 @@
  */
 export class AssetStorage {
   constructor() {
-    this.dbName = 'OpenClawAssets';
+    this.dbName = 'Captain ClawAssets';
     this.storeName = 'files';
     this.db = null;
     this.chunkSize = 1024 * 1024 * 5; // 5MB chunks to prevent memory issues

@@ -1,5 +1,5 @@
 /**
- * Main ES Module Coordinator for OpenClaw
+ * Main ES Module Coordinator for Captain Claw
  * Imports all modules and exposes necessary functions to window for HTML compatibility
  */
 
@@ -81,7 +81,7 @@ async function checkClawRezCached() {
 // when the user chooses Install or Not now (or immediately if not applicable).
 function runInstallOnboarding() {
   return new Promise((resolve) => {
-    var api = window.OpenClawInstall;
+    var api = window.CaptainClawWebInstall;
     var screen = document.getElementById('installScreen');
     var SEEN_KEY = 'pwa_install_onboarded';
 
@@ -140,7 +140,7 @@ window.initGameWhenReady = async function() {
       // Small delay to ensure all async operations are complete
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // loadGame() is defined in inline script and handles openclaw.js injection
+      // loadGame() is defined in inline script and handles captain-claw-web.js injection
       if (typeof window.loadGame === 'function') {
         window.loadGame();
       } else {
