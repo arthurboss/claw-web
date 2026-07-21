@@ -1,8 +1,8 @@
-# Captain Claw Web Architecture
+# Claw Web Architecture
 
 ## Overview
 
-Captain Claw Web uses a lazy-loading architecture optimized for browser environments. Assets are loaded on-demand rather than all at startup, significantly reducing initial load time and memory usage.
+Claw Web uses a lazy-loading architecture optimized for browser environments. Assets are loaded on-demand rather than all at startup, significantly reducing initial load time and memory usage.
 
 ## Asset Loading Strategy
 
@@ -190,7 +190,7 @@ Build_Release/
 ├─ openclaw.wasm        # Compiled game code (~48MB)
 ├─ openclaw.js          # Emscripten runtime loader (~413KB)
 ├─ openclaw.data        # Preloaded assets
-├─ captain-claw-web.html        # Game entry point
+├─ claw-web.html        # Game entry point
 ├─ *.js                 # Bridge modules (graphics, textures, asset loading)
 └─ config.xml           # Game configuration
 ```

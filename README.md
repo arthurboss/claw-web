@@ -1,10 +1,12 @@
-# Captain Claw Web
+# Claw Web
 
-> Play Captain Claw (1997) in your web browser - no installation needed!
+> Play the classic Claw platformer in your web browser - no installation needed!
 
-> **⚠️ URL Changed:** This project was renamed from `WASM-OpenClaw`. Old bookmarks to `/WASM-OpenClaw/` will redirect, but please update to [https://arthurboss.github.io/captain-claw-web/](https://arthurboss.github.io/captain-claw-web/). Your uploaded `CLAW.REZ` and saved progress are preserved automatically (they are stored per-origin and migrated on first load) — no re-upload needed.
+> **Unofficial fan project.** Not affiliated with, authorized, or endorsed by the rights holders. Captain Claw and its assets are trademarks/copyright of their respective owners (Monolith Productions / Warner Bros.). This project ships no game content: you supply your own `CLAW.REZ` from a copy of the game you own.
 
-**Play [here](https://arthurboss.github.io/captain-claw-web/)** (requires you to upload the CLAW.REZ file)
+> **⚠️ URL Changed:** This project was previously hosted at `/captain-claw-web/` and `/WASM-OpenClaw/`. Old bookmarks redirect, but please update to [https://arthurboss.github.io/claw-web/](https://arthurboss.github.io/claw-web/). Your uploaded `CLAW.REZ` and saved progress are preserved automatically (stored per-origin and migrated on first load) — no re-upload needed.
+
+**Play [here](https://arthurboss.github.io/claw-web/)** (requires you to upload the CLAW.REZ file)
 
 Browser-based version of the classic platformer. Based on [OpenClaw](https://github.com/pjasicek/OpenClaw) by pjasicek.
 
@@ -28,8 +30,8 @@ Browser-based version of the classic platformer. Based on [OpenClaw](https://git
 1. **Clone or download the repository:**
 
    ```bash
-   git clone https://github.com/arthurboss/captain-claw-web.git
-   cd captain-claw-web
+   git clone https://github.com/arthurboss/claw-web.git
+   cd claw-web
    ```
 
 2. **Build the game:**

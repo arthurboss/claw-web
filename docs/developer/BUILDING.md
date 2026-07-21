@@ -1,6 +1,6 @@
-# Building Captain Claw Web
+# Building Claw Web
 
-This guide covers building the WebAssembly version of Captain Claw Web from source.
+This guide covers building the WebAssembly version of Claw Web from source.
 
 ## Prerequisites
 
@@ -42,11 +42,11 @@ source ./emsdk_env.sh
 
 **Note:** The `source ./emsdk_env.sh` command must be run in every new terminal before building.
 
-### 2. Clone Captain Claw Web
+### 2. Clone Claw Web
 
 ```bash
 git clone [your-repo-url]
-cd captain-claw-web
+cd claw-web
 ```
 
 ### 3. Prepare Assets
@@ -116,7 +116,7 @@ Build_Release/
 ├── openclaw.wasm       # Compiled game engine (~40MB)
 ├── openclaw.js         # Emscripten JavaScript runtime (~8MB)
 ├── openclaw.data       # Preloaded assets (ASSETS.ZIP)
-├── captain-claw-web.html       # Game entry point
+├── claw-web.html       # Game entry point
 └── *.js                # Bridge modules (graphics, textures, etc.)
 ```
 
@@ -133,7 +133,7 @@ Open: <http://localhost:5173/>
 **Features:**
 
 - Hot reload for rapid iteration
-- Clean root URL (`/` → `captain-claw-web.html`)
+- Clean root URL (`/` → `claw-web.html`)
 - No certificate warnings
 - Secure context for Keyboard Lock API and Web Audio
 
@@ -151,7 +151,7 @@ Open: <http://localhost:5173/>
 **No rebuild needed (just refresh browser):**
 
 - Modified JavaScript files (`*.js` in Build_Release/)
-- Modified HTML (`captain-claw-web.html`)
+- Modified HTML (`claw-web.html`)
 - Modified CSS styles
 - Updated documentation
 

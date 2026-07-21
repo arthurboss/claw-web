@@ -3,8 +3,8 @@
 # Sourced by deploy-prod.sh and deploy-staging.sh. Not meant to run standalone.
 #
 # gh-pages layout on origin:
-#   /            -> production (served at https://arthurboss.github.io/captain-claw-web/)
-#   /staging/    -> staging    (served at .../captain-claw-web/staging/)
+#   /            -> production (served at https://arthurboss.github.io/claw-web/)
+#   /staging/    -> staging    (served at .../claw-web/staging/)
 # Both live on the single origin/gh-pages branch. deploy-prod excludes staging/
 # from its --delete; deploy-staging scopes its rsync target to staging/ only.
 

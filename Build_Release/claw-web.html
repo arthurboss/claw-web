@@ -5,7 +5,7 @@
 
     <!-- Per-environment localStorage isolation. GitHub Pages serves every
          deployment from ONE origin, and localStorage is origin-scoped, so
-         production (/captain-claw-web/) and staging (/captain-claw-web/staging/)
+         production (/claw-web/) and staging (/claw-web/staging/)
          would otherwise share one key space: game saves, install-onboarding
          flag, touch-mode, and the SW kill-switch id would all collide.
          We namespace keys by scope. PRODUCTION KEEPS BARE KEYS so existing
@@ -41,39 +41,45 @@
       })();
     </script>
 
-    <!-- One-time save-data migration. The save key was renamed from the
-         pre-rebrand 'openclaw:saves' to 'captain-claw-web:saves' (matched in
-         SaveBridge.cpp). Copy an existing legacy save into the new key once so
-         returning players keep their progress, then remove the old key. Runs
-         AFTER the env shim above so the prefix (on staging) applies to both
-         keys consistently. Guarded to act only when the new key is empty and a
-         legacy value exists. -->
+    <!-- One-time save-data migration. The save key has been renamed across
+         rebrands: openclaw:saves -> captain-claw-web:saves -> claw-web:saves
+         (the current key, matched in SaveBridge.cpp). Copy a save from the most
+         recent legacy key that still holds one into the current key, so a user
+         returning from ANY prior version keeps their progress, then clear the
+         old keys. Runs AFTER the env shim above so the prefix (on staging)
+         applies to every key consistently. Guarded to act only when the current
+         key is empty. -->
     <script>
       (function () {
         try {
-          var OLD = "openclaw:saves";
-          var NEW = "captain-claw-web:saves";
+          var NEW = "claw-web:saves";
+          // Newest-first: prefer the most recent legacy key that has data.
+          var LEGACY = ["captain-claw-web:saves", "openclaw:saves"];
           if (localStorage.getItem(NEW) === null) {
-            var legacy = localStorage.getItem(OLD);
-            if (legacy !== null) {
-              localStorage.setItem(NEW, legacy);
-              localStorage.removeItem(OLD);
-              console.info("[migrate] Copied legacy save data to '" + NEW + "'.");
+            for (var i = 0; i < LEGACY.length; i++) {
+              var val = localStorage.getItem(LEGACY[i]);
+              if (val !== null) {
+                localStorage.setItem(NEW, val);
+                console.info("[migrate] Copied save data from '" + LEGACY[i] + "' to '" + NEW + "'.");
+                break;
+              }
             }
           }
+          // Clear any stale legacy keys now that the current key is authoritative.
+          for (var j = 0; j < LEGACY.length; j++) localStorage.removeItem(LEGACY[j]);
         } catch (e) {
           console.warn("[migrate] Save-data migration skipped:", e);
         }
       })();
     </script>
 
-    <title>Captain Claw Web</title>
+    <title>Claw Web</title>
     <meta
       name="description"
       content="Reimplementation of Captain Claw (1997) platformer"
     />
 
-    <meta property="og:title" content="Captain Claw Web" />
+    <meta property="og:title" content="Claw Web" />
     <meta property="og:description" content="Play Captain Claw (1997) in your web browser" />
     <!--<meta property="og:image" content="preview.png">-->
 
@@ -87,7 +93,7 @@
     <!-- iOS PWA: standalone fullscreen mode, hides Safari chrome when added to Home Screen -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Captain Claw Web" />
+    <meta name="apple-mobile-web-app-title" content="Claw Web" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#000000" />
 
@@ -686,6 +692,7 @@
         </div>
 
         <p class="onboard-legal">You must own Captain Claw (1997) to use this file legally.</p>
+        <p class="onboard-legal">Unofficial fan project, not affiliated with or endorsed by the rights holders. Captain Claw is a trademark of its respective owners.</p>
       </div>
     </section>
 
@@ -734,7 +741,7 @@
               class="control-btn"
               id="pwa-install-control"
               title="Install App"
-              aria-label="Install Captain Claw Web"
+              aria-label="Install Claw Web"
               style="display: none"
             >
               <svg class="icon-download" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
@@ -756,10 +763,10 @@
       <div class="onboard-card">
         <div class="onboard-emoji">🎮</div>
         <span id="installBadge" class="onboard-badge">&nbsp;</span>
-        <h2>Install Captain Claw Web?</h2>
-        <p id="installReason">Install Captain Claw Web for the best experience.</p>
+        <h2>Install Claw Web?</h2>
+        <p id="installReason">Install Claw Web for the best experience.</p>
         <div class="onboard-actions">
-          <button class="btn btn-primary" id="installYesBtn"><svg class="icon-download" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> Install Captain Claw Web</button>
+          <button class="btn btn-primary" id="installYesBtn"><svg class="icon-download" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg> Install Claw Web</button>
           <button class="btn btn-ghost" id="installSkipBtn">Not now</button>
         </div>
       </div>
@@ -1411,7 +1418,7 @@
           if (isIOSSafari) {
             return {
               level: 'recommended',
-              reason: 'On iPhone/iPad, installing is the only way to play truly fullscreen and launch Captain Claw Web straight from your home screen.'
+              reason: 'On iPhone/iPad, installing is the only way to play truly fullscreen and launch Claw Web straight from your home screen.'
             };
           }
           if (isSamsungBrowser) {
@@ -1430,7 +1437,7 @@
           }
           return {
             level: 'optional',
-            reason: 'On desktop, Captain Claw Web already runs great in the browser. Installing simply opens it in its own dedicated window.'
+            reason: 'On desktop, Claw Web already runs great in the browser. Installing simply opens it in its own dedicated window.'
           };
         }
 
@@ -1451,21 +1458,21 @@
           }
           if (isIOSSafari) {
             alert(
-              'Install Captain Claw Web on iOS:\n\n' +
+              'Install Claw Web on iOS:\n\n' +
               '1. Tap the Share button at the bottom of Safari\n' +
               '2. Choose “Add to Home Screen”\n' +
               '3. Tap “Add” — the game launches fullscreen.'
             );
           } else if (isMacSafari) {
             alert(
-              'Install Captain Claw Web on Mac:\n\n' +
+              'Install Claw Web on Mac:\n\n' +
               '1. Open the File menu in Safari\n' +
               '2. Choose “Add to Dock…”\n' +
               '3. Confirm — the game opens in its own window.'
             );
           } else {
             alert(
-              'Install Captain Claw Web:\n\n' +
+              'Install Claw Web:\n\n' +
               'Open your browser menu and choose “Install app”,\n' +
               '“Add to Home Screen”, or “Create shortcut”.\n\n' +
               'The game will then open in its own fullscreen window.'
@@ -1488,7 +1495,7 @@
         }
 
         // Public API for the onboarding flow (game-init.js).
-        window.CaptainClawWebInstall = {
+        window.ClawWebInstall = {
           isInstalled: isStandalone,
           platform: {
             isIOSSafari: isIOSSafari,
