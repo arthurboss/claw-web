@@ -398,7 +398,7 @@ async function prepareAssetStorage() {
       if (!navigator.onLine) {
         console.log('Device is offline and CLAW.REZ not cached. Showing offline message...');
         showOfflineNeedCache();
-        throw new Error('Offline: CLAW.REZ not cached. Please connect to internet first.');
+        return false;
       }
 
       console.log('Showing upload UI...');
@@ -460,10 +460,6 @@ async function prepareAssetStorage() {
 
   } catch (error) {
     console.error('Failed to prepare asset storage:', error);
-    alert(
-      `Failed to load game assets: ${error.message}\n\n` +
-      `Please check browser console for details.`
-    );
     return false;
   }
 }
