@@ -205,13 +205,13 @@ async function uploadClawRez() {
   const file = fileInput.files[0];
 
   if (!file) {
-    alert('Please select a file first');
+    showUploadError('Please select a file first');
     return;
   }
 
   // Revalidate before upload (in case button was enabled programmatically)
   if (!file.name.match(/^CLAW\.REZ$/i)) {
-    alert('Error: File must be named CLAW.REZ');
+    showUploadError('Error: File must be named CLAW.REZ');
     return;
   }
 
@@ -339,7 +339,7 @@ async function reuploadClawRez() {
       window.location.reload();
     } catch (error) {
       console.error('Failed to delete CLAW.REZ:', error);
-      alert(`Failed to delete file: ${error.message}`);
+      showUploadError(`Failed to delete file: ${error.message}`);
     }
   }
 }
@@ -440,7 +440,7 @@ async function prepareAssetStorage() {
         console.log(`Compression ratio: ${((1 - storedBlob.size / clawRezBlob.size) * 100).toFixed(1)}%`);
       } catch (decompressError) {
         console.error('Decompression failed:', decompressError);
-        alert(
+        showUploadError(
           `Failed to decompress CLAW.REZ using ${metadata.compressionAlgorithm}.\n\n` +
           `Error: ${decompressError.message}\n\n` +
           `Please clear browser storage and re-upload CLAW.REZ.`
