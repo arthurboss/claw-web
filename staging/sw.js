@@ -7,7 +7,7 @@
 // share the origin's Cache Storage, and a version bump in one environment
 // would run activate -> caches.keys() -> delete the OTHER environment's cache.
 // registration.scope is the source of truth; fall back to the SW's own path.
-const CACHE_VERSION = "v6";
+const CACHE_VERSION = "v7";
 const SCOPE_PATH = (function () {
   try {
     return new URL(self.registration.scope).pathname;
@@ -20,6 +20,7 @@ const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
 
 // Essential assets needed to boot the game
 // These are served by Vite and have stable, hashed filenames in production
+// Includes WASM/data binaries to enable offline play after first online run
 const SHELL_ASSETS = [
   "./claw-web.html",
   "./game-init.js",
@@ -41,6 +42,8 @@ const SHELL_ASSETS = [
   "./favicon-16x16.png",
   "./favicon-32x32.png",
   "./preview.png",
+  "./openclaw.wasm",
+  "./openclaw.data",
 ];
 
 // On install: cache the app shell
@@ -106,10 +109,10 @@ self.addEventListener("fetch", (event) => {
   // returning a 200 for a Range request breaks playback and wasm streaming).
   if (req.headers.has("range")) return;
 
-  // Large binaries are loaded/streamed directly and have their own IndexedDB
-  // cache — the SW must not touch them at all (letting a failed inner fetch
-  // surface as a FetchEvent error would abort the game load).
-  const HANDS_OFF = [".wasm", ".data", ".zip", ".mp4"];
+  // Large binaries: openclaw.wasm/data are in SHELL_ASSETS for offline support.
+  // Other large files (.zip, .mp4) bypass the SW to preserve Range request
+  // support and streaming behavior.
+  const HANDS_OFF = [".zip", ".mp4"];
   const path = url.pathname.toLowerCase();
   if (HANDS_OFF.some((ext) => path.endsWith(ext)) || path.includes("assets.zip")) {
     return; // browser handles it natively
