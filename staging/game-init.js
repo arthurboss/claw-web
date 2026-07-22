@@ -45,6 +45,17 @@ function prewarmAudioContext() {
   }
 }
 
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    window._wakeLock = await navigator.wakeLock.request('screen');
+  } catch (e) { /* not supported or denied — silent */ }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') requestWakeLock();
+});
+
 function waitForStartClick() {
   // Reveals the in-game controls (.bottom-controls, touch install button),
   // which stay hidden until the start overlay is gone so their clicks can't
@@ -62,6 +73,7 @@ function waitForStartClick() {
       overlay.style.display = 'none';
       markStarted();
       window._startOverlayClick = null;
+      requestWakeLock();
       resolve();
     };
   });

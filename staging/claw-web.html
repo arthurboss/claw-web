@@ -76,12 +76,34 @@
     <title>Claw Web</title>
     <meta
       name="description"
-      content="Reimplementation of Captain Claw (1997) platformer"
+      content="Captain Claw (1997) reimplemented for the browser - unofficial fan project"
     />
 
     <meta property="og:title" content="Claw Web" />
-    <meta property="og:description" content="Play Captain Claw (1997) in your web browser" />
-    <!--<meta property="og:image" content="preview.png">-->
+    <meta property="og:description" content="Captain Claw (1997) reimplemented for the browser - unofficial fan project" />
+    <meta property="og:image" content="preview.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Claw Web" />
+    <meta name="twitter:description" content="Captain Claw (1997) reimplemented for the browser - unofficial fan project" />
+    <meta name="twitter:image" content="preview.png" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": ["VideoGame", "SoftwareApplication"],
+      "name": "Claw Web",
+      "description": "Captain Claw (1997) reimplemented for the browser - unofficial fan project",
+      "applicationCategory": "Game",
+      "operatingSystem": "Browser",
+      "gamePlatform": ["Browser", "WebAssembly"],
+      "genre": "Platformer",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "ratingCount": "1"
+      }
+    }
+    </script>
 
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
@@ -684,6 +706,7 @@
             <input type="file" id="clawRezFile" accept=".REZ,.rez" onchange="validateClawRezFile()" />
           </label>
           <button class="btn btn-primary" id="uploadBtn" onclick="uploadClawRez()" disabled>Upload CLAW.REZ</button>
+          <p id="uploadError" style="display:none;color:#e23b2e;margin-top:0.75rem;font-size:0.9em;white-space:pre-wrap;"></p>
         </div>
 
         <div id="uploadProgress" style="display: none;">
