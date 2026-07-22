@@ -327,7 +327,7 @@ Potential improvements for even better performance:
 - [x] Compress metadata XMLs with gzip (✓ Implemented - 79% size reduction)
 - [ ] Preload next level's metadata while playing current level
 - [ ] Implement progressive asset loading (low-res → high-res)
-- [ ] Add service worker for offline play
+- [x] Add service worker for offline play (✓ Implemented - `sw.js` caches shell assets; bump `CACHE_VERSION` in `sw.js` whenever a file in `SHELL_ASSETS` changes)
 - [ ] Use WebAssembly SIMD for faster resource decompression
 
 ## References

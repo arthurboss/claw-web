@@ -43,6 +43,8 @@ Deploys are manual via `scripts/`. Both environments share the `gh-pages` branch
 
 **Default workflow:** deploy every new branch to **staging first** (safe — never touches prod), test on a real device, then merge and run `deploy-prod.sh` to promote. Skip only for deploy-only/non-visual changes.
 
+> **SW cache version rule:** any PR that modifies a file listed in `SHELL_ASSETS` in `sw.js` (i.e. `claw-web.html`, `game-init.js`, any `.js` bridge, `site.webmanifest`, icons, or `preview.png`) **must** bump `CACHE_VERSION` in `sw.js` (e.g. `v5` -> `v6`). Without a bump, returning users with a cached SW will not receive the updated files. Also ensure any new `Build_Release/` file served to the browser is added to `SHELL_ASSETS`.
+
 **Env isolation** (prod + staging share one origin, so storage is scoped deliberately):
 
 - **SW cache** named per scope (`openclaw::<scope>::<version>`) — a version bump in one env can't delete the other's cache; kill-switch teardown is scoped too.
