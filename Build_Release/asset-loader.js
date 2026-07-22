@@ -41,6 +41,16 @@ const REZ_VALID_SIGNATURES = ['RezMgr Version 1', 'WinRez 2.4'];
 const REZ_MIN_SIZE = 100 * 1024 * 1024; // ~100MB; real files are ~113MB
 const REZ_MAX_SIZE = 130 * 1024 * 1024; // generous upper bound
 
+function showUploadError(message) {
+  const el = document.getElementById('uploadError');
+  if (el) { el.textContent = message; el.style.display = 'block'; }
+}
+
+function clearUploadError() {
+  const el = document.getElementById('uploadError');
+  if (el) { el.textContent = ''; el.style.display = 'none'; }
+}
+
 function rejectRezFile(message) {
   const fileInput = document.getElementById('clawRezFile');
   const uploadBtn = document.getElementById('uploadBtn');
@@ -50,10 +60,11 @@ function rejectRezFile(message) {
   if (uploadBtn) uploadBtn.disabled = true;
   if (drop) drop.classList.remove('has-file');
   if (name) name.textContent = '';
-  alert(message);
+  showUploadError(message);
 }
 
 function acceptRezFile(file) {
+  clearUploadError();
   const uploadBtn = document.getElementById('uploadBtn');
   const drop = document.getElementById('fileDrop');
   const name = document.getElementById('fileDropName');
@@ -199,6 +210,16 @@ async function uploadClawRez() {
     window.prewarmAudioContext();
   }
 
+  // Request durable storage on first upload. On iOS PWA the system may show
+  // a permission prompt on the very first write; calling persist() here
+  // (inside a user gesture) ensures the grant happens before we start writing
+  // so the write doesn't silently fail.
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(() => {});
+  }
+
+  clearUploadError();
+
   // Show progress UI
   document.getElementById('uploadArea').style.display = 'none';
   const progressDiv = document.getElementById('uploadProgress');
@@ -283,7 +304,7 @@ async function uploadClawRez() {
       failMsg += '\n\nTip: private / incognito browsing often blocks local '
                + 'storage. Try again in a normal browser window.';
     }
-    alert(failMsg);
+    showUploadError(failMsg);
 
     // Reset UI
     progressDiv.style.display = 'none';
