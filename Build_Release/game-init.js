@@ -70,6 +70,10 @@ function waitForStartClick() {
     overlay.style.display = 'flex';
     window._startOverlayClick = function() {
       prewarmAudioContext();
+      // Warm the level-music synth now (AudioWorklet + 8.4MB soundfont) so it's
+      // ready before the first level, instead of loading lazily after a level
+      // starts. Fire-and-forget: never block the game start on it.
+      if (typeof window.warmLevelMidi === 'function') window.warmLevelMidi();
       overlay.style.display = 'none';
       markStarted();
       window._startOverlayClick = null;
