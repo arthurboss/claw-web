@@ -1,7 +1,7 @@
 {
   "name": "Claw Web",
   "short_name": "Claw Web",
-  "description": "Monolith's Captain Claw (1997) - unofficial fan browser-port",
+  "description": "Captain Claw (1997) reimplemented for the browser - unofficial fan project",
   "start_url": "./claw-web.html",
   "display": "fullscreen",
   "orientation": "landscape",
