@@ -10,7 +10,8 @@ import {
   reuploadClawRez,
   getStorageStats,
   prepareAssetStorage,
-  mountClawRezToFS
+  mountClawRezToFS,
+  cacheGameBinariesInBackground
 } from './asset-loader.js';
 import { initResourceLoader, getLoadingState, updateLoadingUI } from './resource-loader.js';
 import { WebGLBridge } from './graphics-bridge.js';
@@ -26,6 +27,7 @@ window.getStorageStats = getStorageStats;
 // Expose functions needed by inline scripts
 window.prepareAssetStorage = prepareAssetStorage;
 window.mountClawRezToFS = mountClawRezToFS;
+window.cacheGameBinariesInBackground = cacheGameBinariesInBackground;
 window.getLoadingState = getLoadingState;
 window.updateLoadingUI = updateLoadingUI;
 
