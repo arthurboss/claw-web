@@ -9,6 +9,16 @@ let assetStorage = null;
 let uploadResolve = null;
 
 /**
+ * Show offline (no cache) message
+ */
+function showOfflineNeedCache() {
+  const offlineDiv = document.getElementById('offlineNeedCache');
+  if (offlineDiv) {
+    offlineDiv.classList.add('visible');
+  }
+}
+
+/**
  * Show asset upload UI
  */
 function showAssetUpload() {
@@ -195,13 +205,13 @@ async function uploadClawRez() {
   const file = fileInput.files[0];
 
   if (!file) {
-    alert('Please select a file first');
+    showUploadError('Please select a file first');
     return;
   }
 
   // Revalidate before upload (in case button was enabled programmatically)
   if (!file.name.match(/^CLAW\.REZ$/i)) {
-    alert('Error: File must be named CLAW.REZ');
+    showUploadError('Error: File must be named CLAW.REZ');
     return;
   }
 
@@ -329,7 +339,7 @@ async function reuploadClawRez() {
       window.location.reload();
     } catch (error) {
       console.error('Failed to delete CLAW.REZ:', error);
-      alert(`Failed to delete file: ${error.message}`);
+      showUploadError(`Failed to delete file: ${error.message}`);
     }
   }
 }
@@ -382,7 +392,16 @@ async function prepareAssetStorage() {
     const hasClawRez = await assetStorage.hasFile('CLAW.REZ');
 
     if (!hasClawRez) {
-      console.log('CLAW.REZ not found in storage. Showing upload UI...');
+      console.log('CLAW.REZ not found in storage.');
+
+      // Check if device is offline
+      if (!navigator.onLine) {
+        console.log('Device is offline and CLAW.REZ not cached. Showing offline message...');
+        showOfflineNeedCache();
+        return false;
+      }
+
+      console.log('Showing upload UI...');
       showAssetUpload();
       await waitForUpload();
     } else {
@@ -421,7 +440,7 @@ async function prepareAssetStorage() {
         console.log(`Compression ratio: ${((1 - storedBlob.size / clawRezBlob.size) * 100).toFixed(1)}%`);
       } catch (decompressError) {
         console.error('Decompression failed:', decompressError);
-        alert(
+        showUploadError(
           `Failed to decompress CLAW.REZ using ${metadata.compressionAlgorithm}.\n\n` +
           `Error: ${decompressError.message}\n\n` +
           `Please clear browser storage and re-upload CLAW.REZ.`
@@ -441,10 +460,6 @@ async function prepareAssetStorage() {
 
   } catch (error) {
     console.error('Failed to prepare asset storage:', error);
-    alert(
-      `Failed to load game assets: ${error.message}\n\n` +
-      `Please check browser console for details.`
-    );
     return false;
   }
 }
