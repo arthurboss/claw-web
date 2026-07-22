@@ -547,7 +547,14 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: clamp(12px, 3vmin, 24px);
+        /* Add the safe-area insets to the base padding so the card never sits
+           under the notch/Dynamic Island in an installed PWA (standalone mode
+           has no browser chrome, so the top inset is otherwise ignored). */
+        padding:
+          calc(clamp(12px, 3vmin, 24px) + env(safe-area-inset-top, 0px))
+          calc(clamp(12px, 3vmin, 24px) + env(safe-area-inset-right, 0px))
+          calc(clamp(12px, 3vmin, 24px) + env(safe-area-inset-bottom, 0px))
+          calc(clamp(12px, 3vmin, 24px) + env(safe-area-inset-left, 0px));
         background: radial-gradient(circle at 50% 30%, #1a2230 0%, #0a0d12 70%);
         color: #fff;
         text-align: center;
@@ -1238,6 +1245,12 @@
         postRun: [
           function () {
             if (window.markGameRunning) window.markGameRunning();
+            // Now that the game is rendering, cache the WASM/data binaries to
+            // IndexedDB in the background for offline play. Deferred to postRun
+            // so the ~52MB of writes never block the first launch.
+            if (window.cacheGameBinariesInBackground) {
+              setTimeout(function () { window.cacheGameBinariesInBackground(); }, 0);
+            }
             // Disable Emscripten's automatic canvas resizing
             if (typeof Browser !== 'undefined') {
               Browser.resizeCanvas = false;

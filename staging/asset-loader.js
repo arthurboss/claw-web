@@ -382,66 +382,80 @@ async function decompressBlob(compressedBlob, algorithm) {
 /**
  * Prepare CLAW.REZ from IndexedDB (but don't write to FS yet)
  */
-// Emscripten binaries that must be available offline. We cache their raw bytes
-// in IndexedDB and feed them to the runtime directly (Module.wasmBinary and
-// Module.getPreloadedPackage), because Safari cannot instantiateStreaming a
-// Service-Worker-served WASM response — so the SW leaves these hands-off and we
-// own their offline availability here instead.
+// Emscripten binaries needed for OFFLINE boots. Online, the runtime streams
+// these straight from the network (fast, low memory, exactly like a normal
+// Emscripten load). We only intercept when we must serve them from IndexedDB
+// because there is no network — because Safari cannot instantiateStreaming a
+// Service-Worker-served WASM response, so the SW leaves them hands-off and we
+// own their offline availability here.
 const GAME_BINARIES = [
-  { name: 'openclaw.wasm', url: 'openclaw.wasm' },
-  { name: 'openclaw.data', url: 'openclaw.data' },
+  { name: 'openclaw.wasm' },
+  { name: 'openclaw.data' },
 ];
 
-// Ensure openclaw.wasm/.data are in IndexedDB and expose their bytes to
-// Emscripten via Module hooks so the runtime never fetches them from the
-// network. On first online run they are fetched and stored; on every later run
-// (including offline) they are served from IndexedDB.
+// Feed cached binary bytes to Emscripten so it never hits the network. Only
+// used when the binaries are already in IndexedDB (the offline path). Setting
+// Module.wasmBinary forces the slower non-streaming compile and holds the whole
+// wasm in memory, so we deliberately do NOT do this online.
+async function feedBinariesFromCache() {
+  const wasmBlob = await assetStorage.getFile('openclaw.wasm');
+  const dataBlob = await assetStorage.getFile('openclaw.data');
+  if (!wasmBlob || !dataBlob) return false;
+
+  const M = window.Module;
+  if (!M) return false;
+
+  M.wasmBinary = new Uint8Array(await wasmBlob.arrayBuffer());
+  const dataBuffer = await dataBlob.arrayBuffer();
+  M.getPreloadedPackage = function (name) {
+    // Emscripten asks for the .data package by its remote name; return our
+    // cached ArrayBuffer for it and let anything else fall through to fetch.
+    if (name && name.includes('openclaw.data')) return dataBuffer;
+    return null;
+  };
+  console.log('[binaries] Serving openclaw.wasm/.data from IndexedDB (offline).');
+  return true;
+}
+
+// Decide how the game binaries are provided for THIS boot.
+// - Online  -> always let Emscripten stream them from the network (fast,
+//   low-memory, streaming compile). Never touch the cache: reading 47MB from
+//   IndexedDB + non-streaming compile is strictly slower. Binaries are cached
+//   in the background after boot for future offline use.
+// - Offline, cached -> feed the bytes from IndexedDB (works on Safari).
+// - Offline, not cached -> cannot boot; caller shows the offline screen.
+// Returns true if the game can proceed to boot.
 async function prepareGameBinaries() {
   if (!assetStorage) return false;
 
-  const buffers = {};
+  if (navigator.onLine) {
+    console.log('[binaries] Online; streaming from network this run.');
+    return true;
+  }
 
-  for (const bin of GAME_BINARIES) {
-    let blob = await assetStorage.getFile(bin.name);
+  // Offline: must serve from IndexedDB, if we cached them on a prior run.
+  const ok = await feedBinariesFromCache();
+  if (!ok) console.warn('[binaries] Offline and openclaw.wasm/.data not cached.');
+  return ok;
+}
 
-    if (!blob) {
-      // Not cached yet — must fetch from network (first online run).
-      if (!navigator.onLine) {
-        console.warn(`[binaries] ${bin.name} not cached and device offline.`);
-        return false;
-      }
-      console.log(`[binaries] Fetching ${bin.name} for offline cache...`);
-      const resp = await fetch(bin.url, { credentials: 'same-origin' });
-      if (!resp.ok) throw new Error(`Failed to fetch ${bin.name}: ${resp.status}`);
-      blob = await resp.blob();
-      // Store uncompressed: these are consumed as raw bytes at boot and the
-      // decompress step would only add latency to every subsequent launch.
+// Fetch openclaw.wasm/.data and store them in IndexedDB WITHOUT blocking boot.
+// Runs after the game is already rendering (postRun), so the ~52MB of writes
+// never delay the first launch. No-op if already cached or if offline.
+async function cacheGameBinariesInBackground() {
+  try {
+    if (!assetStorage || !navigator.onLine) return;
+    for (const bin of GAME_BINARIES) {
+      if (await assetStorage.hasFile(bin.name)) continue;
+      const resp = await fetch(bin.name, { credentials: 'same-origin' });
+      if (!resp.ok) { console.warn(`[binaries] bg fetch ${bin.name} failed: ${resp.status}`); continue; }
+      const blob = await resp.blob();
       await assetStorage.storeFile(bin.name, blob);
-      console.log(`[binaries] Cached ${bin.name} (${(blob.size / 1024 / 1024).toFixed(2)}MB)`);
-    } else {
-      console.log(`[binaries] ${bin.name} loaded from cache (${(blob.size / 1024 / 1024).toFixed(2)}MB)`);
+      console.log(`[binaries] Cached ${bin.name} for offline (${(blob.size / 1024 / 1024).toFixed(2)}MB).`);
     }
-
-    buffers[bin.name] = await blob.arrayBuffer();
+  } catch (e) {
+    console.warn('[binaries] Background caching skipped:', e);
   }
-
-  // Hand the bytes to Emscripten. Module is defined in the HTML before this
-  // runs; setting these makes createWasm()/the .data package loader use our
-  // bytes instead of issuing a fetch (see openclaw.js getBinarySync /
-  // getPreloadedPackage). This is what keeps Safari working offline.
-  const M = window.Module;
-  if (M) {
-    M.wasmBinary = new Uint8Array(buffers['openclaw.wasm']);
-    const dataBuffer = buffers['openclaw.data'];
-    M.getPreloadedPackage = function (name) {
-      // Emscripten asks for the .data package by its remote name; return our
-      // cached ArrayBuffer for it and let anything else fall through to fetch.
-      if (name && name.indexOf('openclaw.data') !== -1) return dataBuffer;
-      return null;
-    };
-  }
-
-  return true;
 }
 
 async function prepareAssetStorage() {
@@ -587,7 +601,8 @@ export {
   reuploadClawRez,
   getStorageStats,
   prepareAssetStorage,
-  mountClawRezToFS
+  mountClawRezToFS,
+  cacheGameBinariesInBackground
 };
 
 // Keep window globals for HTML event handlers (permanent)
