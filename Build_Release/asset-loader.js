@@ -9,6 +9,16 @@ let assetStorage = null;
 let uploadResolve = null;
 
 /**
+ * Show offline (no cache) message
+ */
+function showOfflineNeedCache() {
+  const offlineDiv = document.getElementById('offlineNeedCache');
+  if (offlineDiv) {
+    offlineDiv.classList.add('visible');
+  }
+}
+
+/**
  * Show asset upload UI
  */
 function showAssetUpload() {
@@ -195,13 +205,13 @@ async function uploadClawRez() {
   const file = fileInput.files[0];
 
   if (!file) {
-    alert('Please select a file first');
+    showUploadError('Please select a file first');
     return;
   }
 
   // Revalidate before upload (in case button was enabled programmatically)
   if (!file.name.match(/^CLAW\.REZ$/i)) {
-    alert('Error: File must be named CLAW.REZ');
+    showUploadError('Error: File must be named CLAW.REZ');
     return;
   }
 
@@ -329,7 +339,7 @@ async function reuploadClawRez() {
       window.location.reload();
     } catch (error) {
       console.error('Failed to delete CLAW.REZ:', error);
-      alert(`Failed to delete file: ${error.message}`);
+      showUploadError(`Failed to delete file: ${error.message}`);
     }
   }
 }
@@ -372,6 +382,120 @@ async function decompressBlob(compressedBlob, algorithm) {
 /**
  * Prepare CLAW.REZ from IndexedDB (but don't write to FS yet)
  */
+// Emscripten binaries needed for OFFLINE boots. Online, the runtime streams
+// these straight from the network (fast, low memory, exactly like a normal
+// Emscripten load). We only intercept when we must serve them from IndexedDB
+// because there is no network — because Safari cannot instantiateStreaming a
+// Service-Worker-served WASM response, so the SW leaves them hands-off and we
+// own their offline availability here.
+const GAME_BINARIES = [
+  { name: 'openclaw.wasm' },
+  { name: 'openclaw.data' },
+];
+
+// Feed cached binary bytes to Emscripten so it never hits the network. Only
+// used when the binaries are already in IndexedDB (the offline path). Setting
+// Module.wasmBinary forces the slower non-streaming compile and holds the whole
+// wasm in memory, so we deliberately do NOT do this online.
+async function feedBinariesFromCache() {
+  const wasmBlob = await assetStorage.getFile('openclaw.wasm');
+  const dataBlob = await assetStorage.getFile('openclaw.data');
+  if (!wasmBlob || !dataBlob) return false;
+
+  const M = window.Module;
+  if (!M) return false;
+
+  M.wasmBinary = new Uint8Array(await wasmBlob.arrayBuffer());
+  const dataBuffer = await dataBlob.arrayBuffer();
+  M.getPreloadedPackage = function (name) {
+    // Emscripten asks for the .data package by its remote name; return our
+    // cached ArrayBuffer for it and let anything else fall through to fetch.
+    if (name && name.includes('openclaw.data')) return dataBuffer;
+    return null;
+  };
+  console.log('[binaries] Serving openclaw.wasm/.data from IndexedDB (offline).');
+  return true;
+}
+
+// Decide how the game binaries are provided for THIS boot.
+// - Online  -> always let Emscripten stream them from the network (fast,
+//   low-memory, streaming compile). Never touch the cache: reading 47MB from
+//   IndexedDB + non-streaming compile is strictly slower. Binaries are cached
+//   in the background after boot for future offline use.
+// - Offline, cached -> feed the bytes from IndexedDB (works on Safari).
+// - Offline, not cached -> cannot boot; caller shows the offline screen.
+// Returns true if the game can proceed to boot.
+async function prepareGameBinaries() {
+  if (!assetStorage) return false;
+
+  if (navigator.onLine) {
+    console.log('[binaries] Online; streaming from network this run.');
+    return true;
+  }
+
+  // Offline: must serve from IndexedDB, if we cached them on a prior run.
+  const ok = await feedBinariesFromCache();
+  if (!ok) console.warn('[binaries] Offline and openclaw.wasm/.data not cached.');
+  return ok;
+}
+
+// Version tag for a game binary as served right now. Uses the ETag (falling
+// back to Last-Modified) from a cheap HEAD request. A new deploy changes these,
+// which is how we detect that a cached binary is stale. Returns null if the
+// server sends neither header (then we cannot tell, and keep what we have).
+async function fetchBinaryVersion(name) {
+  const resp = await fetch(name, { method: 'HEAD', credentials: 'same-origin' });
+  if (!resp.ok) return null;
+  return resp.headers.get('etag') || resp.headers.get('last-modified') || null;
+}
+
+// Fetch openclaw.wasm/.data and store them in IndexedDB WITHOUT blocking boot.
+// Runs after the game is already rendering (postRun), so the ~52MB of writes
+// never delay the first launch. Only runs online.
+//
+// Re-fetches (and overwrites) a binary when the server's version tag differs
+// from the cached one, so a new deploy invalidates the old cached copy. The
+// IndexedDB store is keyed by filename, so the overwrite releases the previous
+// bytes - we never accumulate multiple versions. A binary cached before this
+// versioning existed has no stored tag, so it always mismatches and is refreshed
+// on the next online launch (no manual cache clearing needed).
+async function cacheGameBinariesInBackground() {
+  try {
+    if (!assetStorage || !navigator.onLine) return;
+    for (const bin of GAME_BINARIES) {
+      const has = await assetStorage.hasFile(bin.name);
+
+      // What version is live on the server right now?
+      let serverVersion = null;
+      try {
+        serverVersion = await fetchBinaryVersion(bin.name);
+      } catch (e) {
+        // HEAD failed (offline mid-run, etc.). If we already have a copy, keep
+        // it; otherwise fall through and try a normal GET below.
+        if (has) { continue; }
+      }
+
+      if (has) {
+        const meta = await assetStorage.getFileMetadata(bin.name);
+        const cachedVersion = meta && meta.version;
+        // Up to date (or server won't tell us) -> keep the cached copy.
+        if (serverVersion === null || cachedVersion === serverVersion) continue;
+        console.log(`[binaries] ${bin.name} is stale (cached=${cachedVersion}, server=${serverVersion}); refreshing.`);
+      }
+
+      const resp = await fetch(bin.name, { credentials: 'same-origin' });
+      if (!resp.ok) { console.warn(`[binaries] bg fetch ${bin.name} failed: ${resp.status}`); continue; }
+      const blob = await resp.blob();
+      // Prefer the version from the GET response; fall back to the HEAD value.
+      const version = resp.headers.get('etag') || resp.headers.get('last-modified') || serverVersion || null;
+      await assetStorage.storeFile(bin.name, blob, null, { version: version });
+      console.log(`[binaries] Cached ${bin.name} for offline (${(blob.size / 1024 / 1024).toFixed(2)}MB, v=${version}).`);
+    }
+  } catch (e) {
+    console.warn('[binaries] Background caching skipped:', e);
+  }
+}
+
 async function prepareAssetStorage() {
   try {
     // Initialize IndexedDB storage
@@ -382,7 +506,16 @@ async function prepareAssetStorage() {
     const hasClawRez = await assetStorage.hasFile('CLAW.REZ');
 
     if (!hasClawRez) {
-      console.log('CLAW.REZ not found in storage. Showing upload UI...');
+      console.log('CLAW.REZ not found in storage.');
+
+      // Check if device is offline
+      if (!navigator.onLine) {
+        console.log('Device is offline and CLAW.REZ not cached. Showing offline message...');
+        showOfflineNeedCache();
+        return false;
+      }
+
+      console.log('Showing upload UI...');
       showAssetUpload();
       await waitForUpload();
     } else {
@@ -421,7 +554,7 @@ async function prepareAssetStorage() {
         console.log(`Compression ratio: ${((1 - storedBlob.size / clawRezBlob.size) * 100).toFixed(1)}%`);
       } catch (decompressError) {
         console.error('Decompression failed:', decompressError);
-        alert(
+        showUploadError(
           `Failed to decompress CLAW.REZ using ${metadata.compressionAlgorithm}.\n\n` +
           `Error: ${decompressError.message}\n\n` +
           `Please clear browser storage and re-upload CLAW.REZ.`
@@ -437,14 +570,19 @@ async function prepareAssetStorage() {
     clawRezData = new Uint8Array(arrayBuffer);
     console.log(`CLAW.REZ ready to mount (${(clawRezData.length / 1024 / 1024).toFixed(2)}MB)`);
 
+    // Cache/provide the WASM + data binaries so the game boots offline without
+    // the SW intercepting them (required for Safari). If this fails offline
+    // before they were ever cached, surface the offline screen.
+    const binariesReady = await prepareGameBinaries();
+    if (!binariesReady) {
+      if (!navigator.onLine) showOfflineNeedCache();
+      return false;
+    }
+
     return true;
 
   } catch (error) {
     console.error('Failed to prepare asset storage:', error);
-    alert(
-      `Failed to load game assets: ${error.message}\n\n` +
-      `Please check browser console for details.`
-    );
     return false;
   }
 }
@@ -501,7 +639,8 @@ export {
   reuploadClawRez,
   getStorageStats,
   prepareAssetStorage,
-  mountClawRezToFS
+  mountClawRezToFS,
+  cacheGameBinariesInBackground
 };
 
 // Keep window globals for HTML event handlers (permanent)
