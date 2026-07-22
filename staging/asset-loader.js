@@ -439,19 +439,57 @@ async function prepareGameBinaries() {
   return ok;
 }
 
+// Version tag for a game binary as served right now. Uses the ETag (falling
+// back to Last-Modified) from a cheap HEAD request. A new deploy changes these,
+// which is how we detect that a cached binary is stale. Returns null if the
+// server sends neither header (then we cannot tell, and keep what we have).
+async function fetchBinaryVersion(name) {
+  const resp = await fetch(name, { method: 'HEAD', credentials: 'same-origin' });
+  if (!resp.ok) return null;
+  return resp.headers.get('etag') || resp.headers.get('last-modified') || null;
+}
+
 // Fetch openclaw.wasm/.data and store them in IndexedDB WITHOUT blocking boot.
 // Runs after the game is already rendering (postRun), so the ~52MB of writes
-// never delay the first launch. No-op if already cached or if offline.
+// never delay the first launch. Only runs online.
+//
+// Re-fetches (and overwrites) a binary when the server's version tag differs
+// from the cached one, so a new deploy invalidates the old cached copy. The
+// IndexedDB store is keyed by filename, so the overwrite releases the previous
+// bytes - we never accumulate multiple versions. A binary cached before this
+// versioning existed has no stored tag, so it always mismatches and is refreshed
+// on the next online launch (no manual cache clearing needed).
 async function cacheGameBinariesInBackground() {
   try {
     if (!assetStorage || !navigator.onLine) return;
     for (const bin of GAME_BINARIES) {
-      if (await assetStorage.hasFile(bin.name)) continue;
+      const has = await assetStorage.hasFile(bin.name);
+
+      // What version is live on the server right now?
+      let serverVersion = null;
+      try {
+        serverVersion = await fetchBinaryVersion(bin.name);
+      } catch (e) {
+        // HEAD failed (offline mid-run, etc.). If we already have a copy, keep
+        // it; otherwise fall through and try a normal GET below.
+        if (has) { continue; }
+      }
+
+      if (has) {
+        const meta = await assetStorage.getFileMetadata(bin.name);
+        const cachedVersion = meta && meta.version;
+        // Up to date (or server won't tell us) -> keep the cached copy.
+        if (serverVersion === null || cachedVersion === serverVersion) continue;
+        console.log(`[binaries] ${bin.name} is stale (cached=${cachedVersion}, server=${serverVersion}); refreshing.`);
+      }
+
       const resp = await fetch(bin.name, { credentials: 'same-origin' });
       if (!resp.ok) { console.warn(`[binaries] bg fetch ${bin.name} failed: ${resp.status}`); continue; }
       const blob = await resp.blob();
-      await assetStorage.storeFile(bin.name, blob);
-      console.log(`[binaries] Cached ${bin.name} for offline (${(blob.size / 1024 / 1024).toFixed(2)}MB).`);
+      // Prefer the version from the GET response; fall back to the HEAD value.
+      const version = resp.headers.get('etag') || resp.headers.get('last-modified') || serverVersion || null;
+      await assetStorage.storeFile(bin.name, blob, null, { version: version });
+      console.log(`[binaries] Cached ${bin.name} for offline (${(blob.size / 1024 / 1024).toFixed(2)}MB, v=${version}).`);
     }
   } catch (e) {
     console.warn('[binaries] Background caching skipped:', e);
