@@ -9,6 +9,16 @@ let assetStorage = null;
 let uploadResolve = null;
 
 /**
+ * Show offline (no cache) message
+ */
+function showOfflineNeedCache() {
+  const offlineDiv = document.getElementById('offlineNeedCache');
+  if (offlineDiv) {
+    offlineDiv.classList.add('visible');
+  }
+}
+
+/**
  * Show asset upload UI
  */
 function showAssetUpload() {
@@ -382,7 +392,16 @@ async function prepareAssetStorage() {
     const hasClawRez = await assetStorage.hasFile('CLAW.REZ');
 
     if (!hasClawRez) {
-      console.log('CLAW.REZ not found in storage. Showing upload UI...');
+      console.log('CLAW.REZ not found in storage.');
+
+      // Check if device is offline
+      if (!navigator.onLine) {
+        console.log('Device is offline and CLAW.REZ not cached. Showing offline message...');
+        showOfflineNeedCache();
+        throw new Error('Offline: CLAW.REZ not cached. Please connect to internet first.');
+      }
+
+      console.log('Showing upload UI...');
       showAssetUpload();
       await waitForUpload();
     } else {

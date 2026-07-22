@@ -810,6 +810,21 @@
         </div>
       </div>
     </section>
+
+    <!-- Offline mode: shown when network is unavailable and CLAW.REZ hasn't
+         been cached yet. Tells the user to play online first to cache the file. -->
+    <section id="offlineNeedCache" class="onboard">
+      <div class="onboard-card">
+        <div class="onboard-emoji">🌐</div>
+        <h2>Connect to internet first</h2>
+        <p>Your device is offline and the game hasn't been cached yet.</p>
+        <p>Please connect to the internet and upload <strong>CLAW.REZ</strong> to enable offline play.</p>
+        <div class="onboard-actions">
+          <button class="btn btn-primary" id="offlineReloadBtn" onclick="location.reload()">Reload</button>
+        </div>
+      </div>
+    </section>
+
     <div class="debug_panel" style="display: none">
       <div class="cheats">
         <div>
