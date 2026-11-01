@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "watch": "bash dev-watch.sh"
+    "watch": "bash dev-watch.sh",
+    "android:sync": "cp Build_Release/claw-web.html Build_Release/index.html && npx cap copy android"
   },
   "devDependencies": {
     "@capacitor/android": "^8.6.0",
