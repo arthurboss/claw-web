@@ -63,6 +63,19 @@ function waitForStartClick() {
   // which stay hidden until the start overlay is gone so their clicks can't
   // fall through to the overlay and start the game prematurely.
   const markStarted = () => document.body.classList.add('game-started');
+
+  // Native app: the WebView does not enforce the browser's audio-autoplay
+  // gesture requirement, so the tap-to-start overlay has nothing to unlock
+  // here. Start immediately instead of waiting for a tap.
+  const isNativeShell = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (isNativeShell) {
+    prewarmAudioContext();
+    if (typeof window.warmLevelMidi === 'function') window.warmLevelMidi();
+    markStarted();
+    requestWakeLock();
+    return Promise.resolve();
+  }
+
   return new Promise((resolve) => {
     if (window.audioContext && window.audioContext.state === 'running') {
       markStarted(); resolve(); return;
