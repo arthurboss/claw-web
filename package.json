@@ -9,6 +9,9 @@
     "watch": "bash dev-watch.sh"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
     "vite": "^6.3.5"
   }
 }

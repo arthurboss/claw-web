@@ -1447,7 +1447,14 @@
         // API — so display-mode: fullscreen here means the app was LAUNCHED as
         // an installed PWA (manifest uses display: fullscreen), not a tab that
         // toggled fullscreen. Both fullscreen and standalone indicate installed.
+        // Capacitor wraps the page in a native WebView inside an already-
+        // installed app; there is nothing left to 'install', so treat it
+        // the same as an installed/standalone PWA.
+        var isNativeShell =
+          !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+
         var isStandalone =
+          isNativeShell ||
           window.matchMedia('(display-mode: standalone)').matches ||
           window.matchMedia('(display-mode: fullscreen)').matches ||
           window.navigator.standalone === true;
