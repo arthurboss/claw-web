@@ -1,4 +1,4 @@
-package com.arthurboss.captainclaw;
+package com.arthurboss.clawmobile;
 
 import android.os.Bundle;
 import androidx.core.view.WindowCompat;

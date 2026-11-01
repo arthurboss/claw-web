@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">Claw Mobile</string>
     <string name="title_activity_main">Claw Mobile</string>
-    <string name="package_name">com.arthurboss.captainclaw</string>
-    <string name="custom_url_scheme">com.arthurboss.captainclaw</string>
+    <string name="package_name">com.arthurboss.clawmobile</string>
+    <string name="custom_url_scheme">com.arthurboss.clawmobile</string>
 </resources>
