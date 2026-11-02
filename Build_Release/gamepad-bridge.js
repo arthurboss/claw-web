@@ -81,9 +81,27 @@ function triggerHaptic(gamepadIndex, preset) {
 // gamepad preset table).
 function triggerDeviceVibration(durationMs) {
     if (!window.__lastPointerWasTouch) return false;
+    const ms = Math.max(1, Math.round(durationMs));
+
+    // Native app: Android WebView does not reliably implement the Vibration
+    // API even with the VIBRATE permission granted, so route through the
+    // official @capacitor/haptics plugin (native Vibrator access) instead.
+    const isNativeShell = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    if (isNativeShell) {
+        try {
+            const haptics = window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;
+            if (!haptics) return false;
+            haptics.vibrate({ duration: ms });
+            return true;
+        } catch (e) {
+            log('Native vibration error: ' + e);
+            return false;
+        }
+    }
+
     if (!('vibrate' in navigator)) return false;
     try {
-        navigator.vibrate(Math.max(1, Math.round(durationMs)));
+        navigator.vibrate(ms);
         return true;
     } catch (e) {
         log('Vibration error: ' + e);
