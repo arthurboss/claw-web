@@ -1813,13 +1813,21 @@ bool ScreenElementMenuItem::Initialize(TiXmlElement* pElem)
         else if (conditionTypeStr == "FullscreenOn")
         {
 #ifdef __EMSCRIPTEN__
-            m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 1 : 0; });
+            // Hidden on the Android app: it is already permanently fullscreen
+            // at the OS level, so the toggle has nothing to offer there.
+            m_bVisible = (bool)EM_ASM_INT({
+                if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) return 0;
+                return document.fullscreenElement ? 1 : 0;
+            });
 #endif
         }
         else if (conditionTypeStr == "FullscreenOff")
         {
 #ifdef __EMSCRIPTEN__
-            m_bVisible = (bool)EM_ASM_INT({ return document.fullscreenElement ? 0 : 1; });
+            m_bVisible = (bool)EM_ASM_INT({
+                if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) return 0;
+                return document.fullscreenElement ? 0 : 1;
+            });
 #else
             m_bVisible = true;
 #endif
@@ -2118,13 +2126,15 @@ void ScreenElementMenuItem::ReEvaluateVisibilityCondition()
     else if (m_VisibilityConditionType == "FullscreenOn")
     {
 #ifdef __EMSCRIPTEN__
-        // Hide fullscreen controls on iOS: the browser Fullscreen API is
-        // unsupported there and toggling it crashes the game. Both the ON and
-        // OFF variants stay hidden so no fullscreen button shows on iOS.
+        // Hide fullscreen controls on iOS (Fullscreen API unsupported there,
+        // toggling it crashes the game) and on the Android app (already
+        // permanently fullscreen at the OS level). Both ON and OFF variants
+        // stay hidden on both.
         m_bVisible = (bool)EM_ASM_INT({
             var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                 (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-            if (iOS) return 0;
+            var isNativeAndroid = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+            if (iOS || isNativeAndroid) return 0;
             return document.fullscreenElement ? 1 : 0;
         });
 #endif
@@ -2135,7 +2145,8 @@ void ScreenElementMenuItem::ReEvaluateVisibilityCondition()
         m_bVisible = (bool)EM_ASM_INT({
             var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                 (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-            if (iOS) return 0;
+            var isNativeAndroid = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+            if (iOS || isNativeAndroid) return 0;
             return document.fullscreenElement ? 0 : 1;
         });
 #else
