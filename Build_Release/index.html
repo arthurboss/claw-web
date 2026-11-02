@@ -1131,6 +1131,17 @@
             // actually takes effect once resolution logic runs.
             var savedCanvas = document.getElementById("canvas");
             if (savedCanvas) savedCanvas.classList.toggle("force-4-3", window.forceOriginalAspect);
+            // Widescreen width is computed from window.innerWidth/innerHeight
+            // at the moment updateGameResolution() runs (unlike the fixed 4:3
+            // default, which needs no live measurement). This early in boot,
+            // the Android WebView's layout/insets have not settled yet, so a
+            // restored widescreen preference can compute against a stale
+            // size and render stretched. Re-run the calc once layout has
+            // actually settled, matching what a manual re-toggle already does.
+            if (!window.forceOriginalAspect) {
+              window.addEventListener("load", function () { updateGameResolution(); });
+              setTimeout(function () { updateGameResolution(); }, 300);
+            }
           }
         } catch (e) {}
       }
