@@ -12,7 +12,7 @@ Captain Claw WASM is a browser-based fork of Captain Claw (1997), focused on opt
 
 - **`CLAW.REZ`** — original game archive (~113MB, uploaded at runtime, not in repo).
 - **`ASSETS.ZIP`** — custom assets, auto-generated from `Build_Release/ASSETS/`.
-- Emscripten SDK (`emsdk/`, gitignored), CMake 4.3.2+, Node.js 18+ (Vite).
+- Emscripten SDK (`emsdk/`, gitignored), CMake 4.3.2+, Node.js 18+ (Vite). On dev VMs it may live outside the repo (e.g. `~/emsdk`) instead of a repo-relative `emsdk/` — source its `emsdk_env.sh` by absolute path, and when `build_wasm.sh` clears the SDL2 shader cache (`rm -rf ./emsdk/upstream/emscripten/cache/build/sdl2`), that relative path silently no-ops if `emsdk/` isn't inside the repo; clear the real path manually instead.
 - Browsers: Chrome 105+ / Firefox 121+ / Safari 16.4+ / Edge 105+.
 
 ## Build
