@@ -41,6 +41,9 @@
   // of truth — no duplicated numbers to drift). Preset names map to actions:
   // light=nav/weapon/back, medium=select, attack=attack/fire, jump=jump.
   var HAPTIC = { light: "light", medium: "medium", attack: "attack", jump: "jump" };
+  function isNativeShell() {
+    return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  }
   function vibrate(preset) {
     if (typeof window.triggerHaptic === "function") {
       window.triggerHaptic(0, preset);
@@ -454,7 +457,11 @@
       markTouchInput(e);
       el.classList.add("active");
       pressKey(code);
-      vibrate(hapticMs || HAPTIC.light);
+      // Buttons with no explicit preset (movement, jump-on-press) kept the
+      // web default-light buzz, but on the Android app that is too much
+      // feedback for routine input - only buttons with an explicit preset
+      // (attack/fire) or that open/confirm/exit a menu vibrate there.
+      if (hapticMs || !isNativeShell()) vibrate(hapticMs || HAPTIC.light);
       try { el.setPointerCapture(e.pointerId); } catch (err) {}
       e.preventDefault();
     });
@@ -475,7 +482,9 @@
       markTouchInput(e);
       el.classList.add("active");
       pressKey(code);
-      vibrate(hapticMs || HAPTIC.light);
+      // See setupHoldButton: unpresetted taps (weapon switch) keep the web
+      // default-light buzz but are silent on the Android app.
+      if (hapticMs || !isNativeShell()) vibrate(hapticMs || HAPTIC.light);
       e.preventDefault();
     });
     function up(e) {
@@ -621,17 +630,17 @@
     var root = buildDom();
     setupJoystick(document.getElementById("tcJoyBase"), document.getElementById("tcJoyThumb"));
     // D-pad direction buttons (hold-style, 4 directions only, no diagonals)
-    setupHoldButton(document.getElementById("tcDup"), KEY.up, HAPTIC.light);
-    setupHoldButton(document.getElementById("tcDdown"), KEY.down, HAPTIC.light);
-    setupHoldButton(document.getElementById("tcDleft"), KEY.left, HAPTIC.light);
-    setupHoldButton(document.getElementById("tcDright"), KEY.right, HAPTIC.light);
+    setupHoldButton(document.getElementById("tcDup"), KEY.up);
+    setupHoldButton(document.getElementById("tcDdown"), KEY.down);
+    setupHoldButton(document.getElementById("tcDleft"), KEY.left);
+    setupHoldButton(document.getElementById("tcDright"), KEY.right);
     setupMoveToggle(root, document.getElementById("tcMoveToggle"));
     setupInstallButton(document.getElementById("tcInstall"));
     // Gameplay buttons
-    setupHoldButton(document.getElementById("tcJump"), KEY.jump, HAPTIC.jump);
+    setupHoldButton(document.getElementById("tcJump"), KEY.jump);
     setupHoldButton(document.getElementById("tcFire"), KEY.fire, HAPTIC.attack);
     setupTapButton(document.getElementById("tcAttack"), KEY.attack, HAPTIC.attack);
-    setupTapButton(document.getElementById("tcWeapon"), KEY.weapon, HAPTIC.light);
+    setupTapButton(document.getElementById("tcWeapon"), KEY.weapon);
     setupTapButton(document.getElementById("tcPause"), KEY.pause, HAPTIC.light);
     // Menu buttons
     setupTapButton(document.getElementById("tcSelect"), KEY.select, HAPTIC.medium);
