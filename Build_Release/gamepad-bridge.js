@@ -71,7 +71,7 @@ function triggerHaptic(gamepadIndex, preset) {
         return false;
     }
 
-    return triggerHapticCustom(gamepadIndex, config.duration, config.weak, config.strong);
+    return triggerHapticCustom(gamepadIndex, config.duration, config.weak, config.strong, preset);
 }
 
 // Vibrate the touchscreen device via the Web Vibration API. This is the touch
@@ -79,11 +79,36 @@ function triggerHaptic(gamepadIndex, preset) {
 // a phone buzzes but a mouse/gamepad user is unaffected. The Vibration API has
 // no magnitude, so the preset duration carries the intensity (matching the
 // gamepad preset table).
-function triggerDeviceVibration(durationMs) {
+// Presets with no meaningful discrete action behind them on the Android app:
+// step fires on every footstep, and jump has no C++ caller at all (only the
+// touch overlay's jump button used it, on press rather than landing). Scoped
+// to the native app + touch input only; web and gamepad rumble are untouched.
+const NATIVE_TOUCH_VIBRATION_BLOCKLIST = ['step', 'jump'];
+
+function triggerDeviceVibration(durationMs, preset) {
     if (!window.__lastPointerWasTouch) return false;
+    const ms = Math.max(1, Math.round(durationMs));
+
+    // Native app: Android WebView does not reliably implement the Vibration
+    // API even with the VIBRATE permission granted, so route through the
+    // official @capacitor/haptics plugin (native Vibrator access) instead.
+    const isNativeShell = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+    if (isNativeShell) {
+        if (NATIVE_TOUCH_VIBRATION_BLOCKLIST.indexOf(preset) !== -1) return false;
+        try {
+            const haptics = window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;
+            if (!haptics) return false;
+            haptics.vibrate({ duration: ms });
+            return true;
+        } catch (e) {
+            log('Native vibration error: ' + e);
+            return false;
+        }
+    }
+
     if (!('vibrate' in navigator)) return false;
     try {
-        navigator.vibrate(Math.max(1, Math.round(durationMs)));
+        navigator.vibrate(ms);
         return true;
     } catch (e) {
         log('Vibration error: ' + e);
@@ -105,11 +130,11 @@ function resolveGamepad(gamepadIndex) {
     return null;
 }
 
-function triggerHapticCustom(gamepadIndex, durationMs, weakMagnitude, strongMagnitude) {
+function triggerHapticCustom(gamepadIndex, durationMs, weakMagnitude, strongMagnitude, preset) {
     if (!hapticEnabled) return false;
 
     // Touch device vibration, independent of any connected gamepad.
-    const vibrated = triggerDeviceVibration(durationMs);
+    const vibrated = triggerDeviceVibration(durationMs, preset);
 
     const gp = resolveGamepad(gamepadIndex);
     if (!gp) return vibrated;

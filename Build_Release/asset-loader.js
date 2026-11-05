@@ -393,16 +393,28 @@ async function prepareAssetStorage() {
     if (!hasClawRez) {
       console.log('CLAW.REZ not found in storage.');
 
-      // Check if device is offline
-      if (!navigator.onLine) {
+      var isNativeShell = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+
+      if (isNativeShell) {
+        // The Android app ships CLAW.REZ bundled alongside the other web
+        // assets - no upload step, just pull it in once and cache it the
+        // same way an uploaded file would be.
+        console.log('Native shell: loading bundled CLAW.REZ...');
+        const bundledResp = await fetch('./CLAW.REZ');
+        if (!bundledResp.ok) {
+          throw new Error('Bundled CLAW.REZ missing (HTTP ' + bundledResp.status + ')');
+        }
+        const bundledBlob = await bundledResp.blob();
+        await assetStorage.storeFile('CLAW.REZ', bundledBlob);
+      } else if (!navigator.onLine) {
         console.log('Device is offline and CLAW.REZ not cached. Showing offline message...');
         showOfflineNeedCache();
         return false;
+      } else {
+        console.log('Showing upload UI...');
+        showAssetUpload();
+        await waitForUpload();
       }
-
-      console.log('Showing upload UI...');
-      showAssetUpload();
-      await waitForUpload();
     } else {
       console.log('CLAW.REZ found in storage. Loading...');
       const metadata = await assetStorage.getFileMetadata('CLAW.REZ');

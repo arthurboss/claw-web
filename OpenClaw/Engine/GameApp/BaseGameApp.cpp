@@ -961,6 +961,30 @@ bool BaseGameApp::InitializeDisplay(GameOptions &gameOptions) {
     return false;
   }
 
+#ifdef __EMSCRIPTEN__
+  // The JS side may have already restored a widescreen preference and sized
+  // the canvas element before this runs (claw-web.html recomputes it from
+  // the live window size as soon as the page parses, well before the WASM
+  // module loads). SDL_CreateWindow below forces the canvas's width/height
+  // attributes to match whatever size it's given, so creating it with the
+  // static config default here would stomp that back to 640x480 while the
+  // canvas's CSS box stays sized for widescreen - stretching every menu
+  // until the player re-toggles widescreen. Read the current canvas size
+  // first and create the window at that size instead.
+  int canvasWidth = EM_ASM_INT({
+    var canvas = document.getElementById('canvas');
+    return canvas ? canvas.width : 640;
+  });
+  int canvasHeight = EM_ASM_INT({
+    var canvas = document.getElementById('canvas');
+    return canvas ? canvas.height : 480;
+  });
+  if (canvasWidth > 0 && canvasHeight > 0) {
+    gameOptions.windowWidth = canvasWidth;
+    gameOptions.windowHeight = canvasHeight;
+  }
+#endif
+
   m_pWindow = SDL_CreateWindow(VGetGameTitle(), SDL_WINDOWPOS_UNDEFINED,
                                SDL_WINDOWPOS_UNDEFINED, gameOptions.windowWidth,
                                gameOptions.windowHeight, SDL_WINDOW_SHOWN);
@@ -980,23 +1004,6 @@ bool BaseGameApp::InitializeDisplay(GameOptions &gameOptions) {
   }
 
   m_WindowSize.Set(gameOptions.windowWidth, gameOptions.windowHeight);
-
-#ifdef __EMSCRIPTEN__
-  // Get actual canvas dimensions from JavaScript (may differ from config defaults)
-  // This ensures menus render correctly from the first frame
-  int canvasWidth = EM_ASM_INT({
-    var canvas = document.getElementById('canvas');
-    return canvas ? canvas.width : 640;
-  });
-  int canvasHeight = EM_ASM_INT({
-    var canvas = document.getElementById('canvas');
-    return canvas ? canvas.height : 480;
-  });
-  if (canvasWidth > 0 && canvasHeight > 0) {
-    m_WindowSize.Set(canvasWidth, canvasHeight);
-    LOG("Using canvas dimensions: " + ToStr(canvasWidth) + "x" + ToStr(canvasHeight));
-  }
-#endif
 
   uint32 rendererFlags = SDL_RENDERER_ACCELERATED;
   if (gameOptions.useVerticalSync) {

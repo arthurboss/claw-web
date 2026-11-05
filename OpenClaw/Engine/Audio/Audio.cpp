@@ -9,6 +9,10 @@
 
 #include <iostream>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #ifdef _WIN32
 #include <Windows.h>
 #include "../../../MidiProc/midiproc.h"
@@ -68,6 +72,26 @@ bool Audio::Initialize(const GameOptions& config)
     m_MusicVolume = max(0, min(100, config.musicVolume));
     m_bSoundOn = config.soundOn;
     m_bMusicOn = config.musicOn;
+
+#ifdef __EMSCRIPTEN__
+    // Android app only: a persisted sound/music preference overrides the
+    // config.xml default, so toggling it in the options menu sticks across
+    // launches instead of always resetting.
+    m_bSoundOn = (bool)EM_ASM_INT({
+        if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return $0;
+        try {
+            var saved = localStorage.getItem("claw-mobile:sound");
+            return saved === null ? $0 : (saved === "1" ? 1 : 0);
+        } catch (e) { return $0; }
+    }, m_bSoundOn ? 1 : 0);
+    m_bMusicOn = (bool)EM_ASM_INT({
+        if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return $0;
+        try {
+            var saved = localStorage.getItem("claw-mobile:music");
+            return saved === null ? $0 : (saved === "1" ? 1 : 0);
+        } catch (e) { return $0; }
+    }, m_bMusicOn ? 1 : 0);
+#endif
 
     // Convert 0-100 range to 0.0-1.0 for audio system
     float soundVol = static_cast<float>(m_SoundVolume) / 100.0f;
@@ -343,6 +367,14 @@ void Audio::SetSoundActive(bool active)
             m_audioSystem->StopAllSounds();
         }
     }
+
+#ifdef __EMSCRIPTEN__
+    EM_ASM({
+        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+            try { localStorage.setItem("claw-mobile:sound", $0 ? "1" : "0"); } catch (e) {}
+        }
+    }, m_bSoundOn ? 1 : 0);
+#endif
 }
 
 void Audio::SetMusicActive(bool active)
@@ -356,6 +388,14 @@ void Audio::SetMusicActive(bool active)
         // resumes (the bug where toggling music off then on again killed it).
         m_audioSystem->SetMusicEnabled(m_bMusicOn);
     }
+
+#ifdef __EMSCRIPTEN__
+    EM_ASM({
+        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+            try { localStorage.setItem("claw-mobile:music", $0 ? "1" : "0"); } catch (e) {}
+        }
+    }, m_bMusicOn ? 1 : 0);
+#endif
 }
 
 #ifdef _WIN32

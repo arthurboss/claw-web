@@ -54,8 +54,38 @@ async function requestWakeLock() {
   } catch (e) { /* not supported or denied — silent */ }
 }
 
+// Android app only: fully suspend audio when the app is backgrounded (home
+// button, task switch) - a background tab playing sound is normal for a
+// desktop browser but not for a mobile app.
+function isNativeShellForVisibility() {
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
+function suspendGameAudio() {
+  try {
+    if (window.audioContext && window.audioContext.state === 'running') window.audioContext.suspend();
+  } catch (e) {}
+  try {
+    var sdl2Ctx = window.Module && window.Module.SDL2 && window.Module.SDL2.audioContext;
+    if (sdl2Ctx && sdl2Ctx.state === 'running') sdl2Ctx.suspend();
+  } catch (e) {}
+}
+function resumeGameAudio() {
+  try {
+    if (window.audioContext && window.audioContext.state === 'suspended') window.audioContext.resume();
+  } catch (e) {}
+  try {
+    var sdl2Ctx = window.Module && window.Module.SDL2 && window.Module.SDL2.audioContext;
+    if (sdl2Ctx && sdl2Ctx.state === 'suspended') sdl2Ctx.resume();
+  } catch (e) {}
+}
+
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') requestWakeLock();
+  if (document.visibilityState === 'visible') {
+    requestWakeLock();
+    if (isNativeShellForVisibility()) resumeGameAudio();
+  } else if (isNativeShellForVisibility()) {
+    suspendGameAudio();
+  }
 });
 
 function waitForStartClick() {
@@ -63,6 +93,19 @@ function waitForStartClick() {
   // which stay hidden until the start overlay is gone so their clicks can't
   // fall through to the overlay and start the game prematurely.
   const markStarted = () => document.body.classList.add('game-started');
+
+  // Native app: the WebView does not enforce the browser's audio-autoplay
+  // gesture requirement, so the tap-to-start overlay has nothing to unlock
+  // here. Start immediately instead of waiting for a tap.
+  const isNativeShell = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  if (isNativeShell) {
+    prewarmAudioContext();
+    if (typeof window.warmLevelMidi === 'function') window.warmLevelMidi();
+    markStarted();
+    requestWakeLock();
+    return Promise.resolve();
+  }
+
   return new Promise((resolve) => {
     if (window.audioContext && window.audioContext.state === 'running') {
       markStarted(); resolve(); return;

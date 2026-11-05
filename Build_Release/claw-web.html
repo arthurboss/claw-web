@@ -1085,6 +1085,9 @@
       // Smart fullscreen function - always fullscreens the game container
       // Uses Keyboard Lock API to capture ESC key in fullscreen (Chrome/Edge)
       function toggleFullscreen() {
+        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+          return;
+        }
         var gameContainer = document.getElementById("gameContainer");
         if (!gameContainer) return;
 
@@ -1113,10 +1116,43 @@
       window.toggleFullscreen = toggleFullscreen;
 
       // Aspect ratio state - false = widescreen (dynamic), true = force 4:3 original
+      function isNativeShell() {
+        return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+      }
+      var WIDESCREEN_STORAGE_KEY = "claw-mobile:widescreen";
       window.forceOriginalAspect = true;
+      if (isNativeShell()) {
+        try {
+          var savedWidescreen = localStorage.getItem(WIDESCREEN_STORAGE_KEY);
+          if (savedWidescreen !== null) {
+            window.forceOriginalAspect = savedWidescreen !== "1";
+            // The canvas markup hardcodes class="force-4-3" to match the
+            // default; re-sync it now so a restored widescreen preference
+            // actually takes effect once resolution logic runs.
+            var savedCanvas = document.getElementById("canvas");
+            if (savedCanvas) savedCanvas.classList.toggle("force-4-3", window.forceOriginalAspect);
+            // Widescreen width is computed from window.innerWidth/innerHeight
+            // at the moment updateGameResolution() runs (unlike the fixed 4:3
+            // default, which needs no live measurement). This early in boot,
+            // the Android WebView's layout/insets have not settled yet, so a
+            // restored widescreen preference can compute against a stale
+            // size and render stretched. Re-run the calc once layout has
+            // actually settled, matching what a manual re-toggle already does.
+            if (!window.forceOriginalAspect) {
+              window.addEventListener("load", function () { updateGameResolution(); });
+              setTimeout(function () { updateGameResolution(); }, 300);
+            }
+          }
+        } catch (e) {}
+      }
 
       window.toggleAspectRatio = function() {
         window.forceOriginalAspect = !window.forceOriginalAspect;
+        if (isNativeShell()) {
+          try {
+            localStorage.setItem(WIDESCREEN_STORAGE_KEY, window.forceOriginalAspect ? "0" : "1");
+          } catch (e) {}
+        }
         var canvas = document.getElementById("canvas");
         if (canvas) canvas.classList.toggle("force-4-3", window.forceOriginalAspect);
         updateGameResolution();
@@ -1447,7 +1483,14 @@
         // API — so display-mode: fullscreen here means the app was LAUNCHED as
         // an installed PWA (manifest uses display: fullscreen), not a tab that
         // toggled fullscreen. Both fullscreen and standalone indicate installed.
+        // Capacitor wraps the page in a native WebView inside an already-
+        // installed app; there is nothing left to 'install', so treat it
+        // the same as an installed/standalone PWA.
+        var isNativeShell =
+          !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+
         var isStandalone =
+          isNativeShell ||
           window.matchMedia('(display-mode: standalone)').matches ||
           window.matchMedia('(display-mode: fullscreen)').matches ||
           window.navigator.standalone === true;

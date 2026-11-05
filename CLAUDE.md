@@ -12,7 +12,7 @@ Captain Claw WASM is a browser-based fork of Captain Claw (1997), focused on opt
 
 - **`CLAW.REZ`** — original game archive (~113MB, uploaded at runtime, not in repo).
 - **`ASSETS.ZIP`** — custom assets, auto-generated from `Build_Release/ASSETS/`.
-- Emscripten SDK (`emsdk/`, gitignored), CMake 4.3.2+, Node.js 18+ (Vite).
+- Emscripten SDK (`emsdk/`, gitignored), CMake 4.3.2+, Node.js 18+ (Vite). On dev VMs it may live outside the repo (e.g. `~/emsdk`) instead of a repo-relative `emsdk/` — source its `emsdk_env.sh` by absolute path, and when `build_wasm.sh` clears the SDL2 shader cache (`rm -rf ./emsdk/upstream/emscripten/cache/build/sdl2`), that relative path silently no-ops if `emsdk/` isn't inside the repo; clear the real path manually instead.
 - Browsers: Chrome 105+ / Firefox 121+ / Safari 16.4+ / Edge 105+.
 
 ## Build
@@ -117,6 +117,18 @@ emcmake cmake -DEmscripten=1 -DExtern_Config=0 ..   # embed config.xml in WASM
 ```
 
 Emscripten flags live in `CMakeLists.txt` (SDL2 + image/ttf/gfx/mixer, `ASYNCIFY`, 256MB memory with growth, WebGL2, `USE_ZLIB`, `FETCH`). Preloaded: `ASSETS.ZIP`, `console02.tga`, `clacon.ttf`. `CLAW.REZ` is explicitly **not** preloaded.
+
+## Android App (Capacitor)
+
+`android/` wraps `Build_Release/` in a native Capacitor shell (`com.arthurboss.clawmobile`, label "Claw Mobile") instead of the browser PWA. Differences from web, all gated behind a `window.Capacitor.isNativePlatform()` check so the web build is untouched:
+
+- `CLAW.REZ` ships bundled in the APK (`Build_Release/CLAW.REZ`, gitignored) and auto-loads on first run — no upload screen.
+- No tap-to-start overlay — Android WebView does not enforce the audio-autoplay gesture requirement that overlay exists for on web.
+- Locked to landscape, runs edge-to-edge fullscreen (`MainActivity.java`).
+
+**`Build_Release/index.html` gotcha:** Capacitor requires an `index.html` entry point; the project's real entry is `claw-web.html`. `index.html` is a plain copy, not auto-synced by Vite or git. **Never edit it directly or copy it by hand** — run `yarn android:sync` (copies `claw-web.html` to `index.html`, then `cap copy android`) before every Android build. Production deploys are unaffected either way: `deploy-prod.sh` always regenerates `index.html` from `claw-web.html` on the gh-pages worktree, ignoring this file.
+
+**Building the APK:** this repo's dev VMs are aarch64 Linux; Android's `aapt2`/`d8` build tools are x86_64-only. Build inside an amd64 container (`podman run --platform linux/amd64 eclipse-temurin:21-jdk`), bind-mounting the Android SDK and a persistent `~/.android` debug-keystore dir (keeps the debug signature stable across rebuilds — without it, every rebuild forces an uninstall on the test device).
 
 ## Known Limitations
 
